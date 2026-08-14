@@ -1,0 +1,241 @@
+{
+  "nav": {
+    "signIn": "Inloggen",
+    "propose": "Voertuig aanbieden",
+    "search": "Voertuig zoeken",
+    "how": "Hoe het werkt",
+    "types": "Voertuigtypes",
+    "contact": "Contact"
+  },
+  "hero": {
+    "eyebrow": "Uw Europese partner voor gebruikte vrachtwagens",
+    "headline": "Een gebruikte vrachtwagen kopen of verkopen was nooit zo eenvoudig en betrouwbaar.",
+    "subtitle": "Wilmet Trucks vereenvoudigt de aan- en verkoop van gebruikte vrachtwagens, trekkers, bakwagens, opleggers en bedrijfsvoertuigen voor professionals, overal in Europa, met gekwalificeerde en betrouwbare opportuniteiten die klaar zijn voor gebruik."
+  },
+  "cta": {
+    "propose": {
+      "title": "Heeft u een vrachtwagen te koop? Wilmet kan hem snel aankopen.",
+      "text": "Bied uw gebruikte vrachtwagen, bedrijfswagen, trekker, bakwagen, oplegger of bedrijfsvoertuig aan. Ons team analyseert uw opportuniteit, controleert de belangrijkste gegevens en antwoordt u snel, eenvoudig en professioneel.",
+      "button": "Mijn voertuig aanbieden"
+    },
+    "search": {
+      "title": "Zoekt u een betrouwbare vrachtwagen? Wilmet vindt de juiste opportuniteit.",
+      "text": "Beschrijf het voertuig dat u zoekt: vrachtwagen, bedrijfswagen, trekker, bakwagen, oplegger of speciaal voertuig. Is er een passende opportuniteit beschikbaar, dan stellen wij die voor. Zo niet, activeren wij ons netwerk om een voertuig te vinden dat past bij uw behoeften, uw budget en uw markt.",
+      "button": "Mijn zoekopdracht starten"
+    }
+  },
+  "how": {
+    "title": "Hoe werkt het?",
+    "sellers": {
+      "title": "U verkoopt een voertuig",
+      "s1": "U biedt uw voertuig aan",
+      "s1d": "Bezorg ons de gegevens en foto's in enkele minuten.",
+      "s2": "Wilmet analyseert de opportuniteit",
+      "s2d": "Onze experts kwalificeren het voertuig, de documenten en de voorwaarden.",
+      "s3": "Wij komen snel bij u terug",
+      "s3d": "Een duidelijk antwoord, zonder onnodig uitstel.",
+      "s4": "Wilmet kan aankopen",
+      "s4d": "Als de opportuniteit wordt gevalideerd, ronden wij de transactie af."
+    },
+    "buyers": {
+      "title": "U zoekt een voertuig",
+      "s1": "U beschrijft uw behoefte",
+      "s1d": "Type, motorisatie, budget, termijn.",
+      "s2": "Wilmet controleert de beschikbare opportuniteiten",
+      "s2d": "In eigen voorraad en in het Europese netwerk.",
+      "s3": "Wij stellen een passend voertuig voor",
+      "s3d": "Een gekwalificeerde selectie, klaar voor gebruik.",
+      "s4": "Begeleiding tot de afronding",
+      "s4d": "Wij volgen de transactie op tot de levering."
+    }
+  },
+  "types": {
+    "title": "Behandelde voertuigtypes",
+    "utilitaire_leger": "Lichte bedrijfswagens",
+    "camion_porteur": "Bakwagens",
+    "tracteur_routier": "Trekkers",
+    "semi_remorque": "Opleggers",
+    "remorque": "Aanhangwagens",
+    "benne": "Kippers",
+    "frigorifique": "Koelwagens",
+    "plateau": "Open laadbakken",
+    "fourgon": "Gesloten bestelwagens",
+    "nacelle": "Hoogwerkers",
+    "specialise": "Speciale voertuigen"
+  },
+  "why": {
+    "title": "Waarom Wilmet?",
+    "1t": "Snelheid",
+    "1d": "Een snel antwoord op aangeboden of gezochte opportuniteiten.",
+    "2t": "Vakkennis",
+    "2d": "Een grondige kwalificatie van voertuigen, documenten en voorwaarden.",
+    "3t": "Europees netwerk",
+    "3d": "De mogelijkheid om op meerdere markten te kopen en te verkopen.",
+    "intro": "Met Wilmet Trucks kunnen professionals hun voertuigen snel verkopen of toegang krijgen tot gekwalificeerde, geselecteerde en rijklare gebruikte vrachtwagens en bedrijfswagens, overal in Europa."
+  },
+  "contact": {
+    "title": "Contact & locatie",
+    "text": "Wilmet Trucks — handel in bedrijfsvoertuigen. Neem contact met ons op voor elke specifieke vraag.",
+    "phone": "Telefoon",
+    "email": "E-mail",
+    "address": "Adres"
+  },
+  "footer": {
+    "tagline": "Portaal voor partners & professionele kopers",
+    "legal": "Juridische informatie",
+    "privacy": "Privacy",
+    "rights": "Alle rechten voorbehouden."
+  },
+  "buyer": {
+    "meta": {
+      "title": "Een voertuig zoeken — Wilmet Trucks",
+      "description": "Beschrijf uw behoefte. Wilmet controleert de beschikbare opportuniteiten en zijn netwerk om u de meest relevante voertuigen voor te stellen."
+    },
+    "title": "Vind het bedrijfsvoertuig dat u nodig heeft",
+    "subtitle": "Beschrijf uw behoefte. Wilmet controleert de beschikbare opportuniteiten en zijn netwerk om u de meest relevante voertuigen voor te stellen.",
+    "step": "Stap {{current}} van {{total}}",
+    "steps": {
+      "vehicle": "Gezocht voertuig",
+      "technical": "Technische criteria",
+      "budget": "Budget & termijn",
+      "contact": "Uw gegevens"
+    },
+    "fields": {
+      "vehicleCategory": "Voertuigcategorie",
+      "pickCategoryFirst": "Kies eerst een categorie",
+      "vehicleType": "Voertuigtype",
+      "bodyType": "Gewenste opbouw",
+      "brand": "Voorkeursmerk",
+      "brandOpt": "Voorkeursmerk (optioneel)",
+      "model": "Voorkeursmodel",
+      "modelOpt": "Voorkeursmodel (optioneel)",
+      "intendedUse": "Voorzien gebruik",
+      "usageCountry": "Land van gebruik",
+      "minYear": "Minimum bouwjaar",
+      "maxMileage": "Maximum kilometerstand",
+      "minEuro": "Minimum Euronorm",
+      "fuel": "Brandstof",
+      "gearbox": "Versnellingsbak",
+      "ptac": "MTM (kg)",
+      "payload": "Nuttig laadvermogen (kg)",
+      "requiredEquipment": "Noodzakelijke uitrusting",
+      "wantedEquipment": "Gewenste uitrusting",
+      "maxBudget": "Maximumbudget excl. btw",
+      "currency": "Valuta",
+      "budgetFlexible": "Budget flexibel?",
+      "timeline": "Aankooptermijn",
+      "financing": "Financiering nodig?",
+      "firstName": "Voornaam",
+      "lastName": "Naam",
+      "company": "Bedrijf",
+      "email": "E-mail",
+      "phone": "Telefoon",
+      "country": "Land",
+      "city": "Stad",
+      "message": "Aanvullend bericht",
+      "gdpr": "Ik geef Wilmet toestemming om mij over mijn aanvraag te contacteren."
+    },
+    "choices": {
+      "flexOui": "Ja",
+      "flexNon": "Nee",
+      "flexOpp": "Afhankelijk van de opportuniteit",
+      "tImmediat": "Onmiddellijk",
+      "t7j": "Binnen 7 dagen",
+      "t30j": "Binnen 30 dagen",
+      "t3m": "Binnen 3 maanden",
+      "tFutur": "Toekomstig project",
+      "finOui": "Ja",
+      "finNon": "Nee",
+      "finDiscuss": "Te bespreken"
+    },
+    "actions": {
+      "back": "Terug",
+      "next": "Doorgaan",
+      "submit": "Mijn aanvraag versturen"
+    },
+    "success": {
+      "title": "Uw zoekopdracht is aan Wilmet doorgestuurd.",
+      "text": "Ons team controleert de beschikbare opportuniteiten en komt bij u terug met de meest relevante voertuigen.",
+      "reference": "Referentie van uw aanvraag",
+      "createAccount": "Account aanmaken om mijn aanvraag te volgen",
+      "home": "Terug naar de startpagina"
+    },
+    "errors": {
+      "required": "Dit veld is verplicht.",
+      "email": "Ongeldig e-mailadres.",
+      "submit": "De aanvraag kon niet worden verzonden. Probeer het opnieuw."
+    }
+  },
+  "common": {
+    "select": "Selecteren",
+    "search": "Zoeken",
+    "other": "Andere",
+    "loading": "Laden…",
+    "language": "Taal"
+  },
+  "catalog": {
+    "eyebrow": "Beschikbare voorraad",
+    "title": "Voertuigen te koop",
+    "subtitle": "Vrachtwagens, trekkers, aanhangwagens en bedrijfswagens gecontroleerd door onze teams. Prijzen excl. btw, beschikbaarheid per voertuig vermeld.",
+    "searchPlaceholder": "Merk, model, stad…",
+    "searchLabel": "Een voertuig zoeken",
+    "count_one": "{{count}} voertuig beschikbaar",
+    "count_other": "{{count}} voertuigen beschikbaar",
+    "vehicle": "Voertuig",
+    "priceOnRequest": "Prijs op aanvraag",
+    "exclVat": "Excl. btw",
+    "priceExclVat": "Prijs excl. btw",
+    "viewDetails": "Details bekijken",
+    "reserved": "Gereserveerd",
+    "available": "Beschikbaar",
+    "back": "Terug naar de catalogus",
+    "description": "Beschrijving",
+    "specsTitle": "Kenmerken",
+    "equipment": "Uitrusting",
+    "photo": "Foto {{index}}",
+    "ref": "Ref.",
+    "location": "Locatie",
+    "availability": "Beschikbaarheid",
+    "status": "Status",
+    "interested": "Dit voertuig interesseert mij",
+    "replyNote": "Een Wilmet-verkoper antwoordt binnen 24 werkuren.",
+    "empty": {
+      "title": "Momenteel geen voertuigen beschikbaar",
+      "text": "Onze voorraad wisselt elke week. Beschrijf uw behoefte en wij stellen u passende voertuigen voor zodra ze binnenkomen.",
+      "cta": "Mijn behoefte beschrijven"
+    },
+    "notFound": {
+      "title": "Dit voertuig is niet meer beschikbaar",
+      "text": "Het is mogelijk verkocht. Bekijk de andere voertuigen of beschrijf uw behoefte.",
+      "browse": "Catalogus bekijken"
+    },
+    "nav": {
+      "vehicles": "Voertuigen",
+      "search": "Voertuig zoeken",
+      "vehiclesForSale": "Voertuigen te koop",
+      "legal": "Juridische informatie",
+      "cgu": "Gebruiksvoorwaarden",
+      "cgv": "Verkoopvoorwaarden",
+      "privacy": "Privacy",
+      "cookies": "Cookies"
+    },
+    "spec": {
+      "brand": "Merk",
+      "model": "Model",
+      "version": "Versie",
+      "year": "Bouwjaar",
+      "mileage": "Kilometerstand",
+      "vehicleType": "Voertuigtype",
+      "bodyType": "Opbouw",
+      "fuelType": "Brandstof",
+      "gearbox": "Versnellingsbak",
+      "power": "Vermogen",
+      "euroStandard": "Euronorm",
+      "grossVehicleWeight": "MTM",
+      "payload": "Nuttig laadvermogen",
+      "axleConfiguration": "Asconfiguratie",
+      "cabinType": "Cabine",
+      "generalCondition": "Algemene staat"
+    }
+  }
+}

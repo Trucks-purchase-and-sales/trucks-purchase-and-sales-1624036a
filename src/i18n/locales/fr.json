@@ -1,0 +1,241 @@
+{
+  "nav": {
+    "signIn": "Se connecter",
+    "propose": "Proposer un véhicule",
+    "search": "Chercher un véhicule",
+    "how": "Comment ça marche",
+    "types": "Types de véhicules",
+    "contact": "Contact"
+  },
+  "hero": {
+    "eyebrow": "Votre partenaire européen du camion d'occasion",
+    "headline": "Acheter ou vendre un camion d'occasion n'a jamais été aussi simple et fiable.",
+    "subtitle": "Wilmet Trucks simplifie l'achat et la vente de camions, tracteurs, porteurs, semi-remorques et véhicules utilitaires d'occasion pour les professionnels, partout en Europe, avec des opportunités qualifiées, fiables et prêtes à être exploitées."
+  },
+  "cta": {
+    "propose": {
+      "title": "Vous avez un camion à vendre ? Wilmet peut l'acheter rapidement.",
+      "text": "Proposez votre camion, utilitaire, tracteur, porteur, semi-remorque ou véhicule professionnel d'occasion. Notre équipe analyse votre opportunité, vérifie les informations clés et vous répond rapidement avec une approche simple, sérieuse et professionnelle.",
+      "button": "Proposer mon véhicule"
+    },
+    "search": {
+      "title": "Vous cherchez un camion fiable ? Wilmet trouve l'opportunité adaptée.",
+      "text": "Décrivez le véhicule que vous recherchez : camion, utilitaire, tracteur, porteur, semi-remorque ou véhicule spécialisé. Si une opportunité correspondante est disponible, nous vous la proposons. Sinon, nous activons notre réseau pour trouver un véhicule adapté à vos besoins, à votre budget et à votre marché.",
+      "button": "Lancer ma recherche"
+    }
+  },
+  "how": {
+    "title": "Comment ça marche ?",
+    "sellers": {
+      "title": "Vous vendez un véhicule",
+      "s1": "Vous proposez votre véhicule",
+      "s1d": "Transmettez les informations et photos en quelques minutes.",
+      "s2": "Wilmet analyse l'opportunité",
+      "s2d": "Nos experts qualifient le véhicule, les documents et les conditions.",
+      "s3": "Nous revenons vers vous rapidement",
+      "s3d": "Une réponse claire, sans délai inutile.",
+      "s4": "Wilmet peut acheter",
+      "s4d": "Si l'opportunité est validée, nous concrétisons la transaction."
+    },
+    "buyers": {
+      "title": "Vous cherchez un véhicule",
+      "s1": "Vous décrivez votre besoin",
+      "s1d": "Type, motorisation, budget, délai.",
+      "s2": "Wilmet vérifie les opportunités disponibles",
+      "s2d": "Dans son stock et son réseau européen.",
+      "s3": "Nous vous proposons un véhicule adapté",
+      "s3d": "Sélection qualifiée et prête à être exploitée.",
+      "s4": "Accompagnement jusqu'à la finalisation",
+      "s4d": "Nous suivons la transaction jusqu'à la livraison."
+    }
+  },
+  "types": {
+    "title": "Types de véhicules traités",
+    "utilitaire_leger": "Utilitaires légers",
+    "camion_porteur": "Camions porteurs",
+    "tracteur_routier": "Tracteurs routiers",
+    "semi_remorque": "Semi-remorques",
+    "remorque": "Remorques",
+    "benne": "Bennes",
+    "frigorifique": "Frigorifiques",
+    "plateau": "Plateaux",
+    "fourgon": "Fourgons",
+    "nacelle": "Nacelles",
+    "specialise": "Véhicules spécialisés"
+  },
+  "why": {
+    "title": "Pourquoi Wilmet ?",
+    "1t": "Réactivité",
+    "1d": "Une réponse rapide sur les opportunités proposées ou recherchées.",
+    "2t": "Expertise métier",
+    "2d": "Une qualification sérieuse des véhicules, documents et conditions.",
+    "3t": "Réseau européen",
+    "3d": "Une capacité à acheter et revendre sur plusieurs marchés.",
+    "intro": "Avec Wilmet Trucks, les professionnels peuvent vendre rapidement leurs véhicules ou accéder à des camions et utilitaires d'occasion qualifiés, sélectionnés et prêts à rouler, partout en Europe."
+  },
+  "contact": {
+    "title": "Contact & localisation",
+    "text": "Wilmet Trucks — négoce de véhicules industriels. Contactez-nous pour toute demande spécifique.",
+    "phone": "Téléphone",
+    "email": "Email",
+    "address": "Adresse"
+  },
+  "footer": {
+    "tagline": "Portail partenaires & acheteurs professionnels",
+    "legal": "Mentions légales",
+    "privacy": "Confidentialité",
+    "rights": "Tous droits réservés."
+  },
+  "buyer": {
+    "meta": {
+      "title": "Chercher un véhicule — Wilmet Trucks",
+      "description": "Décrivez votre besoin. Wilmet vérifie ses opportunités disponibles et son réseau pour vous proposer les véhicules les plus pertinents."
+    },
+    "title": "Trouvez le véhicule professionnel qu'il vous faut",
+    "subtitle": "Décrivez votre besoin. Wilmet vérifie ses opportunités disponibles et son réseau pour vous proposer les véhicules les plus pertinents.",
+    "step": "Étape {{current}} sur {{total}}",
+    "steps": {
+      "vehicle": "Véhicule recherché",
+      "technical": "Critères techniques",
+      "budget": "Budget & délai",
+      "contact": "Vos coordonnées"
+    },
+    "fields": {
+      "vehicleCategory": "Catégorie de véhicule",
+      "pickCategoryFirst": "Sélectionnez d'abord une catégorie",
+      "vehicleType": "Type de véhicule",
+      "bodyType": "Carrosserie souhaitée",
+      "brand": "Marque préférée",
+      "brandOpt": "Marque préférée (optionnel)",
+      "model": "Modèle préféré",
+      "modelOpt": "Modèle préféré (optionnel)",
+      "intendedUse": "Usage prévu",
+      "usageCountry": "Pays d'utilisation",
+      "minYear": "Année minimum",
+      "maxMileage": "Kilométrage maximum",
+      "minEuro": "Norme Euro minimum",
+      "fuel": "Énergie",
+      "gearbox": "Boîte de vitesses",
+      "ptac": "PTAC (kg)",
+      "payload": "Charge utile (kg)",
+      "requiredEquipment": "Équipements indispensables",
+      "wantedEquipment": "Équipements souhaités",
+      "maxBudget": "Budget maximum HT",
+      "currency": "Devise",
+      "budgetFlexible": "Budget flexible ?",
+      "timeline": "Délai d'achat",
+      "financing": "Financement nécessaire ?",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "company": "Société",
+      "email": "Email",
+      "phone": "Téléphone",
+      "country": "Pays",
+      "city": "Ville",
+      "message": "Message complémentaire",
+      "gdpr": "J'accepte que Wilmet me contacte au sujet de ma demande."
+    },
+    "choices": {
+      "flexOui": "Oui",
+      "flexNon": "Non",
+      "flexOpp": "Selon opportunité",
+      "tImmediat": "Immédiat",
+      "t7j": "Sous 7 jours",
+      "t30j": "Sous 30 jours",
+      "t3m": "Sous 3 mois",
+      "tFutur": "Projet futur",
+      "finOui": "Oui",
+      "finNon": "Non",
+      "finDiscuss": "À discuter"
+    },
+    "actions": {
+      "back": "Retour",
+      "next": "Continuer",
+      "submit": "Envoyer ma demande"
+    },
+    "success": {
+      "title": "Votre recherche a bien été transmise à Wilmet.",
+      "text": "Notre équipe vérifie les opportunités disponibles et revient vers vous avec les véhicules les plus pertinents.",
+      "reference": "Référence de votre demande",
+      "createAccount": "Créer un compte pour suivre ma demande",
+      "home": "Retour à l'accueil"
+    },
+    "errors": {
+      "required": "Ce champ est obligatoire.",
+      "email": "Email invalide.",
+      "submit": "Impossible d'envoyer la demande. Merci de réessayer."
+    }
+  },
+  "common": {
+    "select": "Sélectionner",
+    "search": "Rechercher",
+    "other": "Autre",
+    "loading": "Chargement…",
+    "language": "Langue"
+  },
+  "catalog": {
+    "eyebrow": "Stock disponible",
+    "title": "Véhicules à vendre",
+    "subtitle": "Camions, tracteurs, remorques et utilitaires contrôlés par nos équipes. Prix hors TVA, disponibilité indiquée par véhicule.",
+    "searchPlaceholder": "Marque, modèle, ville…",
+    "searchLabel": "Rechercher un véhicule",
+    "count_one": "{{count}} véhicule disponible",
+    "count_other": "{{count}} véhicules disponibles",
+    "vehicle": "Véhicule",
+    "priceOnRequest": "Prix sur demande",
+    "exclVat": "Hors TVA",
+    "priceExclVat": "Prix hors TVA",
+    "viewDetails": "Voir la fiche",
+    "reserved": "Réservé",
+    "available": "Disponible",
+    "back": "Retour au catalogue",
+    "description": "Description",
+    "specsTitle": "Caractéristiques",
+    "equipment": "Équipements",
+    "photo": "Photo {{index}}",
+    "ref": "Réf.",
+    "location": "Localisation",
+    "availability": "Disponibilité",
+    "status": "Statut",
+    "interested": "Ce véhicule m'intéresse",
+    "replyNote": "Un commercial Wilmet vous répond sous 24 h ouvrées.",
+    "empty": {
+      "title": "Aucun véhicule disponible pour le moment",
+      "text": "Notre stock évolue chaque semaine. Décrivez votre besoin et nous vous proposons les véhicules correspondants dès leur arrivée.",
+      "cta": "Décrire mon besoin"
+    },
+    "notFound": {
+      "title": "Ce véhicule n'est plus disponible",
+      "text": "Il a peut-être été vendu. Consultez les autres véhicules ou décrivez votre besoin.",
+      "browse": "Voir le catalogue"
+    },
+    "nav": {
+      "vehicles": "Véhicules",
+      "search": "Chercher un véhicule",
+      "vehiclesForSale": "Véhicules à vendre",
+      "legal": "Mentions légales",
+      "cgu": "CGU",
+      "cgv": "CGV",
+      "privacy": "Confidentialité",
+      "cookies": "Cookies"
+    },
+    "spec": {
+      "brand": "Marque",
+      "model": "Modèle",
+      "version": "Version",
+      "year": "Année",
+      "mileage": "Kilométrage",
+      "vehicleType": "Type de véhicule",
+      "bodyType": "Carrosserie",
+      "fuelType": "Carburant",
+      "gearbox": "Boîte de vitesses",
+      "power": "Puissance",
+      "euroStandard": "Norme Euro",
+      "grossVehicleWeight": "PTAC",
+      "payload": "Charge utile",
+      "axleConfiguration": "Configuration d'essieux",
+      "cabinType": "Cabine",
+      "generalCondition": "État général"
+    }
+  }
+}

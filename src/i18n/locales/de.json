@@ -1,0 +1,241 @@
+{
+  "nav": {
+    "signIn": "Anmelden",
+    "propose": "Fahrzeug anbieten",
+    "search": "Fahrzeug suchen",
+    "how": "So funktioniert es",
+    "types": "Fahrzeugtypen",
+    "contact": "Kontakt"
+  },
+  "hero": {
+    "eyebrow": "Ihr europäischer Partner für Gebrauchtlkw",
+    "headline": "Einen gebrauchten Lkw kaufen oder verkaufen war noch nie so einfach und verlässlich.",
+    "subtitle": "Wilmet Trucks vereinfacht den An- und Verkauf gebrauchter Lkw, Sattelzugmaschinen, Motorwagen, Auflieger und Nutzfahrzeuge für Profis in ganz Europa – mit qualifizierten, verlässlichen und einsatzbereiten Angeboten."
+  },
+  "cta": {
+    "propose": {
+      "title": "Sie haben einen Lkw zu verkaufen? Wilmet kauft ihn schnell an.",
+      "text": "Bieten Sie Ihren gebrauchten Lkw, Transporter, Ihre Sattelzugmaschine, Ihren Motorwagen, Auflieger oder Ihr Nutzfahrzeug an. Unser Team prüft Ihr Angebot, kontrolliert die wichtigsten Angaben und antwortet Ihnen schnell – einfach, seriös und professionell.",
+      "button": "Mein Fahrzeug anbieten"
+    },
+    "search": {
+      "title": "Sie suchen einen verlässlichen Lkw? Wilmet findet das passende Angebot.",
+      "text": "Beschreiben Sie das gesuchte Fahrzeug: Lkw, Transporter, Sattelzugmaschine, Motorwagen, Auflieger oder Spezialfahrzeug. Ist ein passendes Angebot verfügbar, schlagen wir es Ihnen vor. Andernfalls aktivieren wir unser Netzwerk, um ein Fahrzeug zu finden, das zu Ihrem Bedarf, Ihrem Budget und Ihrem Markt passt.",
+      "button": "Suche starten"
+    }
+  },
+  "how": {
+    "title": "Wie funktioniert es?",
+    "sellers": {
+      "title": "Sie verkaufen ein Fahrzeug",
+      "s1": "Sie bieten Ihr Fahrzeug an",
+      "s1d": "Übermitteln Sie Angaben und Fotos in wenigen Minuten.",
+      "s2": "Wilmet prüft das Angebot",
+      "s2d": "Unsere Experten qualifizieren Fahrzeug, Dokumente und Bedingungen.",
+      "s3": "Wir melden uns schnell bei Ihnen",
+      "s3d": "Eine klare Antwort, ohne unnötige Verzögerung.",
+      "s4": "Wilmet kann ankaufen",
+      "s4d": "Wird das Angebot bestätigt, schließen wir die Transaktion ab."
+    },
+    "buyers": {
+      "title": "Sie suchen ein Fahrzeug",
+      "s1": "Sie beschreiben Ihren Bedarf",
+      "s1d": "Typ, Motorisierung, Budget, Zeitrahmen.",
+      "s2": "Wilmet prüft die verfügbaren Angebote",
+      "s2d": "Im eigenen Bestand und im europäischen Netzwerk.",
+      "s3": "Wir schlagen Ihnen ein passendes Fahrzeug vor",
+      "s3d": "Qualifizierte Auswahl, einsatzbereit.",
+      "s4": "Begleitung bis zum Abschluss",
+      "s4d": "Wir begleiten die Transaktion bis zur Lieferung."
+    }
+  },
+  "types": {
+    "title": "Bearbeitete Fahrzeugtypen",
+    "utilitaire_leger": "Leichte Nutzfahrzeuge",
+    "camion_porteur": "Motorwagen",
+    "tracteur_routier": "Sattelzugmaschinen",
+    "semi_remorque": "Auflieger",
+    "remorque": "Anhänger",
+    "benne": "Kipper",
+    "frigorifique": "Kühlfahrzeuge",
+    "plateau": "Pritschen",
+    "fourgon": "Kastenwagen",
+    "nacelle": "Hebebühnen",
+    "specialise": "Spezialfahrzeuge"
+  },
+  "why": {
+    "title": "Warum Wilmet?",
+    "1t": "Reaktionsschnelligkeit",
+    "1d": "Eine schnelle Antwort auf angebotene oder gesuchte Fahrzeuge.",
+    "2t": "Fachkompetenz",
+    "2d": "Eine sorgfältige Qualifizierung von Fahrzeugen, Dokumenten und Bedingungen.",
+    "3t": "Europäisches Netzwerk",
+    "3d": "Die Fähigkeit, auf mehreren Märkten zu kaufen und zu verkaufen.",
+    "intro": "Mit Wilmet Trucks verkaufen Profis ihre Fahrzeuge schnell oder erhalten Zugang zu qualifizierten, geprüften und fahrbereiten gebrauchten Lkw und Nutzfahrzeugen – überall in Europa."
+  },
+  "contact": {
+    "title": "Kontakt & Standort",
+    "text": "Wilmet Trucks — Handel mit Nutzfahrzeugen. Kontaktieren Sie uns bei jeder besonderen Anfrage.",
+    "phone": "Telefon",
+    "email": "E-Mail",
+    "address": "Adresse"
+  },
+  "footer": {
+    "tagline": "Portal für Partner & gewerbliche Käufer",
+    "legal": "Impressum",
+    "privacy": "Datenschutz",
+    "rights": "Alle Rechte vorbehalten."
+  },
+  "buyer": {
+    "meta": {
+      "title": "Fahrzeug suchen — Wilmet Trucks",
+      "description": "Beschreiben Sie Ihren Bedarf. Wilmet prüft die verfügbaren Angebote und sein Netzwerk, um Ihnen die passendsten Fahrzeuge vorzuschlagen."
+    },
+    "title": "Finden Sie das Nutzfahrzeug, das Sie brauchen",
+    "subtitle": "Beschreiben Sie Ihren Bedarf. Wilmet prüft die verfügbaren Angebote und sein Netzwerk, um Ihnen die passendsten Fahrzeuge vorzuschlagen.",
+    "step": "Schritt {{current}} von {{total}}",
+    "steps": {
+      "vehicle": "Gesuchtes Fahrzeug",
+      "technical": "Technische Kriterien",
+      "budget": "Budget & Zeitrahmen",
+      "contact": "Ihre Kontaktdaten"
+    },
+    "fields": {
+      "vehicleCategory": "Fahrzeugkategorie",
+      "pickCategoryFirst": "Wählen Sie zuerst eine Kategorie",
+      "vehicleType": "Fahrzeugtyp",
+      "bodyType": "Gewünschter Aufbau",
+      "brand": "Bevorzugte Marke",
+      "brandOpt": "Bevorzugte Marke (optional)",
+      "model": "Bevorzugtes Modell",
+      "modelOpt": "Bevorzugtes Modell (optional)",
+      "intendedUse": "Vorgesehener Einsatz",
+      "usageCountry": "Einsatzland",
+      "minYear": "Mindestbaujahr",
+      "maxMileage": "Maximaler Kilometerstand",
+      "minEuro": "Mindest-Euronorm",
+      "fuel": "Kraftstoff",
+      "gearbox": "Getriebe",
+      "ptac": "Zulässiges Gesamtgewicht (kg)",
+      "payload": "Nutzlast (kg)",
+      "requiredEquipment": "Unverzichtbare Ausstattung",
+      "wantedEquipment": "Gewünschte Ausstattung",
+      "maxBudget": "Maximalbudget netto",
+      "currency": "Währung",
+      "budgetFlexible": "Budget flexibel?",
+      "timeline": "Kaufzeitraum",
+      "financing": "Finanzierung erforderlich?",
+      "firstName": "Vorname",
+      "lastName": "Name",
+      "company": "Unternehmen",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "country": "Land",
+      "city": "Stadt",
+      "message": "Zusätzliche Nachricht",
+      "gdpr": "Ich bin damit einverstanden, dass Wilmet mich zu meiner Anfrage kontaktiert."
+    },
+    "choices": {
+      "flexOui": "Ja",
+      "flexNon": "Nein",
+      "flexOpp": "Je nach Angebot",
+      "tImmediat": "Sofort",
+      "t7j": "Innerhalb von 7 Tagen",
+      "t30j": "Innerhalb von 30 Tagen",
+      "t3m": "Innerhalb von 3 Monaten",
+      "tFutur": "Künftiges Projekt",
+      "finOui": "Ja",
+      "finNon": "Nein",
+      "finDiscuss": "Zu besprechen"
+    },
+    "actions": {
+      "back": "Zurück",
+      "next": "Weiter",
+      "submit": "Anfrage senden"
+    },
+    "success": {
+      "title": "Ihre Suchanfrage wurde an Wilmet übermittelt.",
+      "text": "Unser Team prüft die verfügbaren Angebote und meldet sich mit den passendsten Fahrzeugen bei Ihnen.",
+      "reference": "Referenz Ihrer Anfrage",
+      "createAccount": "Konto erstellen, um meine Anfrage zu verfolgen",
+      "home": "Zurück zur Startseite"
+    },
+    "errors": {
+      "required": "Dieses Feld ist erforderlich.",
+      "email": "Ungültige E-Mail-Adresse.",
+      "submit": "Die Anfrage konnte nicht gesendet werden. Bitte versuchen Sie es erneut."
+    }
+  },
+  "common": {
+    "select": "Auswählen",
+    "search": "Suchen",
+    "other": "Andere",
+    "loading": "Wird geladen…",
+    "language": "Sprache"
+  },
+  "catalog": {
+    "eyebrow": "Verfügbarer Bestand",
+    "title": "Fahrzeuge zu verkaufen",
+    "subtitle": "Lkw, Sattelzugmaschinen, Anhänger und Nutzfahrzeuge, geprüft von unseren Teams. Preise netto, Verfügbarkeit je Fahrzeug angegeben.",
+    "searchPlaceholder": "Marke, Modell, Stadt…",
+    "searchLabel": "Ein Fahrzeug suchen",
+    "count_one": "{{count}} Fahrzeug verfügbar",
+    "count_other": "{{count}} Fahrzeuge verfügbar",
+    "vehicle": "Fahrzeug",
+    "priceOnRequest": "Preis auf Anfrage",
+    "exclVat": "Netto",
+    "priceExclVat": "Preis netto",
+    "viewDetails": "Details ansehen",
+    "reserved": "Reserviert",
+    "available": "Verfügbar",
+    "back": "Zurück zum Katalog",
+    "description": "Beschreibung",
+    "specsTitle": "Technische Daten",
+    "equipment": "Ausstattung",
+    "photo": "Foto {{index}}",
+    "ref": "Ref.",
+    "location": "Standort",
+    "availability": "Verfügbarkeit",
+    "status": "Status",
+    "interested": "Dieses Fahrzeug interessiert mich",
+    "replyNote": "Ein Wilmet-Verkäufer antwortet innerhalb von 24 Arbeitsstunden.",
+    "empty": {
+      "title": "Derzeit keine Fahrzeuge verfügbar",
+      "text": "Unser Bestand ändert sich jede Woche. Beschreiben Sie Ihren Bedarf und wir schlagen Ihnen passende Fahrzeuge vor, sobald sie eintreffen.",
+      "cta": "Meinen Bedarf beschreiben"
+    },
+    "notFound": {
+      "title": "Dieses Fahrzeug ist nicht mehr verfügbar",
+      "text": "Es wurde möglicherweise verkauft. Sehen Sie sich die anderen Fahrzeuge an oder beschreiben Sie Ihren Bedarf.",
+      "browse": "Katalog ansehen"
+    },
+    "nav": {
+      "vehicles": "Fahrzeuge",
+      "search": "Fahrzeug suchen",
+      "vehiclesForSale": "Fahrzeuge zu verkaufen",
+      "legal": "Impressum",
+      "cgu": "Nutzungsbedingungen",
+      "cgv": "Verkaufsbedingungen",
+      "privacy": "Datenschutz",
+      "cookies": "Cookies"
+    },
+    "spec": {
+      "brand": "Marke",
+      "model": "Modell",
+      "version": "Version",
+      "year": "Baujahr",
+      "mileage": "Kilometerstand",
+      "vehicleType": "Fahrzeugtyp",
+      "bodyType": "Aufbau",
+      "fuelType": "Kraftstoff",
+      "gearbox": "Getriebe",
+      "power": "Leistung",
+      "euroStandard": "Euronorm",
+      "grossVehicleWeight": "Zulässiges Gesamtgewicht",
+      "payload": "Nutzlast",
+      "axleConfiguration": "Achskonfiguration",
+      "cabinType": "Kabine",
+      "generalCondition": "Allgemeinzustand"
+    }
+  }
+}
