@@ -488,6 +488,7 @@ function WizardPage() {
           {step === 2 && <Step3 opp={opp} set={set} />}
           {step === 3 && (
             <Step4
+              opp={opp}
               photos={photos}
               pendingPhotos={pendingPhotos}
               uploading={uploadingPhotos}
