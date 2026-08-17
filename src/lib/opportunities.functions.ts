@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { REQUIRED_PHOTO_CATEGORIES, missingSubmissionFields } from "@/lib/wilmet-constants";
+import { REQUIRED_PHOTO_CATEGORIES, missingSubmissionFields, categoryProfile } from "@/lib/wilmet-constants";
 
 // Full draft schema — all optional to allow saving partial drafts.
 const opportunityInput = z.object({
@@ -139,7 +139,8 @@ export const submitOpportunity = createServerFn({ method: "POST" })
     if (missingFields.length > 0) {
       throw new Error(`Informations obligatoires manquantes : ${missingFields.map((f) => f.label).join(", ")}.`);
     }
-    if (current.vehicle_runs === "non" && !current.not_running_reason?.trim()) {
+    if (categoryProfile(current.vehicle_category).powered
+      && current.vehicle_runs === "non" && !current.not_running_reason?.trim()) {
       throw new Error("Précisez pourquoi le véhicule ne roule pas avant l'envoi.");
     }
     if (current.technical_inspection_status === "oui" && !current.inspection_valid_until) {

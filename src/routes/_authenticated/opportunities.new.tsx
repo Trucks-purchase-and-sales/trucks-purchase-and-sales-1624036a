@@ -35,6 +35,7 @@ import {
   NEGOTIABLE_OPTIONS, PHOTO_CATEGORIES, REQUIRED_PHOTO_CATEGORIES,
   KEYS_COUNT_OPTIONS, VISIBILITY_OPTIONS,
   SUSPENSION_OPTIONS, YES_NO_OPTIONS, TAIL_LIFT_CONDITION_OPTIONS, missingSubmissionFields,
+  categoryProfile,
   labelFor, formatPrice,
 
 } from "@/lib/wilmet-constants";
@@ -189,7 +190,13 @@ function WizardPage() {
   const refFn = useServerFn(getReferenceData);
   const {
     data: refData, isLoading: refLoading, isError: refError, refetch: refRefetch,
-  } = useQuery({ queryKey: ["reference-data"], queryFn: () => refFn() });
+  } = useQuery({
+    queryKey: ["reference-data"],
+    queryFn: () => refFn(),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+  const refPartialFailure = (refData?.failed?.length ?? 0) > 0;
   const refState: RefState = { loading: refLoading, error: refError, retry: () => { void refRefetch(); } };
 
 
@@ -256,8 +263,7 @@ function WizardPage() {
       });
       setStep(missingFields[0].step); return;
     }
-    if (opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) {
-
+    if (categoryProfile(opp.vehicle_category).powered && opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) {
       toast.error("Motif d'immobilisation obligatoire", { description: "Précisez pourquoi le véhicule ne roule pas (étape 3)." });
       setStep(2); return;
     }
@@ -461,6 +467,18 @@ function WizardPage() {
           ))}
         </div>
       </div>
+
+      {(refError || refPartialFailure) && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+            <span>
+              Catalogue indisponible ou incomplet — la saisie libre reste possible, vos informations sont conservées.
+            </span>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => void refRefetch()}>Réessayer</Button>
+        </div>
+      )}
 
       <Card className="border-border/70">
         <CardContent className="p-5 sm:p-8">
@@ -708,6 +726,26 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
       : list;
   }, [refs, opp.vehicle_category, opp.body_type]);
 
+  const profile = categoryProfile(opp.vehicle_category);
+
+  /** Single cascade entry point: changing the category invalidates every dependent value. */
+  function onCategoryChange(v: string) {
+    set("vehicle_category", v);
+    set("brand", null);
+    set("model", null);
+    set("body_type", null);
+    set("body_type_other", null);
+    if (!categoryProfile(v).powered) {
+      // Engine-specific data cannot apply to a trailer: drop stale values.
+      set("fuel_type", null);
+      set("gearbox", null);
+      set("euro_standard", null);
+      set("power", null);
+      set("mileage", null);
+      set("vehicle_runs", null);
+    }
+  }
+
 
   return (
     <div className="space-y-6">
@@ -732,7 +770,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
         <Field label="Catégorie de véhicule">
           <RefCombobox
             value={opp.vehicle_category}
-            onChange={(v) => { set("vehicle_category", v); set("brand", null); set("model", null); set("body_type", null); }}
+            onChange={(v) => onCategoryChange(v)}
             options={categoryOptions}
             placeholder="Sélectionner une catégorie"
             state={refState}
@@ -784,9 +822,23 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             placeholder="Choisir la date"
           />
         </Field>
-        <Field label="Kilométrage" hint="Indiquez le kilométrage affiché au compteur.">
-          <Input type="number" min={0} value={opp.mileage ?? ""} onChange={(e) => set("mileage", e.target.value ? parseInt(e.target.value) : null)} />
-        </Field>
+        {profile.hasOdometer && (
+          <Field label="Kilométrage (km)" hint="Kilométrage actuel affiché au compteur.">
+            <div className="relative">
+              <Input
+                type="number" min={0} max={3000000} step={1000} inputMode="numeric" className="pr-10"
+                value={opp.mileage ?? ""}
+                onChange={(e) => set("mileage", e.target.value ? parseInt(e.target.value) : null)}
+                onBlur={(e) => {
+                  if (!e.target.value) return;
+                  const n = parseInt(e.target.value, 10);
+                  if (!Number.isNaN(n)) set("mileage", Math.min(Math.max(n, 0), 3000000));
+                }}
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">km</span>
+            </div>
+          </Field>
+        )}
         <Field label="Immatriculation (optionnel)"><Input value={opp.registration_number ?? ""} onChange={(e) => set("registration_number", e.target.value.toUpperCase())} /></Field>
         <Field label="Numéro de châssis / VIN (optionnel)"><Input value={opp.vin ?? ""} onChange={(e) => set("vin", e.target.value.toUpperCase())} /></Field>
       </div>
@@ -835,18 +887,41 @@ function Step2({ opp, set, refs }: { opp: OppState; set: Set; refs: Refs }) {
     const fromRef = (refs?.euroStandards ?? []).map((e) => ({ value: e.slug, label: e.label }));
     return fromRef.length > 0 ? fromRef : EURO_OPTIONS;
   }, [refs]);
+  const fuelOptions = useMemo(() => {
+    const fromRef = (refs?.fuelTypes ?? []).map((f) => ({ value: f.slug, label: f.label_fr }));
+    return fromRef.length > 0 ? fromRef : FUEL_OPTIONS;
+  }, [refs]);
+  const gearboxOptions = useMemo(() => {
+    const fromRef = (refs?.gearboxTypes ?? []).map((g) => ({ value: g.slug, label: g.label_fr }));
+    return fromRef.length > 0 ? fromRef : GEARBOX_OPTIONS;
+  }, [refs]);
+  const profile = categoryProfile(opp.vehicle_category);
   return (
     <div className="space-y-6">
-      <SectionTitle title="Caractéristiques" />
+      <SectionTitle
+        title="Caractéristiques"
+        hint={profile.powered ? undefined : "Catégorie non motorisée : les champs moteur ne sont pas demandés."}
+      />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Énergie"><Selector value={opp.fuel_type} onChange={(v) => set("fuel_type", v)} options={FUEL_OPTIONS} /></Field>
-        <Field label="Boîte de vitesses"><Selector value={opp.gearbox} onChange={(v) => set("gearbox", v)} options={GEARBOX_OPTIONS} /></Field>
-        <Field label="Puissance"><Input value={opp.power ?? ""} onChange={(e) => set("power", e.target.value)} placeholder="ex : 130 ch" /></Field>
-        <Field label="Norme Euro"><Selector value={opp.euro_standard} onChange={(v) => set("euro_standard", v)} options={euroOptions} /></Field>
-        <Field label="PTAC"><Input value={opp.gross_vehicle_weight ?? ""} onChange={(e) => set("gross_vehicle_weight", e.target.value)} placeholder="3.5 t, 19 t…" /></Field>
+        {profile.powered && (
+          <>
+            <Field label="Énergie"><Selector value={opp.fuel_type} onChange={(v) => set("fuel_type", v)} options={fuelOptions} /></Field>
+            <Field label="Boîte de vitesses"><Selector value={opp.gearbox} onChange={(v) => set("gearbox", v)} options={gearboxOptions} /></Field>
+            <Field label="Puissance"><Input value={opp.power ?? ""} onChange={(e) => set("power", e.target.value)} placeholder="ex : 130 ch" /></Field>
+            <Field label="Norme Euro"><Selector value={opp.euro_standard} onChange={(v) => set("euro_standard", v)} options={euroOptions} /></Field>
+          </>
+        )}
+        <Field label={`${profile.weightLabel} (t)`} hint="Poids total autorisé, en tonnes.">
+          <div className="relative">
+            <Input className="pr-8" inputMode="decimal" value={opp.gross_vehicle_weight ?? ""} onChange={(e) => set("gross_vehicle_weight", e.target.value)} placeholder="3.5, 19…" />
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">t</span>
+          </div>
+        </Field>
         <Field label="Charge utile"><Input value={opp.payload ?? ""} onChange={(e) => set("payload", e.target.value)} /></Field>
         <Field label="Configuration essieux"><Selector value={opp.axle_configuration} onChange={(v) => set("axle_configuration", v)} options={AXLE_CONFIG_OPTIONS} /></Field>
-        <Field label="Cabine"><Selector value={opp.cabin_type} onChange={(v) => set("cabin_type", v)} options={CABIN_OPTIONS} /></Field>
+        {profile.powered && (
+          <Field label="Cabine"><Selector value={opp.cabin_type} onChange={(v) => set("cabin_type", v)} options={CABIN_OPTIONS} /></Field>
+        )}
         <Field label="Empattement (mm)"><Input type="number" min={0} value={opp.wheelbase_mm ?? ""} onChange={(e) => set("wheelbase_mm", e.target.value ? parseInt(e.target.value) : null)} /></Field>
         <Field label="Type de suspension"><Selector value={opp.suspension_type} onChange={(v) => set("suspension_type", v)} options={SUSPENSION_OPTIONS} /></Field>
         <Field label="Dimension des pneus" hint="ex : 315/70 R22.5"><Input value={opp.tyre_size ?? ""} onChange={(e) => set("tyre_size", e.target.value)} /></Field>
@@ -916,7 +991,9 @@ function Step3({ opp, set }: { opp: OppState; set: Set }) {
       <SectionTitle title="État du véhicule" hint="Soyez précis sur les défauts visibles ou connus. Une description transparente permet à Wilmet de vous répondre plus rapidement." />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="État général"><Selector value={opp.general_condition} onChange={(v) => set("general_condition", v)} options={conditionOptions} /></Field>
-        <Field label="Le véhicule roule-t-il ?"><Selector value={opp.vehicle_runs} onChange={(v) => set("vehicle_runs", v)} options={YES_NO_OPTIONS} /></Field>
+        {categoryProfile(opp.vehicle_category).powered && (
+          <Field label="Le véhicule roule-t-il ?"><Selector value={opp.vehicle_runs} onChange={(v) => set("vehicle_runs", v)} options={YES_NO_OPTIONS} /></Field>
+        )}
         <Field label="Contrôle technique valide ?"><Selector value={opp.technical_inspection_status} onChange={(v) => set("technical_inspection_status", v)} options={YES_NO_OPTIONS} /></Field>
         {opp.technical_inspection_status === "oui" && (
           <Field label="Contrôle technique valable jusqu'au *" hint="Date obligatoire lorsque le contrôle technique est valide.">
@@ -1153,7 +1230,16 @@ function Step5({ opp, set }: { opp: OppState; set: Set }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Prix souhaité HT (en euros €)" hint="Montant hors taxes, en euros. Wilmet pourra revenir vers vous avec une proposition ajustée.">
           <div className="relative">
-            <Input type="number" min={0} step={100} className="pr-9" value={opp.desired_price_excl_tax ?? ""} onChange={(e) => set("desired_price_excl_tax", e.target.value ? parseFloat(e.target.value) : null)} />
+            <Input
+              type="number" min={0} max={2000000} step={100} inputMode="decimal" className="pr-9"
+              value={opp.desired_price_excl_tax ?? ""}
+              onChange={(e) => set("desired_price_excl_tax", e.target.value ? parseFloat(e.target.value) : null)}
+              onBlur={(e) => {
+                if (!e.target.value) return;
+                const n = parseFloat(e.target.value);
+                if (!Number.isNaN(n)) set("desired_price_excl_tax", Math.min(Math.max(n, 0), 2000000));
+              }}
+            />
             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">€</span>
           </div>
         </Field>
@@ -1180,7 +1266,7 @@ function Step6({ opp, photos, signedUrls, refs }: { opp: OppState; photos: Photo
     const w: string[] = [];
     const covered = new Set(photos.map((p) => p.category).filter(Boolean));
     const missing = REQUIRED_PHOTO_CATEGORIES.filter((c) => !covered.has(c.value));
-    if (opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) w.push("Le motif d'immobilisation est obligatoire lorsque le véhicule ne roule pas.");
+    if (categoryProfile(opp.vehicle_category).powered && opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) w.push("Le motif d'immobilisation est obligatoire lorsque le véhicule ne roule pas.");
     if (opp.technical_inspection_status === "oui" && !opp.inspection_valid_until) w.push("La date de validité du contrôle technique est obligatoire.");
 
     if (missing.length) w.push(`Photos manquantes : ${missing.map((m) => m.label).join(", ")}.`);
