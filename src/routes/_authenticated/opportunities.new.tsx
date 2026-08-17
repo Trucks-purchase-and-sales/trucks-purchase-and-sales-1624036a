@@ -508,6 +508,49 @@ function WizardPage() {
 
 type Set = <K extends keyof OppState>(k: K, v: OppState[K]) => void;
 type Refs = Awaited<ReturnType<typeof getReferenceData>> | undefined;
+type RefState = { loading: boolean; error: boolean; retry: () => void };
+
+/**
+ * Combobox backed by the reference tables. Never dead-ends: while loading it is
+ * disabled with an explicit message, on error it offers a retry, and when the
+ * referential comes back empty it degrades to a free-text input.
+ */
+function RefCombobox({
+  value, onChange, options, placeholder, state, emptyPlaceholder,
+}: {
+  value: string | null | undefined;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+  state: RefState;
+  emptyPlaceholder?: string;
+}) {
+  if (state.loading && options.length === 0) {
+    return <Input disabled placeholder="Chargement des référentiels…" />;
+  }
+  if (state.error && options.length === 0) {
+    return (
+      <div className="space-y-1.5">
+        <Input value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={emptyPlaceholder ?? "Saisie libre"} />
+        <button type="button" onClick={state.retry} className="text-[11px] font-medium text-accent underline">
+          Référentiel indisponible — réessayer
+        </button>
+      </div>
+    );
+  }
+  if (options.length === 0) {
+    return <Input value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={emptyPlaceholder ?? placeholder} />;
+  }
+  return (
+    <SearchableCombobox
+      value={value ?? undefined}
+      onChange={onChange}
+      options={options}
+      placeholder={placeholder}
+    />
+  );
+}
+
 
 function Field({ label, hint, children, action }: { label: string; hint?: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
