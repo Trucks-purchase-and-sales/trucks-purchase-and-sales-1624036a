@@ -788,13 +788,16 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
         <Field label="Ville"><Input value={opp.city ?? ""} onChange={(e) => set("city", e.target.value)} /></Field>
         <Field label="Code postal"><Input value={opp.postal_code ?? ""} onChange={(e) => set("postal_code", e.target.value)} /></Field>
         <Field label="Pays (UE-27)">
-          <SearchableCombobox
-            value={opp.country ?? undefined}
+          <RefCombobox
+            value={opp.country}
             onChange={(v) => set("country", v)}
             options={countryOptions}
             placeholder="Sélectionner un pays"
+            emptyPlaceholder="Saisir le pays"
+            state={refState}
           />
         </Field>
+
       </div>
       <Field label="Lien de localisation (optionnel)" hint="Lien Google Maps ou adresse précise du lieu où se trouve le véhicule.">
         <Input value={opp.location_url ?? ""} onChange={(e) => set("location_url", e.target.value)} placeholder="https://maps.google.com/…" />
