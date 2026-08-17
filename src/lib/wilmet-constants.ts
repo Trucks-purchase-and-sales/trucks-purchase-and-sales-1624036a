@@ -183,11 +183,11 @@ export const YES_NO_OPTIONS = [
   { value: "non", label: "Non" },
 ];
 
-/** `has_accident` is a free-text column: Oui / Non / Je ne sais pas. */
+/** `has_accident` is a free-text column: tri-state Oui / Non / À vérifier. */
 export const ACCIDENT_OPTIONS = [
   { value: "oui", label: "Oui" },
   { value: "non", label: "Non" },
-  { value: "inconnu", label: "Je ne sais pas" },
+  { value: "a_verifier", label: "À vérifier" },
 ];
 
 
