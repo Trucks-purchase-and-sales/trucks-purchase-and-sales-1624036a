@@ -1036,7 +1036,7 @@ function Step3({ opp, set }: { opp: OppState; set: Set }) {
           />
         </Field>
       </div>
-      {opp.vehicle_runs === "non" && (
+      {categoryProfile(opp.vehicle_category).powered && opp.vehicle_runs === "non" && (
         <Field
           label="Pourquoi le véhicule ne roule-t-il pas ? *"
           hint="Champ obligatoire : panne moteur, boîte, freins, batterie, immobilisation administrative…"
