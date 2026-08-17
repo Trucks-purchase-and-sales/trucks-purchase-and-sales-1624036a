@@ -183,6 +183,15 @@ export const YES_NO_OPTIONS = [
   { value: "non", label: "Non" },
 ];
 
+/** `has_accident` is a free-text column: Oui / Non / Je ne sais pas. */
+export const ACCIDENT_OPTIONS = [
+  { value: "oui", label: "Oui" },
+  { value: "non", label: "Non" },
+  { value: "inconnu", label: "Je ne sais pas" },
+];
+
+
+
 export const TAIL_LIFT_CONDITION_OPTIONS = [
   { value: "fonctionnel", label: "Fonctionnel" },
   { value: "a_reviser", label: "À réviser" },
