@@ -1068,8 +1068,9 @@ function Step3({ opp, set }: { opp: OppState; set: Set }) {
 
 
 function Step4({
-  photos, pendingPhotos, uploading, signedUrls, onUpload, onDelete, onMain, onReorder,
+  opp, photos, pendingPhotos, uploading, signedUrls, onUpload, onDelete, onMain, onReorder,
 }: {
+  opp: OppState;
   photos: Photo[]; pendingPhotos: PendingPhoto[]; uploading: boolean; signedUrls: Record<string, string>;
   onUpload: (files: File[], category: string | null) => void;
   onDelete: (id: string) => void; onMain: (id: string) => void;
@@ -1082,7 +1083,12 @@ function Step4({
     setActiveCat(cat);
     inputRef.current?.click();
   }
-  const missingRequired = REQUIRED_PHOTO_CATEGORIES.filter(
+  const required = useMemo(
+    () => requiredPhotoCategories(opp as unknown as Record<string, unknown>),
+    [opp],
+  );
+  const requiredValues = useMemo(() => new Set(required.map((r) => r.value)), [required]);
+  const missingRequired = required.filter(
     (c) => !photos.some((p) => p.category === c.value) && !pendingPhotos.some((p) => p.category === c.value),
   );
   return (
@@ -1099,6 +1105,7 @@ function Step4({
           </p>
         </div>
       )}
+
 
 
 
