@@ -262,8 +262,7 @@ function WizardPage() {
       });
       setStep(missingFields[0].step); return;
     }
-    if (opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) {
-
+    if (categoryProfile(opp.vehicle_category).powered && opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) {
       toast.error("Motif d'immobilisation obligatoire", { description: "Précisez pourquoi le véhicule ne roule pas (étape 3)." });
       setStep(2); return;
     }
