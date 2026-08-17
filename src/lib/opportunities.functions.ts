@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { REQUIRED_PHOTO_CATEGORIES, missingSubmissionFields, categoryProfile } from "@/lib/wilmet-constants";
+import { requiredPhotoCategories, missingSubmissionFields, categoryProfile } from "@/lib/wilmet-constants";
 
 // Full draft schema — all optional to allow saving partial drafts.
 const opportunityInput = z.object({
@@ -130,7 +130,7 @@ export const submitOpportunity = createServerFn({ method: "POST" })
 
     const { data: current, error: readErr } = await supabase
       .from("vehicle_opportunities")
-      .select("vehicle_runs, not_running_reason, technical_inspection_status, inspection_valid_until, assigned_group, referred_by, referral_code, reference_number, brand, model, vehicle_category, body_type, body_type_other, first_registration_date, mileage, city, country, fuel_type, gross_vehicle_weight, general_condition, desired_price_excl_tax")
+      .select("vehicle_runs, not_running_reason, technical_inspection_status, inspection_valid_until, assigned_group, referred_by, referral_code, reference_number, brand, model, vehicle_category, body_type, body_type_other, first_registration_date, mileage, vin, city, country, visible_on_site, fuel_type, gross_vehicle_weight, general_condition, desired_price_excl_tax, price_negotiable, availability, onsite_contact_name, onsite_contact_phone, defects_and_comments, known_defects")
       .eq("id", data.id)
       .eq("partenaire_id", userId)
       .single();
@@ -151,7 +151,8 @@ export const submitOpportunity = createServerFn({ method: "POST" })
       .from("vehicle_photos").select("category").eq("vehicle_opportunity_id", data.id);
     if (picErr) { console.error("[opportunities.functions]", picErr); throw new Error("Une erreur est survenue, veuillez réessayer."); }
     const covered = new Set((pics ?? []).map((p) => p.category));
-    const missing = REQUIRED_PHOTO_CATEGORIES.filter((c) => !covered.has(c.value as never));
+    const missing = requiredPhotoCategories(current as unknown as Record<string, unknown>)
+      .filter((c) => !covered.has(c.value as never));
     if (missing.length > 0) {
       throw new Error(`Photos obligatoires manquantes : ${missing.map((m) => m.label).join(", ")}.`);
     }

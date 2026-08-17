@@ -183,6 +183,15 @@ export const YES_NO_OPTIONS = [
   { value: "non", label: "Non" },
 ];
 
+/** `has_accident` is a free-text column: Oui / Non / Je ne sais pas. */
+export const ACCIDENT_OPTIONS = [
+  { value: "oui", label: "Oui" },
+  { value: "non", label: "Non" },
+  { value: "inconnu", label: "Je ne sais pas" },
+];
+
+
+
 export const TAIL_LIFT_CONDITION_OPTIONS = [
   { value: "fonctionnel", label: "Fonctionnel" },
   { value: "a_reviser", label: "À réviser" },
@@ -280,22 +289,29 @@ export const KEYS_COUNT_OPTIONS = [
 ];
 
 export const PHOTO_CATEGORIES: {
-  value: string; label: string; helper: string; required?: boolean;
+  value: string; label: string; helper: string;
+  /** Always required at final submission. */
+  required?: boolean;
+  /** Required only for motorised vehicles (a trailer has no dashboard). */
+  requiredWhenPowered?: boolean;
+  /** Required only when the seller declared defects. */
+  requiredWhenDefects?: boolean;
 }[] = [
-  { value: "vue_avant", label: "Vue avant", helper: "Face avant complète du véhicule." },
-  { value: "vue_arriere", label: "Vue arrière", helper: "Face arrière complète." },
-  { value: "cote_gauche", label: "Côté gauche", helper: "Profil gauche entier." },
-  { value: "cote_droit", label: "Côté droit", helper: "Profil droit entier." },
-  { value: "tableau_de_bord", label: "Tableau de bord avec moteur allumé", helper: "Moteur en marche : kilométrage lisible et absence de voyants de défaut.", required: true },
+  { value: "vue_avant", label: "Vue avant", helper: "Face avant complète du véhicule.", required: true },
+  { value: "vue_arriere", label: "Vue arrière", helper: "Face arrière complète.", required: true },
+  { value: "cote_gauche", label: "Côté gauche", helper: "Profil gauche entier.", required: true },
+  { value: "cote_droit", label: "Côté droit", helper: "Profil droit entier.", required: true },
+  { value: "tableau_de_bord", label: "Tableau de bord avec moteur allumé", helper: "Moteur en marche : kilométrage lisible et absence de voyants de défaut.", requiredWhenPowered: true },
   { value: "plaque_vin", label: "Plaque constructeur / VIN", helper: "Plaque constructeur ou numéro de châssis.", required: true },
   { value: "interieur_cabine", label: "Intérieur cabine", helper: "Sièges, volant, planche de bord." },
   { value: "pneus", label: "Photos de tous les pneus", helper: "État des pneumatiques." },
   { value: "moteur", label: "Moteur", helper: "Compartiment moteur, si accessible." },
   { value: "coffre", label: "Caisse / benne / remorque", helper: "Caisse, benne, plateau, coffre selon le véhicule." },
-  { value: "defauts", label: "Défauts visibles", helper: "Chocs, rouille, casses, usures." },
+  { value: "defauts", label: "Défauts visibles", helper: "Chocs, rouille, casses, usures. Obligatoire si vous déclarez des défauts.", requiredWhenDefects: true },
   { value: "documents", label: "Documents (optionnel)", helper: "Carte grise, factures, contrôle technique." },
 ];
 
+/** Photo categories required whatever the vehicle category. */
 export const REQUIRED_PHOTO_CATEGORIES = PHOTO_CATEGORIES.filter((c) => c.required);
 
 /**
@@ -315,6 +331,23 @@ export function categoryProfile(slug?: string | null): CategoryProfile {
 }
 
 /**
+ * Photo categories that block final submission for this particular record.
+ * Shared by the wizard and by `submitOpportunity` so both agree.
+ */
+export function requiredPhotoCategories(
+  rec: Record<string, unknown>,
+): { value: string; label: string }[] {
+  const profile = categoryProfile(rec["vehicle_category"] as string | null | undefined);
+  const hasDefects = String(rec["defects_and_comments"] ?? "").trim() !== ""
+    || String(rec["known_defects"] ?? "").trim() !== "";
+  return PHOTO_CATEGORIES.filter((c) =>
+    c.required
+    || (c.requiredWhenPowered && profile.powered)
+    || (c.requiredWhenDefects && hasDefects),
+  ).map(({ value, label }) => ({ value, label }));
+}
+
+/**
  * Business minimum enforced at FINAL SUBMISSION only (drafts stay permissive).
  * `step` is the 0-based wizard step the user is sent back to.
  * `appliesTo` scopes a field to the categories where it makes sense.
@@ -328,13 +361,19 @@ export const SUBMISSION_REQUIRED_FIELDS: {
   { key: "body_type", label: "Carrosserie", step: 0 },
   { key: "first_registration_date", label: "Date de 1re mise en circulation", step: 0 },
   { key: "mileage", label: "Kilométrage", step: 0, appliesTo: (p) => p.hasOdometer },
+  { key: "vin", label: "Numéro de châssis / VIN", step: 0 },
   { key: "city", label: "Ville", step: 0 },
   { key: "country", label: "Pays", step: 0 },
+  { key: "visible_on_site", label: "Visibilité du véhicule sur parc", step: 0 },
   { key: "fuel_type", label: "Énergie", step: 1, appliesTo: (p) => p.powered },
   { key: "gross_vehicle_weight", label: "PTAC", step: 1 },
   { key: "general_condition", label: "État général", step: 2 },
   { key: "vehicle_runs", label: "Véhicule roulant", step: 2, appliesTo: (p) => p.powered },
   { key: "desired_price_excl_tax", label: "Prix souhaité HT", step: 4 },
+  { key: "price_negotiable", label: "Prix négociable", step: 4 },
+  { key: "availability", label: "Disponibilité", step: 4 },
+  { key: "onsite_contact_name", label: "Nom du contact sur place", step: 4 },
+  { key: "onsite_contact_phone", label: "Téléphone du contact sur place", step: 4 },
 ];
 
 /** Returns the labels of the missing required fields for a candidate record. */
@@ -352,8 +391,13 @@ export function missingSubmissionFields(
   if (rec["body_type"] === "autre" && !String(rec["body_type_other"] ?? "").trim()) {
     missing.push({ key: "body_type_other", label: "Précision carrosserie « Autre »", step: 0 });
   }
+  const price = Number(rec["desired_price_excl_tax"] ?? 0);
+  if (!missing.some((m) => m.key === "desired_price_excl_tax") && !(price > 0)) {
+    missing.push({ key: "desired_price_excl_tax", label: "Prix souhaité HT (supérieur à 0 €)", step: 4 });
+  }
   return missing;
 }
+
 
 
 

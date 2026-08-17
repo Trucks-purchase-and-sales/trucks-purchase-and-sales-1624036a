@@ -32,7 +32,7 @@ import { useAiFeatures } from "@/hooks/useAiFeatures";
 import {
   AVAILABILITY_OPTIONS, AXLE_CONFIG_OPTIONS, CABIN_OPTIONS, CONDITION_OPTIONS,
   EQUIPMENT_OPTIONS, EU27_CODES, EURO_OPTIONS, FUEL_OPTIONS, GEARBOX_OPTIONS,
-  NEGOTIABLE_OPTIONS, PHOTO_CATEGORIES, REQUIRED_PHOTO_CATEGORIES,
+  ACCIDENT_OPTIONS, NEGOTIABLE_OPTIONS, PHOTO_CATEGORIES, requiredPhotoCategories,
   KEYS_COUNT_OPTIONS, VISIBILITY_OPTIONS,
   SUSPENSION_OPTIONS, YES_NO_OPTIONS, TAIL_LIFT_CONDITION_OPTIONS, missingSubmissionFields,
   categoryProfile,
@@ -99,6 +99,7 @@ type OppState = {
   box_width_mm?: number | null;
   box_depth_mm?: number | null;
   not_running_reason?: string | null;
+  has_accident?: string | null;
   inspection_valid_until?: string | null;
   has_service_book?: string | null;
   key_code?: string | null;
@@ -272,7 +273,8 @@ function WizardPage() {
       setStep(2); return;
     }
     const covered = new Set(photos.map((p) => p.category));
-    const missingPhotos = REQUIRED_PHOTO_CATEGORIES.filter((c) => !covered.has(c.value));
+    const missingPhotos = requiredPhotoCategories(opp as unknown as Record<string, unknown>)
+      .filter((c) => !covered.has(c.value));
     if (missingPhotos.length > 0) {
       toast.error("Photos obligatoires manquantes", { description: missingPhotos.map((m) => m.label).join(", ") });
       setStep(3); return;
@@ -488,6 +490,7 @@ function WizardPage() {
           {step === 2 && <Step3 opp={opp} set={set} />}
           {step === 3 && (
             <Step4
+              opp={opp}
               photos={photos}
               pendingPhotos={pendingPhotos}
               uploading={uploadingPhotos}
@@ -543,7 +546,7 @@ type RefState = { loading: boolean; error: boolean; retry: () => void };
  * referential comes back empty it degrades to a free-text input.
  */
 function RefCombobox({
-  value, onChange, options, placeholder, state, emptyPlaceholder, allowCustom, customLabel,
+  value, onChange, options, placeholder, state, emptyPlaceholder, allowCustom, customLabel, disabled,
 }: {
   value: string | null | undefined;
   onChange: (v: string) => void;
@@ -554,7 +557,12 @@ function RefCombobox({
   /** Creatable: lets the seller enter a real brand/model missing from the catalog. */
   allowCustom?: boolean;
   customLabel?: (q: string) => string;
+  /** Dependent selector: disabled until its prerequisite is chosen. */
+  disabled?: boolean;
 }) {
+  if (disabled) {
+    return <Input disabled placeholder={placeholder} />;
+  }
   if (state.loading && options.length === 0) {
     return <Input disabled placeholder="Chargement des référentiels…" />;
   }
@@ -788,7 +796,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
 
       <SectionTitle title="Informations générales" hint="Ces éléments identifient le véhicule." />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Catégorie de véhicule">
+        <Field label="Catégorie de véhicule *">
           <RefCombobox
             value={opp.vehicle_category}
             onChange={(v) => onCategoryChange(v)}
@@ -797,19 +805,20 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             state={refState}
           />
         </Field>
-        <Field label="Marque" hint="Marque absente de la liste ? Saisissez-la, elle sera conservée.">
+        <Field label="Marque *" hint="Marque absente de la liste ? Saisissez-la, elle sera conservée.">
           <RefCombobox
             value={opp.brand}
             onChange={(v) => { set("brand", v); set("model", null); }}
             options={brandOptions}
             placeholder={opp.vehicle_category ? "Sélectionner une marque" : "Sélectionnez d'abord une catégorie"}
+            disabled={!opp.vehicle_category}
             emptyPlaceholder="Saisir la marque"
             state={refState}
             allowCustom
             customLabel={(q) => `Ajouter la marque « ${q} »`}
           />
         </Field>
-        <Field label="Modèle" hint="Modèle absent de la liste ? Saisissez-le librement.">
+        <Field label="Modèle *" hint="Modèle absent de la liste ? Saisissez-le librement.">
           {modelOptions.length > 0 ? (
             <SearchableCombobox
               value={opp.model ?? undefined}
@@ -820,27 +829,28 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
               customLabel={(q) => `Ajouter le modèle « ${q} »`}
             />
           ) : (
-            <Input value={opp.model ?? ""} onChange={(e) => set("model", e.target.value)} placeholder={opp.brand ? "Saisir le modèle" : "Sélectionnez d'abord une marque"} />
+            <Input value={opp.model ?? ""} onChange={(e) => set("model", e.target.value)} disabled={!opp.brand} placeholder={opp.brand ? "Saisir le modèle" : "Sélectionnez d'abord une marque"} />
           )}
         </Field>
-        <Field label="Carrosserie" hint="Type de carrosserie du véhicule.">
+        <Field label="Carrosserie *" hint="Type de carrosserie du véhicule.">
           <RefCombobox
             value={opp.body_type}
             onChange={(v) => { set("body_type", v); if (v !== "autre") set("body_type_other", null); }}
             options={bodyTypeOptions}
-            placeholder="Sélectionner une carrosserie"
+            placeholder={opp.vehicle_category ? "Sélectionner une carrosserie" : "Sélectionnez d'abord une catégorie"}
+            disabled={!opp.vehicle_category}
             emptyPlaceholder="Saisir la carrosserie"
             state={refState}
           />
         </Field>
         {opp.body_type === "autre" && (
-          <Field label="Précisez la carrosserie">
+          <Field label="Précisez la carrosserie *">
             <Input value={opp.body_type_other ?? ""} onChange={(e) => set("body_type_other", e.target.value)} placeholder="ex : porte-conteneurs" />
           </Field>
         )}
 
 
-        <Field label="Date de 1re mise en circulation">
+        <Field label="Date de 1re mise en circulation *">
           <DatePickerField
             value={opp.first_registration_date}
             onChange={(v) => set("first_registration_date", v)}
@@ -849,7 +859,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
           />
         </Field>
         {profile.hasOdometer && (
-          <Field label="Kilométrage (km)" hint="Kilométrage actuel affiché au compteur.">
+          <Field label="Kilométrage (km) *" hint="Kilométrage actuel affiché au compteur.">
             <div className="relative">
               <Input
                 type="number" min={0} max={3000000} step={1000} inputMode="numeric" className="pr-10"
@@ -866,14 +876,14 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
           </Field>
         )}
         <Field label="Immatriculation (optionnel)"><Input value={opp.registration_number ?? ""} onChange={(e) => set("registration_number", e.target.value.toUpperCase())} /></Field>
-        <Field label="Numéro de châssis / VIN (optionnel)"><Input value={opp.vin ?? ""} onChange={(e) => set("vin", e.target.value.toUpperCase())} /></Field>
+        <Field label="Numéro de châssis / VIN *" hint="17 caractères, visible sur la plaque constructeur ou le châssis. Indispensable pour l'expertise Wilmet."><Input value={opp.vin ?? ""} onChange={(e) => set("vin", e.target.value.toUpperCase())} placeholder="ex : VF3XXXXXXXXXXXXXX" /></Field>
       </div>
 
       <SectionTitle title="Localisation du véhicule" />
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Ville"><Input value={opp.city ?? ""} onChange={(e) => set("city", e.target.value)} /></Field>
+        <Field label="Ville *"><Input value={opp.city ?? ""} onChange={(e) => set("city", e.target.value)} /></Field>
         <Field label="Code postal"><Input value={opp.postal_code ?? ""} onChange={(e) => set("postal_code", e.target.value)} /></Field>
-        <Field label="Pays (UE-27)">
+        <Field label="Pays (UE-27) *">
           <RefCombobox
             value={opp.country}
             onChange={(v) => set("country", v)}
@@ -889,7 +899,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
         <Input value={opp.location_url ?? ""} onChange={(e) => set("location_url", e.target.value)} placeholder="https://maps.google.com/…" />
       </Field>
 
-      <Field label="Le véhicule est-il visible sur parc ?">
+      <Field label="Le véhicule est-il visible sur parc ? *">
         <RadioGroup value={opp.visible_on_site ?? ""} onValueChange={(v) => set("visible_on_site", v)} className="flex flex-wrap gap-3">
           {VISIBILITY_OPTIONS.map((o) => (
             <label key={o.value} className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm">
@@ -931,19 +941,19 @@ function Step2({ opp, set, refs }: { opp: OppState; set: Set; refs: Refs }) {
       <div className="grid gap-4 sm:grid-cols-2">
         {profile.powered && (
           <>
-            <Field label="Énergie"><Selector value={opp.fuel_type} onChange={(v) => set("fuel_type", v)} options={fuelOptions} /></Field>
+            <Field label="Énergie *"><Selector value={opp.fuel_type} onChange={(v) => set("fuel_type", v)} options={fuelOptions} /></Field>
             <Field label="Boîte de vitesses"><Selector value={opp.gearbox} onChange={(v) => set("gearbox", v)} options={gearboxOptions} /></Field>
-            <Field label="Puissance"><Input value={opp.power ?? ""} onChange={(e) => set("power", e.target.value)} placeholder="ex : 130 ch" /></Field>
+            <Field label="Puissance" hint="En chevaux (ch) ou kilowatts (kW)."><Input value={opp.power ?? ""} onChange={(e) => set("power", e.target.value)} placeholder="ex : 320 ch / 235 kW" /></Field>
             <Field label="Norme Euro"><Selector value={opp.euro_standard} onChange={(v) => set("euro_standard", v)} options={euroOptions} /></Field>
           </>
         )}
-        <Field label="PTAC / poids total autorisé (t)" hint="En tonnes (ex. 3.5, 19, 44).">
+        <Field label="PTAC / poids total autorisé (t) *" hint="En tonnes (ex. 3.5, 19, 44).">
           <div className="relative">
             <Input className="pr-8" inputMode="decimal" value={opp.gross_vehicle_weight ?? ""} onChange={(e) => set("gross_vehicle_weight", e.target.value)} placeholder="3.5, 19…" />
             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">t</span>
           </div>
         </Field>
-        <Field label="Charge utile"><Input value={opp.payload ?? ""} onChange={(e) => set("payload", e.target.value)} /></Field>
+        <Field label="Charge utile (kg)" hint="En kilogrammes."><Input value={opp.payload ?? ""} onChange={(e) => set("payload", e.target.value)} /></Field>
         <Field label="Configuration essieux"><Selector value={opp.axle_configuration} onChange={(v) => set("axle_configuration", v)} options={AXLE_CONFIG_OPTIONS} /></Field>
         {profile.powered && (
           <Field label="Cabine"><Selector value={opp.cabin_type} onChange={(v) => set("cabin_type", v)} options={CABIN_OPTIONS} /></Field>
@@ -1016,9 +1026,9 @@ function Step3({ opp, set }: { opp: OppState; set: Set }) {
     <div className="space-y-6">
       <SectionTitle title="État du véhicule" hint="Soyez précis sur les défauts visibles ou connus. Une description transparente permet à Wilmet de vous répondre plus rapidement." />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="État général"><Selector value={opp.general_condition} onChange={(v) => set("general_condition", v)} options={conditionOptions} /></Field>
+        <Field label="État général *"><Selector value={opp.general_condition} onChange={(v) => set("general_condition", v)} options={conditionOptions} /></Field>
         {categoryProfile(opp.vehicle_category).powered && (
-          <Field label="Le véhicule roule-t-il ?"><Selector value={opp.vehicle_runs} onChange={(v) => set("vehicle_runs", v)} options={YES_NO_OPTIONS} /></Field>
+          <Field label="Le véhicule roule-t-il ? *"><Selector value={opp.vehicle_runs} onChange={(v) => set("vehicle_runs", v)} options={YES_NO_OPTIONS} /></Field>
         )}
         <Field label="Contrôle technique valide ?"><Selector value={opp.technical_inspection_status} onChange={(v) => set("technical_inspection_status", v)} options={YES_NO_OPTIONS} /></Field>
         {opp.technical_inspection_status === "oui" && (
@@ -1027,6 +1037,7 @@ function Step3({ opp, set }: { opp: OppState; set: Set }) {
           </Field>
         )}
         <Field label="Entretien à jour ?"><Selector value={opp.maintenance_status} onChange={(v) => set("maintenance_status", v)} options={YES_NO_OPTIONS} /></Field>
+        <Field label="Véhicule accidenté ?" hint="Sinistre déclaré ou réparation structurelle connue."><Selector value={opp.has_accident} onChange={(v) => set("has_accident", v)} options={ACCIDENT_OPTIONS} /></Field>
         
         <Field label="Carnet d'entretien disponible ?"><Selector value={opp.has_service_book} onChange={(v) => set("has_service_book", v)} options={YES_NO_OPTIONS} /></Field>
         <Field label="Nombre de clés">
@@ -1067,8 +1078,9 @@ function Step3({ opp, set }: { opp: OppState; set: Set }) {
 
 
 function Step4({
-  photos, pendingPhotos, uploading, signedUrls, onUpload, onDelete, onMain, onReorder,
+  opp, photos, pendingPhotos, uploading, signedUrls, onUpload, onDelete, onMain, onReorder,
 }: {
+  opp: OppState;
   photos: Photo[]; pendingPhotos: PendingPhoto[]; uploading: boolean; signedUrls: Record<string, string>;
   onUpload: (files: File[], category: string | null) => void;
   onDelete: (id: string) => void; onMain: (id: string) => void;
@@ -1081,7 +1093,12 @@ function Step4({
     setActiveCat(cat);
     inputRef.current?.click();
   }
-  const missingRequired = REQUIRED_PHOTO_CATEGORIES.filter(
+  const required = useMemo(
+    () => requiredPhotoCategories(opp as unknown as Record<string, unknown>),
+    [opp],
+  );
+  const requiredValues = useMemo(() => new Set(required.map((r) => r.value)), [required]);
+  const missingRequired = required.filter(
     (c) => !photos.some((p) => p.category === c.value) && !pendingPhotos.some((p) => p.category === c.value),
   );
   return (
@@ -1098,6 +1115,7 @@ function Step4({
           </p>
         </div>
       )}
+
 
 
 
@@ -1140,7 +1158,16 @@ function Step4({
                 <div>
                   <div className="flex items-center gap-1.5 text-sm font-semibold">
                     {cat.label}
+                    <span className={cn(
+                      "rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase",
+                      requiredValues.has(cat.value)
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-secondary text-muted-foreground",
+                    )}>
+                      {requiredValues.has(cat.value) ? "Obligatoire" : "Recommandé"}
+                    </span>
                   </div>
+
 
                   <div className="mt-0.5 text-[11px] text-muted-foreground">{cat.helper}</div>
                 </div>
@@ -1254,7 +1281,7 @@ function Step5({ opp, set }: { opp: OppState; set: Set }) {
     <div className="space-y-6">
       <SectionTitle title="Prix & disponibilité" />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Prix souhaité HT (en euros €)" hint="Montant hors taxes, en euros. Wilmet pourra revenir vers vous avec une proposition ajustée.">
+        <Field label="Prix souhaité HT (en euros €) *" hint="Montant hors taxes, en euros. Wilmet pourra revenir vers vous avec une proposition ajustée.">
           <div className="relative">
             <Input
               type="number" min={0} max={2000000} step={100} inputMode="decimal" className="pr-9"
@@ -1269,8 +1296,8 @@ function Step5({ opp, set }: { opp: OppState; set: Set }) {
             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">€</span>
           </div>
         </Field>
-        <Field label="Prix négociable ?"><Selector value={opp.price_negotiable} onChange={(v) => set("price_negotiable", v)} options={NEGOTIABLE_OPTIONS} /></Field>
-        <Field label="Disponibilité"><Selector value={opp.availability} onChange={(v) => set("availability", v)} options={AVAILABILITY_OPTIONS} /></Field>
+        <Field label="Prix négociable ? *"><Selector value={opp.price_negotiable} onChange={(v) => set("price_negotiable", v)} options={NEGOTIABLE_OPTIONS} /></Field>
+        <Field label="Disponibilité *"><Selector value={opp.availability} onChange={(v) => set("availability", v)} options={AVAILABILITY_OPTIONS} /></Field>
         <Field label="Libre de tout gage ?" hint="Aucun gage, crédit-bail ou nantissement en cours sur le véhicule."><Selector value={opp.free_of_pledge} onChange={(v) => set("free_of_pledge", v)} options={YES_NO_OPTIONS} /></Field>
 
       </div>
@@ -1279,8 +1306,8 @@ function Step5({ opp, set }: { opp: OppState; set: Set }) {
       </Field>
       <SectionTitle title="Contact sur place" />
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Nom"><Input value={opp.onsite_contact_name ?? ""} onChange={(e) => set("onsite_contact_name", e.target.value)} /></Field>
-        <Field label="Téléphone"><Input type="tel" value={opp.onsite_contact_phone ?? ""} onChange={(e) => set("onsite_contact_phone", e.target.value)} /></Field>
+        <Field label="Nom *"><Input value={opp.onsite_contact_name ?? ""} onChange={(e) => set("onsite_contact_name", e.target.value)} /></Field>
+        <Field label="Téléphone *"><Input type="tel" value={opp.onsite_contact_phone ?? ""} onChange={(e) => set("onsite_contact_phone", e.target.value)} /></Field>
         <Field label="Email (optionnel)"><Input type="email" value={opp.onsite_contact_email ?? ""} onChange={(e) => set("onsite_contact_email", e.target.value)} /></Field>
       </div>
     </div>
@@ -1288,23 +1315,46 @@ function Step5({ opp, set }: { opp: OppState; set: Set }) {
 }
 
 function Step6({ opp, photos, signedUrls, refs }: { opp: OppState; photos: Photo[]; signedUrls: Record<string, string>; refs: Refs }) {
+  const blocking = useMemo(() => {
+    const b: string[] = [];
+    const covered = new Set(photos.map((p) => p.category).filter(Boolean));
+    const missingPhotos = requiredPhotoCategories(opp as unknown as Record<string, unknown>)
+      .filter((c) => !covered.has(c.value));
+    for (const f of missingSubmissionFields(opp as unknown as Record<string, unknown>)) {
+      b.push(`${f.label} — champ obligatoire (étape ${f.step + 1}).`);
+    }
+    if (categoryProfile(opp.vehicle_category).powered && opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) b.push("Le motif d'immobilisation est obligatoire lorsque le véhicule ne roule pas.");
+    if (opp.technical_inspection_status === "oui" && !opp.inspection_valid_until) b.push("La date de validité du contrôle technique est obligatoire.");
+    if (missingPhotos.length) b.push(`Photos obligatoires manquantes : ${missingPhotos.map((m) => m.label).join(", ")}.`);
+    return b;
+  }, [opp, photos]);
+
   const warnings = useMemo(() => {
     const w: string[] = [];
-    const covered = new Set(photos.map((p) => p.category).filter(Boolean));
-    const missing = REQUIRED_PHOTO_CATEGORIES.filter((c) => !covered.has(c.value));
-    if (categoryProfile(opp.vehicle_category).powered && opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) w.push("Le motif d'immobilisation est obligatoire lorsque le véhicule ne roule pas.");
-    if (opp.technical_inspection_status === "oui" && !opp.inspection_valid_until) w.push("La date de validité du contrôle technique est obligatoire.");
-
-    if (missing.length) w.push(`Photos manquantes : ${missing.map((m) => m.label).join(", ")}.`);
-    if (!opp.brand || !opp.model) w.push("Marque et modèle recommandés.");
-    if (!opp.desired_price_excl_tax) w.push("Aucun prix souhaité renseigné.");
-    if (!opp.city) w.push("Localisation manquante.");
+    if (!opp.registration_number) w.push("Immatriculation non renseignée (recommandée).");
+    if (!opp.power) w.push("Puissance non renseignée (recommandée).");
+    if (!opp.euro_standard && categoryProfile(opp.vehicle_category).powered) w.push("Norme Euro non renseignée (recommandée).");
+    if (!opp.postal_code) w.push("Code postal non renseigné (recommandé).");
     return w;
-  }, [opp, photos]);
+  }, [opp]);
 
   return (
     <div className="space-y-6">
       <SectionTitle title="Récapitulatif" hint="Vérifiez les informations avant l'envoi." />
+
+      {blocking.length > 0 && (
+        <div className="rounded-xl border border-destructive/50 bg-destructive/5 p-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
+            <AlertTriangle className="h-4 w-4" /> Éléments obligatoires manquants
+          </div>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+            {blocking.map((w, i) => <li key={i}>{w}</li>)}
+          </ul>
+          <p className="mt-3 text-xs text-muted-foreground">
+            L'envoi à Wilmet est bloqué tant que ces éléments manquent. Vous pouvez enregistrer un brouillon.
+          </p>
+        </div>
+      )}
 
       {warnings.length > 0 && (
         <div className="rounded-xl border border-status-analysis bg-status-analysis/40 p-4">
@@ -1319,6 +1369,7 @@ function Step6({ opp, photos, signedUrls, refs }: { opp: OppState; photos: Photo
           </p>
         </div>
       )}
+
 
       <RecapBlock title="Informations véhicule" rows={[
         ["Catégorie", (refs?.vehicleCategories ?? []).find((c) => c.slug === opp.vehicle_category)?.label_fr ?? "—"],
