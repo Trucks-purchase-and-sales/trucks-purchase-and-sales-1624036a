@@ -648,7 +648,8 @@ function DatePickerField({
           initialFocus
           captionLayout="dropdown"
           startMonth={new Date(1950, 0)}
-          endMonth={new Date(new Date().getFullYear() + 1, 11)}
+          endMonth={endMonth ?? new Date(new Date().getFullYear() + 1, 11)}
+          {...(disableFuture ? { disabled: { after: new Date() } } : {})}
           className="p-3 pointer-events-auto"
         />
       </PopoverContent>
