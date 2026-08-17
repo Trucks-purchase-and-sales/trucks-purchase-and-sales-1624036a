@@ -1266,7 +1266,7 @@ function Step6({ opp, photos, signedUrls, refs }: { opp: OppState; photos: Photo
     const w: string[] = [];
     const covered = new Set(photos.map((p) => p.category).filter(Boolean));
     const missing = REQUIRED_PHOTO_CATEGORIES.filter((c) => !covered.has(c.value));
-    if (opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) w.push("Le motif d'immobilisation est obligatoire lorsque le véhicule ne roule pas.");
+    if (categoryProfile(opp.vehicle_category).powered && opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) w.push("Le motif d'immobilisation est obligatoire lorsque le véhicule ne roule pas.");
     if (opp.technical_inspection_status === "oui" && !opp.inspection_valid_until) w.push("La date de validité du contrôle technique est obligatoire.");
 
     if (missing.length) w.push(`Photos manquantes : ${missing.map((m) => m.label).join(", ")}.`);
