@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { REQUIRED_PHOTO_CATEGORIES, missingSubmissionFields, categoryProfile } from "@/lib/wilmet-constants";
+import { requiredPhotoCategories, missingSubmissionFields, categoryProfile } from "@/lib/wilmet-constants";
 
 // Full draft schema — all optional to allow saving partial drafts.
 const opportunityInput = z.object({
