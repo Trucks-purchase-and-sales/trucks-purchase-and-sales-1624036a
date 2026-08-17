@@ -319,15 +319,29 @@ export const REQUIRED_PHOTO_CATEGORIES = PHOTO_CATEGORIES.filter((c) => c.requir
  * so engine-specific fields are neither displayed nor required for them.
  * Unknown categories default to "powered" so nothing is ever silently skipped.
  */
-export type CategoryProfile = { powered: boolean; hasOdometer: boolean };
+export type CategoryProfile = {
+  powered: boolean;
+  hasOdometer: boolean;
+  /** Cabin / HVAC / keys only make sense on a powered vehicle. */
+  hasCabin: boolean;
+  /** A road tractor carries no body: hide caisse dimensions. */
+  hasBody: boolean;
+};
 
 const NON_POWERED_CATEGORIES = new Set(["semi_remorque", "remorque", "semi-remorque"]);
+const NO_BODY_CATEGORIES = new Set(["tracteur_routier"]);
 
 export function categoryProfile(slug?: string | null): CategoryProfile {
-  if (slug && NON_POWERED_CATEGORIES.has(slug)) {
-    return { powered: false, hasOdometer: false };
-  }
-  return { powered: true, hasOdometer: true };
+  const powered = !(slug && NON_POWERED_CATEGORIES.has(slug));
+  const hasBody = !(slug && NO_BODY_CATEGORIES.has(slug));
+  return { powered, hasOdometer: powered, hasCabin: powered, hasBody };
+}
+
+/** True when the seller declared defects, repairs or an accident. */
+export function hasDeclaredDefects(rec: Record<string, unknown>): boolean {
+  const txt = (k: string) => String(rec[k] ?? "").trim() !== "";
+  return txt("defects_and_comments") || txt("known_defects") || txt("expected_repairs")
+    || rec["has_accident"] === "oui";
 }
 
 /**
@@ -338,12 +352,11 @@ export function requiredPhotoCategories(
   rec: Record<string, unknown>,
 ): { value: string; label: string }[] {
   const profile = categoryProfile(rec["vehicle_category"] as string | null | undefined);
-  const hasDefects = String(rec["defects_and_comments"] ?? "").trim() !== ""
-    || String(rec["known_defects"] ?? "").trim() !== "";
+  const defects = hasDeclaredDefects(rec);
   return PHOTO_CATEGORIES.filter((c) =>
     c.required
     || (c.requiredWhenPowered && profile.powered)
-    || (c.requiredWhenDefects && hasDefects),
+    || (c.requiredWhenDefects && defects),
   ).map(({ value, label }) => ({ value, label }));
 }
 
@@ -366,15 +379,22 @@ export const SUBMISSION_REQUIRED_FIELDS: {
   { key: "country", label: "Pays", step: 0 },
   { key: "visible_on_site", label: "Visibilité du véhicule sur parc", step: 0 },
   { key: "fuel_type", label: "Énergie", step: 1, appliesTo: (p) => p.powered },
+  { key: "gearbox", label: "Boîte de vitesses", step: 1, appliesTo: (p) => p.powered },
   { key: "gross_vehicle_weight", label: "PTAC", step: 1 },
   { key: "general_condition", label: "État général", step: 2 },
   { key: "vehicle_runs", label: "Véhicule roulant", step: 2, appliesTo: (p) => p.powered },
+  { key: "technical_inspection_status", label: "Contrôle technique", step: 2 },
+  { key: "has_accident", label: "Véhicule accidenté", step: 2 },
   { key: "desired_price_excl_tax", label: "Prix souhaité HT", step: 4 },
   { key: "price_negotiable", label: "Prix négociable", step: 4 },
   { key: "availability", label: "Disponibilité", step: 4 },
+  { key: "free_of_pledge", label: "Véhicule libre de tout gage", step: 4 },
   { key: "onsite_contact_name", label: "Nom du contact sur place", step: 4 },
   { key: "onsite_contact_phone", label: "Téléphone du contact sur place", step: 4 },
 ];
+
+/** Set of keys enforced at final submission, for the `*` markers in the wizard. */
+export const SUBMISSION_REQUIRED_KEYS = new Set(SUBMISSION_REQUIRED_FIELDS.map((f) => f.key));
 
 /** Returns the labels of the missing required fields for a candidate record. */
 export function missingSubmissionFields(
@@ -388,15 +408,24 @@ export function missingSubmissionFields(
     if (typeof v === "string") return v.trim() === "";
     return false;
   }).map(({ key, label, step }) => ({ key, label, step }));
+
   if (rec["body_type"] === "autre" && !String(rec["body_type_other"] ?? "").trim()) {
     missing.push({ key: "body_type_other", label: "Précision carrosserie « Autre »", step: 0 });
   }
-  const price = Number(rec["desired_price_excl_tax"] ?? 0);
-  if (!missing.some((m) => m.key === "desired_price_excl_tax") && !(price > 0)) {
+  if (profile.powered && rec["vehicle_runs"] === "non" && !String(rec["not_running_reason"] ?? "").trim()) {
+    missing.push({ key: "not_running_reason", label: "Motif d'immobilisation du véhicule", step: 2 });
+  }
+  if (rec["technical_inspection_status"] === "oui" && !String(rec["inspection_valid_until"] ?? "").trim()) {
+    missing.push({ key: "inspection_valid_until", label: "Date de validité du contrôle technique", step: 2 });
+  }
+  const rawPrice = rec["desired_price_excl_tax"];
+  const price = rawPrice === null || rawPrice === undefined || rawPrice === "" ? NaN : Number(rawPrice);
+  if (!missing.some((m) => m.key === "desired_price_excl_tax") && !(Number.isFinite(price) && price > 0)) {
     missing.push({ key: "desired_price_excl_tax", label: "Prix souhaité HT (supérieur à 0 €)", step: 4 });
   }
   return missing;
 }
+
 
 
 
