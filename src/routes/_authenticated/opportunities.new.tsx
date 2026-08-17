@@ -822,6 +822,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             options={categoryOptions}
             placeholder="Sélectionner une catégorie"
             state={refState}
+            curated
           />
         </Field>
         <Field label="Marque" required hint="Marque absente de la liste ? Saisissez-la, elle sera conservée.">
@@ -858,8 +859,8 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             options={bodyTypeOptions}
             placeholder={opp.vehicle_category ? "Sélectionner une carrosserie" : "Sélectionnez d'abord une catégorie"}
             disabled={!opp.vehicle_category}
-            emptyPlaceholder="Saisir la carrosserie"
             state={refState}
+            curated
           />
         </Field>
         {opp.body_type === "autre" && (
@@ -895,7 +896,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
           </Field>
         )}
         <Field label="Immatriculation (optionnel)"><Input value={opp.registration_number ?? ""} onChange={(e) => set("registration_number", e.target.value.toUpperCase())} /></Field>
-        <Field label="Numéro de châssis / VIN" required hint="17 caractères, visible sur la plaque constructeur ou le châssis. Indispensable pour l'expertise Wilmet."><Input value={opp.vin ?? ""} onChange={(e) => set("vin", e.target.value.toUpperCase())} placeholder="ex : VF3XXXXXXXXXXXXXX" /></Field>
+        <Field label="Numéro de châssis / VIN" required hint="17 caractères, visible sur la plaque constructeur ou le châssis. Requis à l'envoi pour la traçabilité du véhicule."><Input value={opp.vin ?? ""} onChange={(e) => set("vin", e.target.value.toUpperCase())} placeholder="ex : VF3XXXXXXXXXXXXXX" /></Field>
       </div>
 
       <SectionTitle title="Localisation du véhicule" />
@@ -908,8 +909,8 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             onChange={(v) => set("country", v)}
             options={countryOptions}
             placeholder="Sélectionner un pays"
-            emptyPlaceholder="Saisir le pays"
             state={refState}
+            curated
           />
         </Field>
 
@@ -1300,7 +1301,7 @@ function Step5({ opp, set }: { opp: OppState; set: Set }) {
     <div className="space-y-6">
       <SectionTitle title="Prix & disponibilité" />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Prix souhaité HT (en euros €)" required hint="Montant hors taxes, en euros. Wilmet pourra revenir vers vous avec une proposition ajustée.">
+        <Field label="Prix souhaité HT (€ HT)" required hint="Montant hors taxes, en euros (supérieur à 0 €). Wilmet pourra revenir vers vous avec une proposition ajustée.">
           <div className="relative">
             <Input
               type="number" min={0} max={2000000} step={100} inputMode="decimal" className="pr-9"
