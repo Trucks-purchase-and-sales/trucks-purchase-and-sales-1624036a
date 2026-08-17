@@ -303,15 +303,15 @@ export const REQUIRED_PHOTO_CATEGORIES = PHOTO_CATEGORIES.filter((c) => c.requir
  * so engine-specific fields are neither displayed nor required for them.
  * Unknown categories default to "powered" so nothing is ever silently skipped.
  */
-export type CategoryProfile = { powered: boolean; hasOdometer: boolean; weightLabel: string };
+export type CategoryProfile = { powered: boolean; hasOdometer: boolean };
 
 const NON_POWERED_CATEGORIES = new Set(["semi_remorque", "remorque", "semi-remorque"]);
 
 export function categoryProfile(slug?: string | null): CategoryProfile {
   if (slug && NON_POWERED_CATEGORIES.has(slug)) {
-    return { powered: false, hasOdometer: false, weightLabel: "PTC" };
+    return { powered: false, hasOdometer: false };
   }
-  return { powered: true, hasOdometer: true, weightLabel: "PTAC" };
+  return { powered: true, hasOdometer: true };
 }
 
 /**
