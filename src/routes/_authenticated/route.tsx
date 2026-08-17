@@ -37,7 +37,7 @@ function AuthedLayout() {
     },
     staleTime: 60_000,
   });
-  const { data: profile } = useQuery({
+  const { data: profile, isSuccess: profileLoaded } = useQuery({
     queryKey: ["partner_kind", userId],
     queryFn: async () => {
       const { data } = await supabase
@@ -49,6 +49,7 @@ function AuthedLayout() {
     },
     staleTime: 60_000,
   });
+  const profileMissing = profileLoaded && profile === null;
   const partnerKind = (profile?.partner_kind ?? null) as "client" | "seller" | null;
   const staffScope = (profile?.staff_scope ?? "both") as "purchase" | "sales" | "both";
   const isExternalStaff = (profile as { is_external?: boolean } | null)?.is_external === true;
