@@ -722,19 +722,22 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
       <SectionTitle title="Informations générales" hint="Ces éléments identifient le véhicule." />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Catégorie de véhicule">
-          <SearchableCombobox
-            value={opp.vehicle_category ?? undefined}
-            onChange={(v) => { set("vehicle_category", v); set("brand", null); set("model", null); }}
+          <RefCombobox
+            value={opp.vehicle_category}
+            onChange={(v) => { set("vehicle_category", v); set("brand", null); set("model", null); set("body_type", null); }}
             options={categoryOptions}
             placeholder="Sélectionner une catégorie"
+            state={refState}
           />
         </Field>
         <Field label="Marque">
-          <SearchableCombobox
-            value={opp.brand ?? undefined}
+          <RefCombobox
+            value={opp.brand}
             onChange={(v) => { set("brand", v); set("model", null); }}
             options={brandOptions}
             placeholder={opp.vehicle_category ? "Sélectionner une marque" : "Sélectionnez d'abord une catégorie"}
+            emptyPlaceholder="Saisir la marque"
+            state={refState}
           />
         </Field>
         <Field label="Modèle">
@@ -749,6 +752,22 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             <Input value={opp.model ?? ""} onChange={(e) => set("model", e.target.value)} placeholder={opp.brand ? "Saisir le modèle" : "Sélectionnez d'abord une marque"} />
           )}
         </Field>
+        <Field label="Carrosserie" hint="Type de carrosserie du véhicule.">
+          <RefCombobox
+            value={opp.body_type}
+            onChange={(v) => { set("body_type", v); if (v !== "autre") set("body_type_other", null); }}
+            options={bodyTypeOptions}
+            placeholder="Sélectionner une carrosserie"
+            emptyPlaceholder="Saisir la carrosserie"
+            state={refState}
+          />
+        </Field>
+        {opp.body_type === "autre" && (
+          <Field label="Précisez la carrosserie">
+            <Input value={opp.body_type_other ?? ""} onChange={(e) => set("body_type_other", e.target.value)} placeholder="ex : porte-conteneurs" />
+          </Field>
+        )}
+
 
         <Field label="Date de 1re mise en circulation">
           <DatePickerField
