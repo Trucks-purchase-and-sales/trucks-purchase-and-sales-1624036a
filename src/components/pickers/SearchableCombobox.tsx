@@ -21,13 +21,23 @@ interface Props {
   disabled?: boolean;
   id?: string;
   className?: string;
+  /**
+   * Creatable mode: the typed text can be committed as-is when the catalog does
+   * not contain it yet (brand/model referentials are never exhaustive).
+   * Opt-in, so every existing usage keeps its strict-list behaviour.
+   */
+  allowCustom?: boolean;
+  /** Label of the "create" row; receives the current query. */
+  customLabel?: (query: string) => string;
 }
 
 export function SearchableCombobox({
   value, onChange, options, placeholder = "Sélectionner",
   searchPlaceholder = "Rechercher…", emptyLabel = "Aucun résultat", disabled, id, className,
+  allowCustom = false, customLabel = (q) => `Utiliser « ${q} »`,
 }: Props) {
   const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState("");
   const selected = options.find((o) => o.value === value);
 
   const grouped = React.useMemo(() => {
@@ -39,6 +49,18 @@ export function SearchableCombobox({
     }
     return Array.from(map.entries());
   }, [options]);
+
+  const trimmed = query.trim();
+  const showCustom =
+    allowCustom &&
+    trimmed.length > 0 &&
+    !options.some((o) => o.label.toLowerCase() === trimmed.toLowerCase());
+
+  const commit = (v: string) => {
+    onChange(v);
+    setOpen(false);
+    setQuery("");
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
