@@ -1315,24 +1315,46 @@ function Step5({ opp, set }: { opp: OppState; set: Set }) {
 }
 
 function Step6({ opp, photos, signedUrls, refs }: { opp: OppState; photos: Photo[]; signedUrls: Record<string, string>; refs: Refs }) {
+  const blocking = useMemo(() => {
+    const b: string[] = [];
+    const covered = new Set(photos.map((p) => p.category).filter(Boolean));
+    const missingPhotos = requiredPhotoCategories(opp as unknown as Record<string, unknown>)
+      .filter((c) => !covered.has(c.value));
+    for (const f of missingSubmissionFields(opp as unknown as Record<string, unknown>)) {
+      b.push(`${f.label} — champ obligatoire (étape ${f.step + 1}).`);
+    }
+    if (categoryProfile(opp.vehicle_category).powered && opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) b.push("Le motif d'immobilisation est obligatoire lorsque le véhicule ne roule pas.");
+    if (opp.technical_inspection_status === "oui" && !opp.inspection_valid_until) b.push("La date de validité du contrôle technique est obligatoire.");
+    if (missingPhotos.length) b.push(`Photos obligatoires manquantes : ${missingPhotos.map((m) => m.label).join(", ")}.`);
+    return b;
+  }, [opp, photos]);
+
   const warnings = useMemo(() => {
     const w: string[] = [];
-    const covered = new Set(photos.map((p) => p.category).filter(Boolean));
-    const missing = requiredPhotoCategories(opp as unknown as Record<string, unknown>)
-      .filter((c) => !covered.has(c.value));
-    if (categoryProfile(opp.vehicle_category).powered && opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) w.push("Le motif d'immobilisation est obligatoire lorsque le véhicule ne roule pas.");
-    if (opp.technical_inspection_status === "oui" && !opp.inspection_valid_until) w.push("La date de validité du contrôle technique est obligatoire.");
-
-    if (missing.length) w.push(`Photos manquantes : ${missing.map((m) => m.label).join(", ")}.`);
-    if (!opp.brand || !opp.model) w.push("Marque et modèle recommandés.");
-    if (!opp.desired_price_excl_tax) w.push("Aucun prix souhaité renseigné.");
-    if (!opp.city) w.push("Localisation manquante.");
+    if (!opp.registration_number) w.push("Immatriculation non renseignée (recommandée).");
+    if (!opp.power) w.push("Puissance non renseignée (recommandée).");
+    if (!opp.euro_standard && categoryProfile(opp.vehicle_category).powered) w.push("Norme Euro non renseignée (recommandée).");
+    if (!opp.postal_code) w.push("Code postal non renseigné (recommandé).");
     return w;
-  }, [opp, photos]);
+  }, [opp]);
 
   return (
     <div className="space-y-6">
       <SectionTitle title="Récapitulatif" hint="Vérifiez les informations avant l'envoi." />
+
+      {blocking.length > 0 && (
+        <div className="rounded-xl border border-destructive/50 bg-destructive/5 p-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
+            <AlertTriangle className="h-4 w-4" /> Éléments obligatoires manquants
+          </div>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+            {blocking.map((w, i) => <li key={i}>{w}</li>)}
+          </ul>
+          <p className="mt-3 text-xs text-muted-foreground">
+            L'envoi à Wilmet est bloqué tant que ces éléments manquent. Vous pouvez enregistrer un brouillon.
+          </p>
+        </div>
+      )}
 
       {warnings.length > 0 && (
         <div className="rounded-xl border border-status-analysis bg-status-analysis/40 p-4">
@@ -1347,6 +1369,7 @@ function Step6({ opp, photos, signedUrls, refs }: { opp: OppState; photos: Photo
           </p>
         </div>
       )}
+
 
       <RecapBlock title="Informations véhicule" rows={[
         ["Catégorie", (refs?.vehicleCategories ?? []).find((c) => c.slug === opp.vehicle_category)?.label_fr ?? "—"],
