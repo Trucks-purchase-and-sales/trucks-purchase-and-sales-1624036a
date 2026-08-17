@@ -615,14 +615,24 @@ function DatePickerField({
   onChange,
   placeholder = "Sélectionner une date",
   disableFuture = false,
+  minDate,
+  maxDate,
 }: {
   value: string | null | undefined;
   onChange: (v: string | null) => void;
   placeholder?: string;
-  /** A first registration cannot be in the future. */
+  /** Shorthand for maxDate = today (a first registration cannot be in the future). */
   disableFuture?: boolean;
+  /** Earliest selectable date. No arbitrary floor is applied by default. */
+  minDate?: Date;
+  /** Latest selectable date. */
+  maxDate?: Date;
 }) {
-  const endMonth = disableFuture ? new Date() : undefined;
+  const upper = maxDate ?? (disableFuture ? new Date() : undefined);
+  const disabledMatchers = [
+    ...(minDate ? [{ before: minDate }] : []),
+    ...(upper ? [{ after: upper }] : []),
+  ];
   const [open, setOpen] = useState(false);
 
   const handleSelect = (date: Date | undefined) => {
@@ -651,9 +661,9 @@ function DatePickerField({
           onSelect={handleSelect}
           initialFocus
           captionLayout="dropdown"
-          startMonth={new Date(1950, 0)}
-          endMonth={endMonth ?? new Date(new Date().getFullYear() + 1, 11)}
-          {...(disableFuture ? { disabled: { after: new Date() } } : {})}
+          startMonth={minDate ?? new Date(1950, 0)}
+          endMonth={upper ?? new Date(new Date().getFullYear() + 1, 11)}
+          {...(disabledMatchers.length ? { disabled: disabledMatchers } : {})}
           className="p-3 pointer-events-auto"
         />
       </PopoverContent>
@@ -753,6 +763,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
       set("power", null);
       set("mileage", null);
       set("vehicle_runs", null);
+      set("not_running_reason", null);
     }
   }
 
@@ -926,7 +937,7 @@ function Step2({ opp, set, refs }: { opp: OppState; set: Set; refs: Refs }) {
             <Field label="Norme Euro"><Selector value={opp.euro_standard} onChange={(v) => set("euro_standard", v)} options={euroOptions} /></Field>
           </>
         )}
-        <Field label="PTAC" hint="PTAC / poids total autorisé, en tonnes (ex. 3.5, 19, 44).">
+        <Field label="PTAC / poids total autorisé (t)" hint="En tonnes (ex. 3.5, 19, 44).">
           <div className="relative">
             <Input className="pr-8" inputMode="decimal" value={opp.gross_vehicle_weight ?? ""} onChange={(e) => set("gross_vehicle_weight", e.target.value)} placeholder="3.5, 19…" />
             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">t</span>
@@ -1026,7 +1037,7 @@ function Step3({ opp, set }: { opp: OppState; set: Set }) {
           />
         </Field>
       </div>
-      {opp.vehicle_runs === "non" && (
+      {categoryProfile(opp.vehicle_category).powered && opp.vehicle_runs === "non" && (
         <Field
           label="Pourquoi le véhicule ne roule-t-il pas ? *"
           hint="Champ obligatoire : panne moteur, boîte, freins, batterie, immobilisation administrative…"
