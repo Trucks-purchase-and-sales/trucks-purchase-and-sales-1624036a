@@ -546,7 +546,7 @@ type RefState = { loading: boolean; error: boolean; retry: () => void };
  * referential comes back empty it degrades to a free-text input.
  */
 function RefCombobox({
-  value, onChange, options, placeholder, state, emptyPlaceholder, allowCustom, customLabel, disabled,
+  value, onChange, options, placeholder, state, emptyPlaceholder, allowCustom, customLabel, disabled, curated,
 }: {
   value: string | null | undefined;
   onChange: (v: string) => void;
@@ -559,12 +559,27 @@ function RefCombobox({
   customLabel?: (q: string) => string;
   /** Dependent selector: disabled until its prerequisite is chosen. */
   disabled?: boolean;
+  /** Curated catalogs (catégorie, carrosserie, pays) never degrade to free text. */
+  curated?: boolean;
 }) {
   if (disabled) {
     return <Input disabled placeholder={placeholder} />;
   }
   if (state.loading && options.length === 0) {
     return <Input disabled placeholder="Chargement des référentiels…" />;
+  }
+  if (options.length === 0 && curated) {
+    return (
+      <div className="space-y-1.5">
+        <Input disabled value={value ?? ""} placeholder="Référentiel indisponible" />
+        <button type="button" onClick={state.retry} className="text-[11px] font-medium text-accent underline">
+          Référentiel indisponible — réessayer
+        </button>
+        <p className="text-[11px] text-muted-foreground">
+          Cette liste est fermée : la saisie libre n'est pas autorisée. Votre brouillon reste enregistrable.
+        </p>
+      </div>
+    );
   }
   if (state.error && options.length === 0) {
     return (
@@ -592,11 +607,14 @@ function RefCombobox({
 }
 
 
-function Field({ label, hint, children, action }: { label: string; hint?: string; children: React.ReactNode; action?: React.ReactNode }) {
+function Field({ label, hint, children, action, required }: { label: string; hint?: string; children: React.ReactNode; action?: React.ReactNode; required?: boolean }) {
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+        <Label className="text-xs font-medium text-muted-foreground">
+          {label}
+          {required && <span className="ml-1 text-accent" title="Requis à l'envoi">*</span>}
+        </Label>
         {action}
       </div>
       {children}
@@ -604,6 +622,7 @@ function Field({ label, hint, children, action }: { label: string; hint?: string
     </div>
   );
 }
+
 
 function Selector({
   value, onChange, options, placeholder,
