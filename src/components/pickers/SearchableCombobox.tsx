@@ -73,22 +73,22 @@ export function SearchableCombobox({
           disabled={disabled}
           className={cn("w-full justify-between font-normal", !selected && "text-muted-foreground", className)}
         >
-          <span className="truncate">{selected?.label ?? placeholder}</span>
+          <span className="truncate">{selected?.label ?? value ?? placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0 pointer-events-auto" align="start">
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput placeholder={searchPlaceholder} value={query} onValueChange={setQuery} />
           <CommandList>
-            <CommandEmpty>{emptyLabel}</CommandEmpty>
+            {!showCustom && <CommandEmpty>{emptyLabel}</CommandEmpty>}
             {grouped.map(([g, opts]) => (
               <CommandGroup key={g} heading={g || undefined}>
                 {opts.map((o) => (
                   <CommandItem
                     key={o.value}
                     value={`${o.label} ${o.value}`}
-                    onSelect={() => { onChange(o.value); setOpen(false); }}
+                    onSelect={() => commit(o.value)}
                   >
                     <Check className={cn("mr-2 h-4 w-4", value === o.value ? "opacity-100" : "opacity-0")} />
                     {o.label}
@@ -96,6 +96,14 @@ export function SearchableCombobox({
                 ))}
               </CommandGroup>
             ))}
+            {showCustom && (
+              <CommandGroup>
+                <CommandItem value={`__custom__${trimmed}`} onSelect={() => commit(trimmed)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {customLabel(trimmed)}
+                </CommandItem>
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>
