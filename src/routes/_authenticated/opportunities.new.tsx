@@ -1149,7 +1149,16 @@ function Step4({
                 <div>
                   <div className="flex items-center gap-1.5 text-sm font-semibold">
                     {cat.label}
+                    <span className={cn(
+                      "rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase",
+                      requiredValues.has(cat.value)
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-secondary text-muted-foreground",
+                    )}>
+                      {requiredValues.has(cat.value) ? "Obligatoire" : "Recommandé"}
+                    </span>
                   </div>
+
 
                   <div className="mt-0.5 text-[11px] text-muted-foreground">{cat.helper}</div>
                 </div>
