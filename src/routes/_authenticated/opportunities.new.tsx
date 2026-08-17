@@ -456,8 +456,9 @@ function WizardPage() {
 
       <Card className="border-border/70">
         <CardContent className="p-5 sm:p-8">
-          {step === 0 && <Step1 opp={opp} set={set} applyOcr={(f: Partial<OppState>) => setOpp((o) => ({ ...o, ...f }))} refs={refData} />}
+          {step === 0 && <Step1 opp={opp} set={set} applyOcr={(f: Partial<OppState>) => setOpp((o) => ({ ...o, ...f }))} refs={refData} refState={refState} />}
           {step === 1 && <Step2 opp={opp} set={set} refs={refData} />}
+
           {step === 2 && <Step3 opp={opp} set={set} />}
           {step === 3 && (
             <Step4
