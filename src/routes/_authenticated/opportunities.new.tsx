@@ -629,6 +629,10 @@ function DatePickerField({
   maxDate?: Date;
 }) {
   const upper = maxDate ?? (disableFuture ? new Date() : undefined);
+  const disabledMatchers = [
+    ...(minDate ? [{ before: minDate }] : []),
+    ...(upper ? [{ after: upper }] : []),
+  ];
   const [open, setOpen] = useState(false);
 
   const handleSelect = (date: Date | undefined) => {
