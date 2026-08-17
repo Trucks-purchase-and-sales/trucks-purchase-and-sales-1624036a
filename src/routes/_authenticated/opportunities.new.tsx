@@ -35,6 +35,7 @@ import {
   NEGOTIABLE_OPTIONS, PHOTO_CATEGORIES, REQUIRED_PHOTO_CATEGORIES,
   KEYS_COUNT_OPTIONS, VISIBILITY_OPTIONS,
   SUSPENSION_OPTIONS, YES_NO_OPTIONS, TAIL_LIFT_CONDITION_OPTIONS, missingSubmissionFields,
+  categoryProfile,
   labelFor, formatPrice,
 
 } from "@/lib/wilmet-constants";
