@@ -1329,7 +1329,7 @@ function Step5({ opp, set }: { opp: OppState; set: Set }) {
         </Field>
         <Field label="Prix négociable ?" required><Selector value={opp.price_negotiable} onChange={(v) => set("price_negotiable", v)} options={NEGOTIABLE_OPTIONS} /></Field>
         <Field label="Disponibilité" required><Selector value={opp.availability} onChange={(v) => set("availability", v)} options={AVAILABILITY_OPTIONS} /></Field>
-        <Field label="Libre de tout gage ?" hint="Aucun gage, crédit-bail ou nantissement en cours sur le véhicule."><Selector value={opp.free_of_pledge} onChange={(v) => set("free_of_pledge", v)} options={YES_NO_OPTIONS} /></Field>
+        <Field label="Libre de tout gage ?" required hint="Aucun gage, crédit-bail ou nantissement en cours sur le véhicule."><Selector value={opp.free_of_pledge} onChange={(v) => set("free_of_pledge", v)} options={YES_NO_OPTIONS} /></Field>
 
       </div>
       <Field label="Conditions particulières">
