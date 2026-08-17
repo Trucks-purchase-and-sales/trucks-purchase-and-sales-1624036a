@@ -781,7 +781,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             state={refState}
           />
         </Field>
-        <Field label="Marque">
+        <Field label="Marque" hint="Marque absente de la liste ? Saisissez-la, elle sera conservée.">
           <RefCombobox
             value={opp.brand}
             onChange={(v) => { set("brand", v); set("model", null); }}
@@ -789,15 +789,19 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             placeholder={opp.vehicle_category ? "Sélectionner une marque" : "Sélectionnez d'abord une catégorie"}
             emptyPlaceholder="Saisir la marque"
             state={refState}
+            allowCustom
+            customLabel={(q) => `Ajouter la marque « ${q} »`}
           />
         </Field>
-        <Field label="Modèle">
+        <Field label="Modèle" hint="Modèle absent de la liste ? Saisissez-le librement.">
           {modelOptions.length > 0 ? (
             <SearchableCombobox
               value={opp.model ?? undefined}
               onChange={(v) => set("model", v)}
               options={modelOptions}
               placeholder="Sélectionner un modèle"
+              allowCustom
+              customLabel={(q) => `Ajouter le modèle « ${q} »`}
             />
           ) : (
             <Input value={opp.model ?? ""} onChange={(e) => set("model", e.target.value)} placeholder={opp.brand ? "Saisir le modèle" : "Sélectionnez d'abord une marque"} />
