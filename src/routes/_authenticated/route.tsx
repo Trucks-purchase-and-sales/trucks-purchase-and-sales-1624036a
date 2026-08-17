@@ -74,6 +74,21 @@ function AuthedLayout() {
     );
   }
 
+  // Auth user exists but no application profile row: do not treat as a normal account.
+  if (profileMissing) {
+    return (
+      <div className="grid min-h-screen place-items-center p-6">
+        <div className="max-w-md space-y-3 text-center text-sm">
+          <h1 className="text-lg font-semibold">Compte en cours d&apos;initialisation</h1>
+          <p className="text-muted-foreground">
+            Votre profil applicatif est introuvable. Votre compte n&apos;a pas été initialisé correctement.
+            Contactez l&apos;administrateur pour le finaliser.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-secondary/40">
