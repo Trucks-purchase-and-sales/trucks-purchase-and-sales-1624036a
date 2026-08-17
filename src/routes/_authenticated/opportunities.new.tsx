@@ -1049,34 +1049,37 @@ function Step2({ opp, set, refs }: { opp: OppState; set: Set; refs: Refs }) {
 function Step3({ opp, set }: { opp: OppState; set: Set }) {
   const ai = useAiFeatures();
   const conditionOptions = CONDITION_OPTIONS;
+  const profile = categoryProfile(opp.vehicle_category);
 
   return (
     <div className="space-y-6">
       <SectionTitle title="État du véhicule" hint="Soyez précis sur les défauts visibles ou connus. Une description transparente permet à Wilmet de vous répondre plus rapidement." />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="État général" required><Selector value={opp.general_condition} onChange={(v) => set("general_condition", v)} options={conditionOptions} /></Field>
-        {categoryProfile(opp.vehicle_category).powered && (
+        {profile.powered && (
           <Field label="Le véhicule roule-t-il ?" required><Selector value={opp.vehicle_runs} onChange={(v) => set("vehicle_runs", v)} options={YES_NO_OPTIONS} /></Field>
         )}
-        <Field label="Contrôle technique valide ?"><Selector value={opp.technical_inspection_status} onChange={(v) => set("technical_inspection_status", v)} options={YES_NO_OPTIONS} /></Field>
+        <Field label="Contrôle technique valide ?" required><Selector value={opp.technical_inspection_status} onChange={(v) => set("technical_inspection_status", v)} options={YES_NO_OPTIONS} /></Field>
         {opp.technical_inspection_status === "oui" && (
           <Field label="Contrôle technique valable jusqu'au" required hint="Date obligatoire lorsque le contrôle technique est valide.">
             <DatePickerField value={opp.inspection_valid_until} onChange={(v) => set("inspection_valid_until", v)} placeholder="Choisir la date" />
           </Field>
         )}
         <Field label="Entretien à jour ?"><Selector value={opp.maintenance_status} onChange={(v) => set("maintenance_status", v)} options={YES_NO_OPTIONS} /></Field>
-        <Field label="Véhicule accidenté ?" hint="Sinistre déclaré ou réparation structurelle connue."><Selector value={opp.has_accident} onChange={(v) => set("has_accident", v)} options={ACCIDENT_OPTIONS} /></Field>
+        <Field label="Véhicule accidenté ?" required hint="Sinistre déclaré ou réparation structurelle connue. Répondez « À vérifier » si vous n'avez pas l'information."><Selector value={opp.has_accident} onChange={(v) => set("has_accident", v)} options={ACCIDENT_OPTIONS} /></Field>
         
         <Field label="Carnet d'entretien disponible ?"><Selector value={opp.has_service_book} onChange={(v) => set("has_service_book", v)} options={YES_NO_OPTIONS} /></Field>
-        <Field label="Nombre de clés">
-          <Selector
-            value={opp.keys_count ? String(opp.keys_count) : null}
-            onChange={(v) => set("keys_count", v ? parseInt(v, 10) : null)}
-            options={KEYS_COUNT_OPTIONS}
-          />
-        </Field>
+        {profile.hasCabin && (
+          <Field label="Nombre de clés">
+            <Selector
+              value={opp.keys_count ? String(opp.keys_count) : null}
+              onChange={(v) => set("keys_count", v ? parseInt(v, 10) : null)}
+              options={KEYS_COUNT_OPTIONS}
+            />
+          </Field>
+        )}
       </div>
-      {categoryProfile(opp.vehicle_category).powered && opp.vehicle_runs === "non" && (
+      {profile.powered && opp.vehicle_runs === "non" && (
         <Field
           label="Pourquoi le véhicule ne roule-t-il pas ?" required
           hint="Champ obligatoire : panne moteur, boîte, freins, batterie, immobilisation administrative…"
