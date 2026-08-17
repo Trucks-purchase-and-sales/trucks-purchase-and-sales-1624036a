@@ -625,7 +625,7 @@ function DatePickerField({
   );
 }
 
-function Step1({ opp, set, applyOcr, refs }: { opp: OppState; set: Set; applyOcr: (f: Partial<OppState>) => void; refs: Refs }) {
+function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set; applyOcr: (f: Partial<OppState>) => void; refs: Refs; refState: RefState }) {
   const ai = useAiFeatures();
   function handleOcrApply(fields: Record<string, string>) {
     const intFields = new Set([
