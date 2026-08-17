@@ -1230,7 +1230,16 @@ function Step5({ opp, set }: { opp: OppState; set: Set }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Prix souhaité HT (en euros €)" hint="Montant hors taxes, en euros. Wilmet pourra revenir vers vous avec une proposition ajustée.">
           <div className="relative">
-            <Input type="number" min={0} step={100} className="pr-9" value={opp.desired_price_excl_tax ?? ""} onChange={(e) => set("desired_price_excl_tax", e.target.value ? parseFloat(e.target.value) : null)} />
+            <Input
+              type="number" min={0} max={2000000} step={100} inputMode="decimal" className="pr-9"
+              value={opp.desired_price_excl_tax ?? ""}
+              onChange={(e) => set("desired_price_excl_tax", e.target.value ? parseFloat(e.target.value) : null)}
+              onBlur={(e) => {
+                if (!e.target.value) return;
+                const n = parseFloat(e.target.value);
+                if (!Number.isNaN(n)) set("desired_price_excl_tax", Math.min(Math.max(n, 0), 2000000));
+              }}
+            />
             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">€</span>
           </div>
         </Field>
