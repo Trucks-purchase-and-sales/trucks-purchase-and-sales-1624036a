@@ -750,7 +750,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
         <Field label="Catégorie de véhicule">
           <RefCombobox
             value={opp.vehicle_category}
-            onChange={(v) => { set("vehicle_category", v); set("brand", null); set("model", null); set("body_type", null); }}
+            onChange={(v) => onCategoryChange(v)}
             options={categoryOptions}
             placeholder="Sélectionner une catégorie"
             state={refState}
