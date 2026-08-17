@@ -822,9 +822,23 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             placeholder="Choisir la date"
           />
         </Field>
-        <Field label="Kilométrage" hint="Indiquez le kilométrage affiché au compteur.">
-          <Input type="number" min={0} value={opp.mileage ?? ""} onChange={(e) => set("mileage", e.target.value ? parseInt(e.target.value) : null)} />
-        </Field>
+        {profile.hasOdometer && (
+          <Field label="Kilométrage (km)" hint="Kilométrage actuel affiché au compteur.">
+            <div className="relative">
+              <Input
+                type="number" min={0} max={3000000} step={1000} inputMode="numeric" className="pr-10"
+                value={opp.mileage ?? ""}
+                onChange={(e) => set("mileage", e.target.value ? parseInt(e.target.value) : null)}
+                onBlur={(e) => {
+                  if (!e.target.value) return;
+                  const n = parseInt(e.target.value, 10);
+                  if (!Number.isNaN(n)) set("mileage", Math.min(Math.max(n, 0), 3000000));
+                }}
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">km</span>
+            </div>
+          </Field>
+        )}
         <Field label="Immatriculation (optionnel)"><Input value={opp.registration_number ?? ""} onChange={(e) => set("registration_number", e.target.value.toUpperCase())} /></Field>
         <Field label="Numéro de châssis / VIN (optionnel)"><Input value={opp.vin ?? ""} onChange={(e) => set("vin", e.target.value.toUpperCase())} /></Field>
       </div>
