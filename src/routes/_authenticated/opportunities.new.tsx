@@ -546,7 +546,8 @@ type RefState = { loading: boolean; error: boolean; retry: () => void };
  * referential comes back empty it degrades to a free-text input.
  */
 function RefCombobox({
-  value, onChange, options, placeholder, state, emptyPlaceholder, allowCustom, customLabel, disabled, curated,
+  value, onChange, options, placeholder, state, emptyPlaceholder, allowCustom, customLabel, disabled,
+  allowFreeTextFallback = false,
 }: {
   value: string | null | undefined;
   onChange: (v: string) => void;
@@ -559,16 +560,27 @@ function RefCombobox({
   customLabel?: (q: string) => string;
   /** Dependent selector: disabled until its prerequisite is chosen. */
   disabled?: boolean;
-  /** Curated catalogs (catégorie, carrosserie, pays) never degrade to free text. */
-  curated?: boolean;
+  /**
+   * Strict curated lists (catégorie, carrosserie, pays) keep this false: when the
+   * référentiel is empty or failed we show an unavailable state + retry instead of
+   * silently accepting arbitrary text. Brand/model opt in.
+   */
+  allowFreeTextFallback?: boolean;
 }) {
+  // Keep a legacy/stored value selectable even if it is no longer in the catalog.
+  const merged = useMemo(() => {
+    const v = (value ?? "").trim();
+    if (!v || options.some((o) => o.value === v)) return options;
+    return [{ value: v, label: v }, ...options];
+  }, [options, value]);
+
   if (disabled) {
     return <Input disabled placeholder={placeholder} />;
   }
-  if (state.loading && options.length === 0) {
+  if (state.loading && merged.length === 0) {
     return <Input disabled placeholder="Chargement des référentiels…" />;
   }
-  if (options.length === 0 && curated) {
+  if (merged.length === 0 && !allowFreeTextFallback) {
     return (
       <div className="space-y-1.5">
         <Input disabled value={value ?? ""} placeholder="Référentiel indisponible" />
@@ -581,30 +593,30 @@ function RefCombobox({
       </div>
     );
   }
-  if (state.error && options.length === 0) {
+  if (merged.length === 0) {
     return (
       <div className="space-y-1.5">
-        <Input value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={emptyPlaceholder ?? "Saisie libre"} />
-        <button type="button" onClick={state.retry} className="text-[11px] font-medium text-accent underline">
-          Référentiel indisponible — réessayer
-        </button>
+        <Input value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={emptyPlaceholder ?? placeholder} />
+        {state.error && (
+          <button type="button" onClick={state.retry} className="text-[11px] font-medium text-accent underline">
+            Référentiel indisponible — réessayer
+          </button>
+        )}
       </div>
     );
-  }
-  if (options.length === 0) {
-    return <Input value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={emptyPlaceholder ?? placeholder} />;
   }
   return (
     <SearchableCombobox
       value={value ?? undefined}
       onChange={onChange}
-      options={options}
+      options={merged}
       placeholder={placeholder}
       allowCustom={allowCustom}
       {...(customLabel ? { customLabel } : {})}
     />
   );
 }
+
 
 
 function Field({ label, hint, children, action, required }: { label: string; hint?: string; children: React.ReactNode; action?: React.ReactNode; required?: boolean }) {
