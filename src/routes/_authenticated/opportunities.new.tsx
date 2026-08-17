@@ -615,14 +615,20 @@ function DatePickerField({
   onChange,
   placeholder = "Sélectionner une date",
   disableFuture = false,
+  minDate,
+  maxDate,
 }: {
   value: string | null | undefined;
   onChange: (v: string | null) => void;
   placeholder?: string;
-  /** A first registration cannot be in the future. */
+  /** Shorthand for maxDate = today (a first registration cannot be in the future). */
   disableFuture?: boolean;
+  /** Earliest selectable date. No arbitrary floor is applied by default. */
+  minDate?: Date;
+  /** Latest selectable date. */
+  maxDate?: Date;
 }) {
-  const endMonth = disableFuture ? new Date() : undefined;
+  const upper = maxDate ?? (disableFuture ? new Date() : undefined);
   const [open, setOpen] = useState(false);
 
   const handleSelect = (date: Date | undefined) => {
@@ -651,9 +657,11 @@ function DatePickerField({
           onSelect={handleSelect}
           initialFocus
           captionLayout="dropdown"
-          startMonth={new Date(1950, 0)}
-          endMonth={endMonth ?? new Date(new Date().getFullYear() + 1, 11)}
-          {...(disableFuture ? { disabled: { after: new Date() } } : {})}
+          startMonth={minDate ?? new Date(1950, 0)}
+          endMonth={upper ?? new Date(new Date().getFullYear() + 1, 11)}
+          {...(minDate || upper
+            ? { disabled: { ...(minDate ? { before: minDate } : {}), ...(upper ? { after: upper } : {}) } }
+            : {})}
           className="p-3 pointer-events-auto"
         />
       </PopoverContent>
