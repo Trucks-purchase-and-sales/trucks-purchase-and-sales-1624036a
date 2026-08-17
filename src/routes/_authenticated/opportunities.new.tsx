@@ -543,7 +543,7 @@ type RefState = { loading: boolean; error: boolean; retry: () => void };
  * referential comes back empty it degrades to a free-text input.
  */
 function RefCombobox({
-  value, onChange, options, placeholder, state, emptyPlaceholder,
+  value, onChange, options, placeholder, state, emptyPlaceholder, allowCustom, customLabel,
 }: {
   value: string | null | undefined;
   onChange: (v: string) => void;
@@ -551,6 +551,9 @@ function RefCombobox({
   placeholder: string;
   state: RefState;
   emptyPlaceholder?: string;
+  /** Creatable: lets the seller enter a real brand/model missing from the catalog. */
+  allowCustom?: boolean;
+  customLabel?: (q: string) => string;
 }) {
   if (state.loading && options.length === 0) {
     return <Input disabled placeholder="Chargement des référentiels…" />;
@@ -574,6 +577,8 @@ function RefCombobox({
       onChange={onChange}
       options={options}
       placeholder={placeholder}
+      allowCustom={allowCustom}
+      {...(customLabel ? { customLabel } : {})}
     />
   );
 }
@@ -609,11 +614,15 @@ function DatePickerField({
   value,
   onChange,
   placeholder = "Sélectionner une date",
+  disableFuture = false,
 }: {
   value: string | null | undefined;
   onChange: (v: string | null) => void;
   placeholder?: string;
+  /** A first registration cannot be in the future. */
+  disableFuture?: boolean;
 }) {
+  const endMonth = disableFuture ? new Date() : undefined;
   const [open, setOpen] = useState(false);
 
   const handleSelect = (date: Date | undefined) => {
@@ -643,7 +652,8 @@ function DatePickerField({
           initialFocus
           captionLayout="dropdown"
           startMonth={new Date(1950, 0)}
-          endMonth={new Date(new Date().getFullYear() + 1, 11)}
+          endMonth={endMonth ?? new Date(new Date().getFullYear() + 1, 11)}
+          {...(disableFuture ? { disabled: { after: new Date() } } : {})}
           className="p-3 pointer-events-auto"
         />
       </PopoverContent>
@@ -776,7 +786,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             state={refState}
           />
         </Field>
-        <Field label="Marque">
+        <Field label="Marque" hint="Marque absente de la liste ? Saisissez-la, elle sera conservée.">
           <RefCombobox
             value={opp.brand}
             onChange={(v) => { set("brand", v); set("model", null); }}
@@ -784,15 +794,19 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             placeholder={opp.vehicle_category ? "Sélectionner une marque" : "Sélectionnez d'abord une catégorie"}
             emptyPlaceholder="Saisir la marque"
             state={refState}
+            allowCustom
+            customLabel={(q) => `Ajouter la marque « ${q} »`}
           />
         </Field>
-        <Field label="Modèle">
+        <Field label="Modèle" hint="Modèle absent de la liste ? Saisissez-le librement.">
           {modelOptions.length > 0 ? (
             <SearchableCombobox
               value={opp.model ?? undefined}
               onChange={(v) => set("model", v)}
               options={modelOptions}
               placeholder="Sélectionner un modèle"
+              allowCustom
+              customLabel={(q) => `Ajouter le modèle « ${q} »`}
             />
           ) : (
             <Input value={opp.model ?? ""} onChange={(e) => set("model", e.target.value)} placeholder={opp.brand ? "Saisir le modèle" : "Sélectionnez d'abord une marque"} />
@@ -820,6 +834,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             value={opp.first_registration_date}
             onChange={(v) => set("first_registration_date", v)}
             placeholder="Choisir la date"
+            disableFuture
           />
         </Field>
         {profile.hasOdometer && (
@@ -911,7 +926,7 @@ function Step2({ opp, set, refs }: { opp: OppState; set: Set; refs: Refs }) {
             <Field label="Norme Euro"><Selector value={opp.euro_standard} onChange={(v) => set("euro_standard", v)} options={euroOptions} /></Field>
           </>
         )}
-        <Field label={`${profile.weightLabel} (t)`} hint="Poids total autorisé, en tonnes.">
+        <Field label="PTAC" hint="PTAC / poids total autorisé, en tonnes (ex. 3.5, 19, 44).">
           <div className="relative">
             <Input className="pr-8" inputMode="decimal" value={opp.gross_vehicle_weight ?? ""} onChange={(e) => set("gross_vehicle_weight", e.target.value)} placeholder="3.5, 19…" />
             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">t</span>

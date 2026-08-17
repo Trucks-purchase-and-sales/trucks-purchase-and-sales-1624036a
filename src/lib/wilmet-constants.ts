@@ -303,15 +303,15 @@ export const REQUIRED_PHOTO_CATEGORIES = PHOTO_CATEGORIES.filter((c) => c.requir
  * so engine-specific fields are neither displayed nor required for them.
  * Unknown categories default to "powered" so nothing is ever silently skipped.
  */
-export type CategoryProfile = { powered: boolean; hasOdometer: boolean; weightLabel: string };
+export type CategoryProfile = { powered: boolean; hasOdometer: boolean };
 
 const NON_POWERED_CATEGORIES = new Set(["semi_remorque", "remorque", "semi-remorque"]);
 
 export function categoryProfile(slug?: string | null): CategoryProfile {
   if (slug && NON_POWERED_CATEGORIES.has(slug)) {
-    return { powered: false, hasOdometer: false, weightLabel: "PTC" };
+    return { powered: false, hasOdometer: false };
   }
-  return { powered: true, hasOdometer: true, weightLabel: "PTAC" };
+  return { powered: true, hasOdometer: true };
 }
 
 /**
@@ -331,7 +331,7 @@ export const SUBMISSION_REQUIRED_FIELDS: {
   { key: "city", label: "Ville", step: 0 },
   { key: "country", label: "Pays", step: 0 },
   { key: "fuel_type", label: "Énergie", step: 1, appliesTo: (p) => p.powered },
-  { key: "gross_vehicle_weight", label: "PTAC / PTC", step: 1 },
+  { key: "gross_vehicle_weight", label: "PTAC (poids total autorisé)", step: 1 },
   { key: "general_condition", label: "État général", step: 2 },
   { key: "vehicle_runs", label: "Véhicule roulant", step: 2, appliesTo: (p) => p.powered },
   { key: "desired_price_excl_tax", label: "Prix souhaité HT", step: 4 },
