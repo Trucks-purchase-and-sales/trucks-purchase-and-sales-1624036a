@@ -545,7 +545,7 @@ type RefState = { loading: boolean; error: boolean; retry: () => void };
  * referential comes back empty it degrades to a free-text input.
  */
 function RefCombobox({
-  value, onChange, options, placeholder, state, emptyPlaceholder, allowCustom, customLabel,
+  value, onChange, options, placeholder, state, emptyPlaceholder, allowCustom, customLabel, disabled,
 }: {
   value: string | null | undefined;
   onChange: (v: string) => void;
@@ -556,7 +556,12 @@ function RefCombobox({
   /** Creatable: lets the seller enter a real brand/model missing from the catalog. */
   allowCustom?: boolean;
   customLabel?: (q: string) => string;
+  /** Dependent selector: disabled until its prerequisite is chosen. */
+  disabled?: boolean;
 }) {
+  if (disabled) {
+    return <Input disabled placeholder={placeholder} />;
+  }
   if (state.loading && options.length === 0) {
     return <Input disabled placeholder="Chargement des référentiels…" />;
   }
@@ -1031,6 +1036,7 @@ function Step3({ opp, set }: { opp: OppState; set: Set }) {
           </Field>
         )}
         <Field label="Entretien à jour ?"><Selector value={opp.maintenance_status} onChange={(v) => set("maintenance_status", v)} options={YES_NO_OPTIONS} /></Field>
+        <Field label="Véhicule accidenté ?" hint="Sinistre déclaré ou réparation structurelle connue."><Selector value={opp.has_accident} onChange={(v) => set("has_accident", v)} options={YES_NO_OPTIONS} /></Field>
         
         <Field label="Carnet d'entretien disponible ?"><Selector value={opp.has_service_book} onChange={(v) => set("has_service_book", v)} options={YES_NO_OPTIONS} /></Field>
         <Field label="Nombre de clés">
