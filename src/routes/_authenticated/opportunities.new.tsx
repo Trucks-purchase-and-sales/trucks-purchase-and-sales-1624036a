@@ -32,7 +32,7 @@ import { useAiFeatures } from "@/hooks/useAiFeatures";
 import {
   AVAILABILITY_OPTIONS, AXLE_CONFIG_OPTIONS, CABIN_OPTIONS, CONDITION_OPTIONS,
   EQUIPMENT_OPTIONS, EU27_CODES, EURO_OPTIONS, FUEL_OPTIONS, GEARBOX_OPTIONS,
-  NEGOTIABLE_OPTIONS, PHOTO_CATEGORIES, REQUIRED_PHOTO_CATEGORIES,
+  NEGOTIABLE_OPTIONS, PHOTO_CATEGORIES, requiredPhotoCategories,
   KEYS_COUNT_OPTIONS, VISIBILITY_OPTIONS,
   SUSPENSION_OPTIONS, YES_NO_OPTIONS, TAIL_LIFT_CONDITION_OPTIONS, missingSubmissionFields,
   categoryProfile,
@@ -272,7 +272,8 @@ function WizardPage() {
       setStep(2); return;
     }
     const covered = new Set(photos.map((p) => p.category));
-    const missingPhotos = REQUIRED_PHOTO_CATEGORIES.filter((c) => !covered.has(c.value));
+    const missingPhotos = requiredPhotoCategories(opp as unknown as Record<string, unknown>)
+      .filter((c) => !covered.has(c.value));
     if (missingPhotos.length > 0) {
       toast.error("Photos obligatoires manquantes", { description: missingPhotos.map((m) => m.label).join(", ") });
       setStep(3); return;
@@ -1299,7 +1300,8 @@ function Step6({ opp, photos, signedUrls, refs }: { opp: OppState; photos: Photo
   const warnings = useMemo(() => {
     const w: string[] = [];
     const covered = new Set(photos.map((p) => p.category).filter(Boolean));
-    const missing = REQUIRED_PHOTO_CATEGORIES.filter((c) => !covered.has(c.value));
+    const missing = requiredPhotoCategories(opp as unknown as Record<string, unknown>)
+      .filter((c) => !covered.has(c.value));
     if (categoryProfile(opp.vehicle_category).powered && opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) w.push("Le motif d'immobilisation est obligatoire lorsque le véhicule ne roule pas.");
     if (opp.technical_inspection_status === "oui" && !opp.inspection_valid_until) w.push("La date de validité du contrôle technique est obligatoire.");
 
