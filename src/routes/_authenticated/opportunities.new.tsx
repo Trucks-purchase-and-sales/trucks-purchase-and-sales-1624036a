@@ -688,6 +688,19 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
     [refs],
   );
 
+  /** Carrosseries available for the selected category (all when no category yet). */
+  const bodyTypeOptions = useMemo(() => {
+    const all = refs?.bodyTypes ?? [];
+    const scoped = opp.vehicle_category
+      ? all.filter((b) => (b.applies_to ?? []).includes(opp.vehicle_category as string))
+      : all;
+    const list = (scoped.length > 0 ? scoped : all).map((b) => ({ value: b.slug, label: b.label_fr }));
+    return opp.body_type && !list.some((o) => o.value === opp.body_type)
+      ? [{ value: opp.body_type, label: opp.body_type }, ...list]
+      : list;
+  }, [refs, opp.vehicle_category, opp.body_type]);
+
+
   return (
     <div className="space-y-6">
       {ai.ocr && (
