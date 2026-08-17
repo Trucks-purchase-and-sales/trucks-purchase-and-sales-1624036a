@@ -468,6 +468,18 @@ function WizardPage() {
         </div>
       </div>
 
+      {(refError || refPartialFailure) && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+            <span>
+              Catalogue indisponible ou incomplet — la saisie libre reste possible, vos informations sont conservées.
+            </span>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => void refRefetch()}>Réessayer</Button>
+        </div>
+      )}
+
       <Card className="border-border/70">
         <CardContent className="p-5 sm:p-8">
           {step === 0 && <Step1 opp={opp} set={set} applyOcr={(f: Partial<OppState>) => setOpp((o) => ({ ...o, ...f }))} refs={refData} refState={refState} />}
