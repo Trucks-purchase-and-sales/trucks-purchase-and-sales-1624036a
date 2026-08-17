@@ -381,6 +381,24 @@ function WizardPage() {
 
   const stepRef = useStepScroll(step);
 
+  if (!gateLoading && gate && !gate.isAdmin && (!gate.hasProfile || gate.kind === null)) {
+    return (
+      <div className="mx-auto max-w-xl py-10">
+        <Card>
+          <CardContent className="space-y-3 p-6 text-sm">
+            <h1 className="text-lg font-semibold">Compte en cours d&apos;initialisation</h1>
+            <p className="text-muted-foreground">
+              Votre profil applicatif n&apos;a pas encore été créé, votre type de compte est donc inconnu.
+              Ce n&apos;est pas une restriction liée à votre rôle : contactez Wilmet pour finaliser
+              l&apos;initialisation de votre compte.
+            </p>
+            <Button variant="outline" onClick={() => navigate({ to: "/dashboard" })}>Retour au tableau de bord</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!gateLoading && gate && !gate.isAdmin && gate.kind !== "seller") {
     return (
       <div className="mx-auto max-w-xl py-10">
