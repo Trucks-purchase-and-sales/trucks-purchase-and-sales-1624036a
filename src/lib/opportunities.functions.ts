@@ -130,7 +130,7 @@ export const submitOpportunity = createServerFn({ method: "POST" })
 
     const { data: current, error: readErr } = await supabase
       .from("vehicle_opportunities")
-      .select("vehicle_runs, not_running_reason, technical_inspection_status, inspection_valid_until, assigned_group, referred_by, referral_code, reference_number, brand, model, vehicle_category, body_type, body_type_other, first_registration_date, mileage, city, country, fuel_type, gross_vehicle_weight, general_condition, desired_price_excl_tax")
+      .select("vehicle_runs, not_running_reason, technical_inspection_status, inspection_valid_until, assigned_group, referred_by, referral_code, reference_number, brand, model, vehicle_category, body_type, body_type_other, first_registration_date, mileage, vin, city, country, visible_on_site, fuel_type, gross_vehicle_weight, general_condition, desired_price_excl_tax, price_negotiable, availability, onsite_contact_name, onsite_contact_phone, defects_and_comments, known_defects")
       .eq("id", data.id)
       .eq("partenaire_id", userId)
       .single();
