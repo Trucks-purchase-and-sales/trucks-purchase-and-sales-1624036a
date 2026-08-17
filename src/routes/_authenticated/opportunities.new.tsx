@@ -546,7 +546,8 @@ type RefState = { loading: boolean; error: boolean; retry: () => void };
  * referential comes back empty it degrades to a free-text input.
  */
 function RefCombobox({
-  value, onChange, options, placeholder, state, emptyPlaceholder, allowCustom, customLabel, disabled, curated,
+  value, onChange, options, placeholder, state, emptyPlaceholder, allowCustom, customLabel, disabled,
+  allowFreeTextFallback = false,
 }: {
   value: string | null | undefined;
   onChange: (v: string) => void;
@@ -559,16 +560,27 @@ function RefCombobox({
   customLabel?: (q: string) => string;
   /** Dependent selector: disabled until its prerequisite is chosen. */
   disabled?: boolean;
-  /** Curated catalogs (catégorie, carrosserie, pays) never degrade to free text. */
-  curated?: boolean;
+  /**
+   * Strict curated lists (catégorie, carrosserie, pays) keep this false: when the
+   * référentiel is empty or failed we show an unavailable state + retry instead of
+   * silently accepting arbitrary text. Brand/model opt in.
+   */
+  allowFreeTextFallback?: boolean;
 }) {
+  // Keep a legacy/stored value selectable even if it is no longer in the catalog.
+  const merged = useMemo(() => {
+    const v = (value ?? "").trim();
+    if (!v || options.some((o) => o.value === v)) return options;
+    return [{ value: v, label: v }, ...options];
+  }, [options, value]);
+
   if (disabled) {
     return <Input disabled placeholder={placeholder} />;
   }
-  if (state.loading && options.length === 0) {
+  if (state.loading && merged.length === 0) {
     return <Input disabled placeholder="Chargement des référentiels…" />;
   }
-  if (options.length === 0 && curated) {
+  if (merged.length === 0 && !allowFreeTextFallback) {
     return (
       <div className="space-y-1.5">
         <Input disabled value={value ?? ""} placeholder="Référentiel indisponible" />
@@ -581,30 +593,30 @@ function RefCombobox({
       </div>
     );
   }
-  if (state.error && options.length === 0) {
+  if (merged.length === 0) {
     return (
       <div className="space-y-1.5">
-        <Input value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={emptyPlaceholder ?? "Saisie libre"} />
-        <button type="button" onClick={state.retry} className="text-[11px] font-medium text-accent underline">
-          Référentiel indisponible — réessayer
-        </button>
+        <Input value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={emptyPlaceholder ?? placeholder} />
+        {state.error && (
+          <button type="button" onClick={state.retry} className="text-[11px] font-medium text-accent underline">
+            Référentiel indisponible — réessayer
+          </button>
+        )}
       </div>
     );
-  }
-  if (options.length === 0) {
-    return <Input value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={emptyPlaceholder ?? placeholder} />;
   }
   return (
     <SearchableCombobox
       value={value ?? undefined}
       onChange={onChange}
-      options={options}
+      options={merged}
       placeholder={placeholder}
       allowCustom={allowCustom}
       {...(customLabel ? { customLabel } : {})}
     />
   );
 }
+
 
 
 function Field({ label, hint, children, action, required }: { label: string; hint?: string; children: React.ReactNode; action?: React.ReactNode; required?: boolean }) {
@@ -822,7 +834,6 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             options={categoryOptions}
             placeholder="Sélectionner une catégorie"
             state={refState}
-            curated
           />
         </Field>
         <Field label="Marque" required hint="Marque absente de la liste ? Saisissez-la, elle sera conservée.">
@@ -834,23 +845,24 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             disabled={!opp.vehicle_category}
             emptyPlaceholder="Saisir la marque"
             state={refState}
+            allowFreeTextFallback
             allowCustom
             customLabel={(q) => `Ajouter la marque « ${q} »`}
           />
         </Field>
         <Field label="Modèle" required hint="Modèle absent de la liste ? Saisissez-le librement.">
-          {modelOptions.length > 0 ? (
-            <SearchableCombobox
-              value={opp.model ?? undefined}
-              onChange={(v) => set("model", v)}
-              options={modelOptions}
-              placeholder="Sélectionner un modèle"
-              allowCustom
-              customLabel={(q) => `Ajouter le modèle « ${q} »`}
-            />
-          ) : (
-            <Input value={opp.model ?? ""} onChange={(e) => set("model", e.target.value)} disabled={!opp.brand} placeholder={opp.brand ? "Saisir le modèle" : "Sélectionnez d'abord une marque"} />
-          )}
+          <RefCombobox
+            value={opp.model}
+            onChange={(v) => set("model", v)}
+            options={modelOptions}
+            placeholder={opp.brand ? "Sélectionner un modèle" : "Sélectionnez d'abord une marque"}
+            emptyPlaceholder="Saisir le modèle"
+            disabled={!opp.brand}
+            state={refState}
+            allowFreeTextFallback
+            allowCustom
+            customLabel={(q) => `Ajouter le modèle « ${q} »`}
+          />
         </Field>
         <Field label="Carrosserie" required hint="Type de carrosserie du véhicule.">
           <RefCombobox
@@ -860,7 +872,6 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             placeholder={opp.vehicle_category ? "Sélectionner une carrosserie" : "Sélectionnez d'abord une catégorie"}
             disabled={!opp.vehicle_category}
             state={refState}
-            curated
           />
         </Field>
         {opp.body_type === "autre" && (
@@ -910,7 +921,6 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             options={countryOptions}
             placeholder="Sélectionner un pays"
             state={refState}
-            curated
           />
         </Field>
 
