@@ -834,6 +834,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             value={opp.first_registration_date}
             onChange={(v) => set("first_registration_date", v)}
             placeholder="Choisir la date"
+            disableFuture
           />
         </Field>
         {profile.hasOdometer && (
