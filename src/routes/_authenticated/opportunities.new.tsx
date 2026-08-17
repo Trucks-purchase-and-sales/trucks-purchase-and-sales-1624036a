@@ -726,6 +726,26 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
       : list;
   }, [refs, opp.vehicle_category, opp.body_type]);
 
+  const profile = categoryProfile(opp.vehicle_category);
+
+  /** Single cascade entry point: changing the category invalidates every dependent value. */
+  function onCategoryChange(v: string) {
+    set("vehicle_category", v);
+    set("brand", null);
+    set("model", null);
+    set("body_type", null);
+    set("body_type_other", null);
+    if (!categoryProfile(v).powered) {
+      // Engine-specific data cannot apply to a trailer: drop stale values.
+      set("fuel_type", null);
+      set("gearbox", null);
+      set("euro_standard", null);
+      set("power", null);
+      set("mileage", null);
+      set("vehicle_runs", null);
+    }
+  }
+
 
   return (
     <div className="space-y-6">
