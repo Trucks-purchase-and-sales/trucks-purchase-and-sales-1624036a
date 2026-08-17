@@ -614,11 +614,15 @@ function DatePickerField({
   value,
   onChange,
   placeholder = "Sélectionner une date",
+  disableFuture = false,
 }: {
   value: string | null | undefined;
   onChange: (v: string | null) => void;
   placeholder?: string;
+  /** A first registration cannot be in the future. */
+  disableFuture?: boolean;
 }) {
+  const endMonth = disableFuture ? new Date() : undefined;
   const [open, setOpen] = useState(false);
 
   const handleSelect = (date: Date | undefined) => {
