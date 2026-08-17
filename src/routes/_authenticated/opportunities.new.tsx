@@ -936,7 +936,7 @@ function Step2({ opp, set, refs }: { opp: OppState; set: Set; refs: Refs }) {
             <Field label="Norme Euro"><Selector value={opp.euro_standard} onChange={(v) => set("euro_standard", v)} options={euroOptions} /></Field>
           </>
         )}
-        <Field label="PTAC" hint="PTAC / poids total autorisé, en tonnes (ex. 3.5, 19, 44).">
+        <Field label="PTAC / poids total autorisé (t)" hint="En tonnes (ex. 3.5, 19, 44).">
           <div className="relative">
             <Input className="pr-8" inputMode="decimal" value={opp.gross_vehicle_weight ?? ""} onChange={(e) => set("gross_vehicle_weight", e.target.value)} placeholder="3.5, 19…" />
             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">t</span>
