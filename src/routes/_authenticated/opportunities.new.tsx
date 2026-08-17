@@ -543,7 +543,7 @@ type RefState = { loading: boolean; error: boolean; retry: () => void };
  * referential comes back empty it degrades to a free-text input.
  */
 function RefCombobox({
-  value, onChange, options, placeholder, state, emptyPlaceholder,
+  value, onChange, options, placeholder, state, emptyPlaceholder, allowCustom, customLabel,
 }: {
   value: string | null | undefined;
   onChange: (v: string) => void;
@@ -551,6 +551,9 @@ function RefCombobox({
   placeholder: string;
   state: RefState;
   emptyPlaceholder?: string;
+  /** Creatable: lets the seller enter a real brand/model missing from the catalog. */
+  allowCustom?: boolean;
+  customLabel?: (q: string) => string;
 }) {
   if (state.loading && options.length === 0) {
     return <Input disabled placeholder="Chargement des référentiels…" />;
@@ -574,6 +577,8 @@ function RefCombobox({
       onChange={onChange}
       options={options}
       placeholder={placeholder}
+      allowCustom={allowCustom}
+      {...(customLabel ? { customLabel } : {})}
     />
   );
 }
