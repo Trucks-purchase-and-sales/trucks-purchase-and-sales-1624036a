@@ -790,7 +790,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
 
       <SectionTitle title="Informations générales" hint="Ces éléments identifient le véhicule." />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Catégorie de véhicule">
+        <Field label="Catégorie de véhicule *">
           <RefCombobox
             value={opp.vehicle_category}
             onChange={(v) => onCategoryChange(v)}
@@ -799,19 +799,20 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             state={refState}
           />
         </Field>
-        <Field label="Marque" hint="Marque absente de la liste ? Saisissez-la, elle sera conservée.">
+        <Field label="Marque *" hint="Marque absente de la liste ? Saisissez-la, elle sera conservée.">
           <RefCombobox
             value={opp.brand}
             onChange={(v) => { set("brand", v); set("model", null); }}
             options={brandOptions}
             placeholder={opp.vehicle_category ? "Sélectionner une marque" : "Sélectionnez d'abord une catégorie"}
+            disabled={!opp.vehicle_category}
             emptyPlaceholder="Saisir la marque"
             state={refState}
             allowCustom
             customLabel={(q) => `Ajouter la marque « ${q} »`}
           />
         </Field>
-        <Field label="Modèle" hint="Modèle absent de la liste ? Saisissez-le librement.">
+        <Field label="Modèle *" hint="Modèle absent de la liste ? Saisissez-le librement.">
           {modelOptions.length > 0 ? (
             <SearchableCombobox
               value={opp.model ?? undefined}
@@ -822,27 +823,28 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
               customLabel={(q) => `Ajouter le modèle « ${q} »`}
             />
           ) : (
-            <Input value={opp.model ?? ""} onChange={(e) => set("model", e.target.value)} placeholder={opp.brand ? "Saisir le modèle" : "Sélectionnez d'abord une marque"} />
+            <Input value={opp.model ?? ""} onChange={(e) => set("model", e.target.value)} disabled={!opp.brand} placeholder={opp.brand ? "Saisir le modèle" : "Sélectionnez d'abord une marque"} />
           )}
         </Field>
-        <Field label="Carrosserie" hint="Type de carrosserie du véhicule.">
+        <Field label="Carrosserie *" hint="Type de carrosserie du véhicule.">
           <RefCombobox
             value={opp.body_type}
             onChange={(v) => { set("body_type", v); if (v !== "autre") set("body_type_other", null); }}
             options={bodyTypeOptions}
-            placeholder="Sélectionner une carrosserie"
+            placeholder={opp.vehicle_category ? "Sélectionner une carrosserie" : "Sélectionnez d'abord une catégorie"}
+            disabled={!opp.vehicle_category}
             emptyPlaceholder="Saisir la carrosserie"
             state={refState}
           />
         </Field>
         {opp.body_type === "autre" && (
-          <Field label="Précisez la carrosserie">
+          <Field label="Précisez la carrosserie *">
             <Input value={opp.body_type_other ?? ""} onChange={(e) => set("body_type_other", e.target.value)} placeholder="ex : porte-conteneurs" />
           </Field>
         )}
 
 
-        <Field label="Date de 1re mise en circulation">
+        <Field label="Date de 1re mise en circulation *">
           <DatePickerField
             value={opp.first_registration_date}
             onChange={(v) => set("first_registration_date", v)}
@@ -851,7 +853,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
           />
         </Field>
         {profile.hasOdometer && (
-          <Field label="Kilométrage (km)" hint="Kilométrage actuel affiché au compteur.">
+          <Field label="Kilométrage (km) *" hint="Kilométrage actuel affiché au compteur.">
             <div className="relative">
               <Input
                 type="number" min={0} max={3000000} step={1000} inputMode="numeric" className="pr-10"
@@ -868,14 +870,14 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
           </Field>
         )}
         <Field label="Immatriculation (optionnel)"><Input value={opp.registration_number ?? ""} onChange={(e) => set("registration_number", e.target.value.toUpperCase())} /></Field>
-        <Field label="Numéro de châssis / VIN (optionnel)"><Input value={opp.vin ?? ""} onChange={(e) => set("vin", e.target.value.toUpperCase())} /></Field>
+        <Field label="Numéro de châssis / VIN *" hint="17 caractères, visible sur la plaque constructeur ou le châssis. Indispensable pour l'expertise Wilmet."><Input value={opp.vin ?? ""} onChange={(e) => set("vin", e.target.value.toUpperCase())} placeholder="ex : VF3XXXXXXXXXXXXXX" /></Field>
       </div>
 
       <SectionTitle title="Localisation du véhicule" />
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Ville"><Input value={opp.city ?? ""} onChange={(e) => set("city", e.target.value)} /></Field>
+        <Field label="Ville *"><Input value={opp.city ?? ""} onChange={(e) => set("city", e.target.value)} /></Field>
         <Field label="Code postal"><Input value={opp.postal_code ?? ""} onChange={(e) => set("postal_code", e.target.value)} /></Field>
-        <Field label="Pays (UE-27)">
+        <Field label="Pays (UE-27) *">
           <RefCombobox
             value={opp.country}
             onChange={(v) => set("country", v)}
@@ -891,7 +893,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
         <Input value={opp.location_url ?? ""} onChange={(e) => set("location_url", e.target.value)} placeholder="https://maps.google.com/…" />
       </Field>
 
-      <Field label="Le véhicule est-il visible sur parc ?">
+      <Field label="Le véhicule est-il visible sur parc ? *">
         <RadioGroup value={opp.visible_on_site ?? ""} onValueChange={(v) => set("visible_on_site", v)} className="flex flex-wrap gap-3">
           {VISIBILITY_OPTIONS.map((o) => (
             <label key={o.value} className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm">
@@ -933,19 +935,19 @@ function Step2({ opp, set, refs }: { opp: OppState; set: Set; refs: Refs }) {
       <div className="grid gap-4 sm:grid-cols-2">
         {profile.powered && (
           <>
-            <Field label="Énergie"><Selector value={opp.fuel_type} onChange={(v) => set("fuel_type", v)} options={fuelOptions} /></Field>
+            <Field label="Énergie *"><Selector value={opp.fuel_type} onChange={(v) => set("fuel_type", v)} options={fuelOptions} /></Field>
             <Field label="Boîte de vitesses"><Selector value={opp.gearbox} onChange={(v) => set("gearbox", v)} options={gearboxOptions} /></Field>
-            <Field label="Puissance"><Input value={opp.power ?? ""} onChange={(e) => set("power", e.target.value)} placeholder="ex : 130 ch" /></Field>
+            <Field label="Puissance" hint="En chevaux (ch) ou kilowatts (kW)."><Input value={opp.power ?? ""} onChange={(e) => set("power", e.target.value)} placeholder="ex : 320 ch / 235 kW" /></Field>
             <Field label="Norme Euro"><Selector value={opp.euro_standard} onChange={(v) => set("euro_standard", v)} options={euroOptions} /></Field>
           </>
         )}
-        <Field label="PTAC / poids total autorisé (t)" hint="En tonnes (ex. 3.5, 19, 44).">
+        <Field label="PTAC / poids total autorisé (t) *" hint="En tonnes (ex. 3.5, 19, 44).">
           <div className="relative">
             <Input className="pr-8" inputMode="decimal" value={opp.gross_vehicle_weight ?? ""} onChange={(e) => set("gross_vehicle_weight", e.target.value)} placeholder="3.5, 19…" />
             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">t</span>
           </div>
         </Field>
-        <Field label="Charge utile"><Input value={opp.payload ?? ""} onChange={(e) => set("payload", e.target.value)} /></Field>
+        <Field label="Charge utile (kg)" hint="En kilogrammes."><Input value={opp.payload ?? ""} onChange={(e) => set("payload", e.target.value)} /></Field>
         <Field label="Configuration essieux"><Selector value={opp.axle_configuration} onChange={(v) => set("axle_configuration", v)} options={AXLE_CONFIG_OPTIONS} /></Field>
         {profile.powered && (
           <Field label="Cabine"><Selector value={opp.cabin_type} onChange={(v) => set("cabin_type", v)} options={CABIN_OPTIONS} /></Field>
@@ -1018,9 +1020,9 @@ function Step3({ opp, set }: { opp: OppState; set: Set }) {
     <div className="space-y-6">
       <SectionTitle title="État du véhicule" hint="Soyez précis sur les défauts visibles ou connus. Une description transparente permet à Wilmet de vous répondre plus rapidement." />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="État général"><Selector value={opp.general_condition} onChange={(v) => set("general_condition", v)} options={conditionOptions} /></Field>
+        <Field label="État général *"><Selector value={opp.general_condition} onChange={(v) => set("general_condition", v)} options={conditionOptions} /></Field>
         {categoryProfile(opp.vehicle_category).powered && (
-          <Field label="Le véhicule roule-t-il ?"><Selector value={opp.vehicle_runs} onChange={(v) => set("vehicle_runs", v)} options={YES_NO_OPTIONS} /></Field>
+          <Field label="Le véhicule roule-t-il ? *"><Selector value={opp.vehicle_runs} onChange={(v) => set("vehicle_runs", v)} options={YES_NO_OPTIONS} /></Field>
         )}
         <Field label="Contrôle technique valide ?"><Selector value={opp.technical_inspection_status} onChange={(v) => set("technical_inspection_status", v)} options={YES_NO_OPTIONS} /></Field>
         {opp.technical_inspection_status === "oui" && (
@@ -1272,7 +1274,7 @@ function Step5({ opp, set }: { opp: OppState; set: Set }) {
     <div className="space-y-6">
       <SectionTitle title="Prix & disponibilité" />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Prix souhaité HT (en euros €)" hint="Montant hors taxes, en euros. Wilmet pourra revenir vers vous avec une proposition ajustée.">
+        <Field label="Prix souhaité HT (en euros €) *" hint="Montant hors taxes, en euros. Wilmet pourra revenir vers vous avec une proposition ajustée.">
           <div className="relative">
             <Input
               type="number" min={0} max={2000000} step={100} inputMode="decimal" className="pr-9"
@@ -1287,8 +1289,8 @@ function Step5({ opp, set }: { opp: OppState; set: Set }) {
             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">€</span>
           </div>
         </Field>
-        <Field label="Prix négociable ?"><Selector value={opp.price_negotiable} onChange={(v) => set("price_negotiable", v)} options={NEGOTIABLE_OPTIONS} /></Field>
-        <Field label="Disponibilité"><Selector value={opp.availability} onChange={(v) => set("availability", v)} options={AVAILABILITY_OPTIONS} /></Field>
+        <Field label="Prix négociable ? *"><Selector value={opp.price_negotiable} onChange={(v) => set("price_negotiable", v)} options={NEGOTIABLE_OPTIONS} /></Field>
+        <Field label="Disponibilité *"><Selector value={opp.availability} onChange={(v) => set("availability", v)} options={AVAILABILITY_OPTIONS} /></Field>
         <Field label="Libre de tout gage ?" hint="Aucun gage, crédit-bail ou nantissement en cours sur le véhicule."><Selector value={opp.free_of_pledge} onChange={(v) => set("free_of_pledge", v)} options={YES_NO_OPTIONS} /></Field>
 
       </div>
@@ -1297,8 +1299,8 @@ function Step5({ opp, set }: { opp: OppState; set: Set }) {
       </Field>
       <SectionTitle title="Contact sur place" />
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Nom"><Input value={opp.onsite_contact_name ?? ""} onChange={(e) => set("onsite_contact_name", e.target.value)} /></Field>
-        <Field label="Téléphone"><Input type="tel" value={opp.onsite_contact_phone ?? ""} onChange={(e) => set("onsite_contact_phone", e.target.value)} /></Field>
+        <Field label="Nom *"><Input value={opp.onsite_contact_name ?? ""} onChange={(e) => set("onsite_contact_name", e.target.value)} /></Field>
+        <Field label="Téléphone *"><Input type="tel" value={opp.onsite_contact_phone ?? ""} onChange={(e) => set("onsite_contact_phone", e.target.value)} /></Field>
         <Field label="Email (optionnel)"><Input type="email" value={opp.onsite_contact_email ?? ""} onChange={(e) => set("onsite_contact_email", e.target.value)} /></Field>
       </div>
     </div>
