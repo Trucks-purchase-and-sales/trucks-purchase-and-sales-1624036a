@@ -153,10 +153,14 @@ function WizardPage() {
     queryFn: async () => {
       const [{ data: roles }, { data: prof }] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", userId),
-        supabase.from("profiles").select("partner_kind").eq("id", userId).maybeSingle(),
+        supabase.from("profiles").select("id, partner_kind").eq("id", userId).maybeSingle(),
       ]);
       const isAdmin = (roles ?? []).some((r) => r.role === "admin" || r.role === "platform_admin");
-      return { isAdmin, kind: (prof?.partner_kind ?? null) as "client" | "seller" | null };
+      return {
+        isAdmin,
+        hasProfile: !!prof,
+        kind: (prof?.partner_kind ?? null) as "client" | "seller" | null,
+      };
     },
     staleTime: 60_000,
   });
