@@ -834,7 +834,6 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             options={categoryOptions}
             placeholder="Sélectionner une catégorie"
             state={refState}
-            curated
           />
         </Field>
         <Field label="Marque" required hint="Marque absente de la liste ? Saisissez-la, elle sera conservée.">
@@ -846,23 +845,24 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             disabled={!opp.vehicle_category}
             emptyPlaceholder="Saisir la marque"
             state={refState}
+            allowFreeTextFallback
             allowCustom
             customLabel={(q) => `Ajouter la marque « ${q} »`}
           />
         </Field>
         <Field label="Modèle" required hint="Modèle absent de la liste ? Saisissez-le librement.">
-          {modelOptions.length > 0 ? (
-            <SearchableCombobox
-              value={opp.model ?? undefined}
-              onChange={(v) => set("model", v)}
-              options={modelOptions}
-              placeholder="Sélectionner un modèle"
-              allowCustom
-              customLabel={(q) => `Ajouter le modèle « ${q} »`}
-            />
-          ) : (
-            <Input value={opp.model ?? ""} onChange={(e) => set("model", e.target.value)} disabled={!opp.brand} placeholder={opp.brand ? "Saisir le modèle" : "Sélectionnez d'abord une marque"} />
-          )}
+          <RefCombobox
+            value={opp.model}
+            onChange={(v) => set("model", v)}
+            options={modelOptions}
+            placeholder={opp.brand ? "Sélectionner un modèle" : "Sélectionnez d'abord une marque"}
+            emptyPlaceholder="Saisir le modèle"
+            disabled={!opp.brand}
+            state={refState}
+            allowFreeTextFallback
+            allowCustom
+            customLabel={(q) => `Ajouter le modèle « ${q} »`}
+          />
         </Field>
         <Field label="Carrosserie" required hint="Type de carrosserie du véhicule.">
           <RefCombobox
@@ -872,7 +872,6 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             placeholder={opp.vehicle_category ? "Sélectionner une carrosserie" : "Sélectionnez d'abord une catégorie"}
             disabled={!opp.vehicle_category}
             state={refState}
-            curated
           />
         </Field>
         {opp.body_type === "autre" && (
@@ -922,7 +921,6 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
             options={countryOptions}
             placeholder="Sélectionner un pays"
             state={refState}
-            curated
           />
         </Field>
 
