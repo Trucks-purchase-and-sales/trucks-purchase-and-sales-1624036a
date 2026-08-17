@@ -249,7 +249,15 @@ function WizardPage() {
   }
 
   async function submitAll() {
+    const missingFields = missingSubmissionFields(opp as unknown as Record<string, unknown>);
+    if (missingFields.length > 0) {
+      toast.error("Informations obligatoires manquantes", {
+        description: missingFields.map((f) => f.label).join(", "),
+      });
+      setStep(missingFields[0].step); return;
+    }
     if (opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) {
+
       toast.error("Motif d'immobilisation obligatoire", { description: "Précisez pourquoi le véhicule ne roule pas (étape 3)." });
       setStep(2); return;
     }
