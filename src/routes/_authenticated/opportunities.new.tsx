@@ -763,6 +763,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
       set("power", null);
       set("mileage", null);
       set("vehicle_runs", null);
+      set("not_running_reason", null);
     }
   }
 
