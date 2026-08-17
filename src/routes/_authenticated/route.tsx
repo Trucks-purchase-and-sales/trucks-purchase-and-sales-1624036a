@@ -37,7 +37,7 @@ function AuthedLayout() {
     },
     staleTime: 60_000,
   });
-  const { data: profile } = useQuery({
+  const { data: profile, isSuccess: profileLoaded } = useQuery({
     queryKey: ["partner_kind", userId],
     queryFn: async () => {
       const { data } = await supabase
@@ -49,6 +49,7 @@ function AuthedLayout() {
     },
     staleTime: 60_000,
   });
+  const profileMissing = profileLoaded && profile === null;
   const partnerKind = (profile?.partner_kind ?? null) as "client" | "seller" | null;
   const staffScope = (profile?.staff_scope ?? "both") as "purchase" | "sales" | "both";
   const isExternalStaff = (profile as { is_external?: boolean } | null)?.is_external === true;
@@ -69,6 +70,21 @@ function AuthedLayout() {
     return (
       <div className="grid min-h-screen place-items-center p-6 text-center text-sm text-muted-foreground">
         Votre compte a été désactivé. Contactez l&apos;administrateur.
+      </div>
+    );
+  }
+
+  // Auth user exists but no application profile row: do not treat as a normal account.
+  if (profileMissing) {
+    return (
+      <div className="grid min-h-screen place-items-center p-6">
+        <div className="max-w-md space-y-3 text-center text-sm">
+          <h1 className="text-lg font-semibold">Compte en cours d&apos;initialisation</h1>
+          <p className="text-muted-foreground">
+            Votre profil applicatif est introuvable. Votre compte n&apos;a pas été initialisé correctement.
+            Contactez l&apos;administrateur pour le finaliser.
+          </p>
+        </div>
       </div>
     );
   }

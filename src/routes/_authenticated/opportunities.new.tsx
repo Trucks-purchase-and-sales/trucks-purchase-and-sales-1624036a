@@ -153,10 +153,14 @@ function WizardPage() {
     queryFn: async () => {
       const [{ data: roles }, { data: prof }] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", userId),
-        supabase.from("profiles").select("partner_kind").eq("id", userId).maybeSingle(),
+        supabase.from("profiles").select("id, partner_kind").eq("id", userId).maybeSingle(),
       ]);
       const isAdmin = (roles ?? []).some((r) => r.role === "admin" || r.role === "platform_admin");
-      return { isAdmin, kind: (prof?.partner_kind ?? null) as "client" | "seller" | null };
+      return {
+        isAdmin,
+        hasProfile: !!prof,
+        kind: (prof?.partner_kind ?? null) as "client" | "seller" | null,
+      };
     },
     staleTime: 60_000,
   });
@@ -376,6 +380,24 @@ function WizardPage() {
   const progress = ((step + 1) / STEPS.length) * 100;
 
   const stepRef = useStepScroll(step);
+
+  if (!gateLoading && gate && !gate.isAdmin && (!gate.hasProfile || gate.kind === null)) {
+    return (
+      <div className="mx-auto max-w-xl py-10">
+        <Card>
+          <CardContent className="space-y-3 p-6 text-sm">
+            <h1 className="text-lg font-semibold">Compte en cours d&apos;initialisation</h1>
+            <p className="text-muted-foreground">
+              Votre profil applicatif n&apos;a pas encore été créé, votre type de compte est donc inconnu.
+              Ce n&apos;est pas une restriction liée à votre rôle : contactez Wilmet pour finaliser
+              l&apos;initialisation de votre compte.
+            </p>
+            <Button variant="outline" onClick={() => navigate({ to: "/dashboard" })}>Retour au tableau de bord</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!gateLoading && gate && !gate.isAdmin && gate.kind !== "seller") {
     return (
