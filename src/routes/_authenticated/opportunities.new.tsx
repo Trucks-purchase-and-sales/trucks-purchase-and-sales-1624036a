@@ -659,9 +659,7 @@ function DatePickerField({
           captionLayout="dropdown"
           startMonth={minDate ?? new Date(1950, 0)}
           endMonth={upper ?? new Date(new Date().getFullYear() + 1, 11)}
-          {...(minDate || upper
-            ? { disabled: { ...(minDate ? { before: minDate } : {}), ...(upper ? { after: upper } : {}) } }
-            : {})}
+          {...(disabledMatchers.length ? { disabled: disabledMatchers } : {})}
           className="p-3 pointer-events-auto"
         />
       </PopoverContent>
