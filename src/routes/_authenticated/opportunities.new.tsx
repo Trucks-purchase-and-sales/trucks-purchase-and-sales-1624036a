@@ -187,7 +187,11 @@ function WizardPage() {
   const reorderFn = useServerFn(reorderPhotos);
 
   const refFn = useServerFn(getReferenceData);
-  const { data: refData } = useQuery({ queryKey: ["reference-data"], queryFn: () => refFn() });
+  const {
+    data: refData, isLoading: refLoading, isError: refError, refetch: refRefetch,
+  } = useQuery({ queryKey: ["reference-data"], queryFn: () => refFn() });
+  const refState: RefState = { loading: refLoading, error: refError, retry: () => { void refRefetch(); } };
+
 
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
 
