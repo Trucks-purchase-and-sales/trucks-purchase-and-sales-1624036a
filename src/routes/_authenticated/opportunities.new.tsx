@@ -962,7 +962,7 @@ function Step2({ opp, set, refs }: { opp: OppState; set: Set; refs: Refs }) {
         {profile.powered && (
           <>
             <Field label="Énergie" required><Selector value={opp.fuel_type} onChange={(v) => set("fuel_type", v)} options={fuelOptions} /></Field>
-            <Field label="Boîte de vitesses"><Selector value={opp.gearbox} onChange={(v) => set("gearbox", v)} options={gearboxOptions} /></Field>
+            <Field label="Boîte de vitesses" required><Selector value={opp.gearbox} onChange={(v) => set("gearbox", v)} options={gearboxOptions} /></Field>
             <Field label="Puissance" hint="En chevaux (ch) ou kilowatts (kW)."><Input value={opp.power ?? ""} onChange={(e) => set("power", e.target.value)} placeholder="ex : 320 ch / 235 kW" /></Field>
             <Field label="Norme Euro"><Selector value={opp.euro_standard} onChange={(v) => set("euro_standard", v)} options={euroOptions} /></Field>
           </>
@@ -983,17 +983,25 @@ function Step2({ opp, set, refs }: { opp: OppState; set: Set; refs: Refs }) {
         <Field label="Dimension des pneus" hint="ex : 315/70 R22.5"><Input value={opp.tyre_size ?? ""} onChange={(e) => set("tyre_size", e.target.value)} /></Field>
       </div>
 
-      <SectionTitle title="Dimensions intérieures (caisse / benne)" hint="Toutes les dimensions sont en millimètres (mm)." />
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Hauteur intérieure (mm)"><Input type="number" min={0} value={opp.box_height_mm ?? ""} onChange={(e) => set("box_height_mm", e.target.value ? parseInt(e.target.value) : null)} /></Field>
-        <Field label="Largeur intérieure (mm)"><Input type="number" min={0} value={opp.box_width_mm ?? ""} onChange={(e) => set("box_width_mm", e.target.value ? parseInt(e.target.value) : null)} /></Field>
-        <Field label="Longueur intérieure (mm)"><Input type="number" min={0} value={opp.box_depth_mm ?? ""} onChange={(e) => set("box_depth_mm", e.target.value ? parseInt(e.target.value) : null)} /></Field>
-      </div>
+      {profile.hasBody && (
+        <>
+          <SectionTitle title="Dimensions intérieures (caisse / benne)" hint="Toutes les dimensions sont en millimètres (mm)." />
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Hauteur intérieure (mm)"><Input type="number" min={0} value={opp.box_height_mm ?? ""} onChange={(e) => set("box_height_mm", e.target.value ? parseInt(e.target.value) : null)} /></Field>
+            <Field label="Largeur intérieure (mm)"><Input type="number" min={0} value={opp.box_width_mm ?? ""} onChange={(e) => set("box_width_mm", e.target.value ? parseInt(e.target.value) : null)} /></Field>
+            <Field label="Longueur intérieure (mm)"><Input type="number" min={0} value={opp.box_depth_mm ?? ""} onChange={(e) => set("box_depth_mm", e.target.value ? parseInt(e.target.value) : null)} /></Field>
+          </div>
+        </>
+      )}
 
       <SectionTitle title="Équipements" hint="Confort, levage puis équipements complémentaires." />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Climatisation"><Selector value={opp.has_air_conditioning} onChange={(v) => set("has_air_conditioning", v)} options={YES_NO_OPTIONS} /></Field>
-        <Field label="Chauffage additionnel"><Selector value={opp.has_heating} onChange={(v) => set("has_heating", v)} options={YES_NO_OPTIONS} /></Field>
+        {profile.hasCabin && (
+          <>
+            <Field label="Climatisation"><Selector value={opp.has_air_conditioning} onChange={(v) => set("has_air_conditioning", v)} options={YES_NO_OPTIONS} /></Field>
+            <Field label="Chauffage additionnel"><Selector value={opp.has_heating} onChange={(v) => set("has_heating", v)} options={YES_NO_OPTIONS} /></Field>
+          </>
+        )}
         <Field label="Crochet / attelage hydraulique"><Selector value={opp.has_hydraulic_hook} onChange={(v) => set("has_hydraulic_hook", v)} options={YES_NO_OPTIONS} /></Field>
         <Field label="Grue"><Selector value={opp.has_crane} onChange={(v) => set("has_crane", v)} options={YES_NO_OPTIONS} /></Field>
       </div>
