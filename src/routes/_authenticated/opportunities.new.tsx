@@ -189,7 +189,13 @@ function WizardPage() {
   const refFn = useServerFn(getReferenceData);
   const {
     data: refData, isLoading: refLoading, isError: refError, refetch: refRefetch,
-  } = useQuery({ queryKey: ["reference-data"], queryFn: () => refFn() });
+  } = useQuery({
+    queryKey: ["reference-data"],
+    queryFn: () => refFn(),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+  const refPartialFailure = (refData?.failed?.length ?? 0) > 0;
   const refState: RefState = { loading: refLoading, error: refError, retry: () => { void refRefetch(); } };
 
 
