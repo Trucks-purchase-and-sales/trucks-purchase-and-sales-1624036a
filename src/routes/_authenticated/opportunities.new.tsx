@@ -887,18 +887,41 @@ function Step2({ opp, set, refs }: { opp: OppState; set: Set; refs: Refs }) {
     const fromRef = (refs?.euroStandards ?? []).map((e) => ({ value: e.slug, label: e.label }));
     return fromRef.length > 0 ? fromRef : EURO_OPTIONS;
   }, [refs]);
+  const fuelOptions = useMemo(() => {
+    const fromRef = (refs?.fuelTypes ?? []).map((f) => ({ value: f.slug, label: f.label_fr }));
+    return fromRef.length > 0 ? fromRef : FUEL_OPTIONS;
+  }, [refs]);
+  const gearboxOptions = useMemo(() => {
+    const fromRef = (refs?.gearboxTypes ?? []).map((g) => ({ value: g.slug, label: g.label_fr }));
+    return fromRef.length > 0 ? fromRef : GEARBOX_OPTIONS;
+  }, [refs]);
+  const profile = categoryProfile(opp.vehicle_category);
   return (
     <div className="space-y-6">
-      <SectionTitle title="Caractéristiques" />
+      <SectionTitle
+        title="Caractéristiques"
+        hint={profile.powered ? undefined : "Catégorie non motorisée : les champs moteur ne sont pas demandés."}
+      />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Énergie"><Selector value={opp.fuel_type} onChange={(v) => set("fuel_type", v)} options={FUEL_OPTIONS} /></Field>
-        <Field label="Boîte de vitesses"><Selector value={opp.gearbox} onChange={(v) => set("gearbox", v)} options={GEARBOX_OPTIONS} /></Field>
-        <Field label="Puissance"><Input value={opp.power ?? ""} onChange={(e) => set("power", e.target.value)} placeholder="ex : 130 ch" /></Field>
-        <Field label="Norme Euro"><Selector value={opp.euro_standard} onChange={(v) => set("euro_standard", v)} options={euroOptions} /></Field>
-        <Field label="PTAC"><Input value={opp.gross_vehicle_weight ?? ""} onChange={(e) => set("gross_vehicle_weight", e.target.value)} placeholder="3.5 t, 19 t…" /></Field>
+        {profile.powered && (
+          <>
+            <Field label="Énergie"><Selector value={opp.fuel_type} onChange={(v) => set("fuel_type", v)} options={fuelOptions} /></Field>
+            <Field label="Boîte de vitesses"><Selector value={opp.gearbox} onChange={(v) => set("gearbox", v)} options={gearboxOptions} /></Field>
+            <Field label="Puissance"><Input value={opp.power ?? ""} onChange={(e) => set("power", e.target.value)} placeholder="ex : 130 ch" /></Field>
+            <Field label="Norme Euro"><Selector value={opp.euro_standard} onChange={(v) => set("euro_standard", v)} options={euroOptions} /></Field>
+          </>
+        )}
+        <Field label={`${profile.weightLabel} (t)`} hint="Poids total autorisé, en tonnes.">
+          <div className="relative">
+            <Input className="pr-8" inputMode="decimal" value={opp.gross_vehicle_weight ?? ""} onChange={(e) => set("gross_vehicle_weight", e.target.value)} placeholder="3.5, 19…" />
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">t</span>
+          </div>
+        </Field>
         <Field label="Charge utile"><Input value={opp.payload ?? ""} onChange={(e) => set("payload", e.target.value)} /></Field>
         <Field label="Configuration essieux"><Selector value={opp.axle_configuration} onChange={(v) => set("axle_configuration", v)} options={AXLE_CONFIG_OPTIONS} /></Field>
-        <Field label="Cabine"><Selector value={opp.cabin_type} onChange={(v) => set("cabin_type", v)} options={CABIN_OPTIONS} /></Field>
+        {profile.powered && (
+          <Field label="Cabine"><Selector value={opp.cabin_type} onChange={(v) => set("cabin_type", v)} options={CABIN_OPTIONS} /></Field>
+        )}
         <Field label="Empattement (mm)"><Input type="number" min={0} value={opp.wheelbase_mm ?? ""} onChange={(e) => set("wheelbase_mm", e.target.value ? parseInt(e.target.value) : null)} /></Field>
         <Field label="Type de suspension"><Selector value={opp.suspension_type} onChange={(v) => set("suspension_type", v)} options={SUSPENSION_OPTIONS} /></Field>
         <Field label="Dimension des pneus" hint="ex : 315/70 R22.5"><Input value={opp.tyre_size ?? ""} onChange={(e) => set("tyre_size", e.target.value)} /></Field>
