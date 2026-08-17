@@ -299,22 +299,41 @@ export const PHOTO_CATEGORIES: {
 export const REQUIRED_PHOTO_CATEGORIES = PHOTO_CATEGORIES.filter((c) => c.required);
 
 /**
+ * Category relevance: a semi-remorque / remorque has no engine and no odometer,
+ * so engine-specific fields are neither displayed nor required for them.
+ * Unknown categories default to "powered" so nothing is ever silently skipped.
+ */
+export type CategoryProfile = { powered: boolean; hasOdometer: boolean; weightLabel: string };
+
+const NON_POWERED_CATEGORIES = new Set(["semi_remorque", "remorque", "semi-remorque"]);
+
+export function categoryProfile(slug?: string | null): CategoryProfile {
+  if (slug && NON_POWERED_CATEGORIES.has(slug)) {
+    return { powered: false, hasOdometer: false, weightLabel: "PTC" };
+  }
+  return { powered: true, hasOdometer: true, weightLabel: "PTAC" };
+}
+
+/**
  * Business minimum enforced at FINAL SUBMISSION only (drafts stay permissive).
  * `step` is the 0-based wizard step the user is sent back to.
+ * `appliesTo` scopes a field to the categories where it makes sense.
  */
-export const SUBMISSION_REQUIRED_FIELDS: { key: string; label: string; step: number }[] = [
+export const SUBMISSION_REQUIRED_FIELDS: {
+  key: string; label: string; step: number; appliesTo?: (p: CategoryProfile) => boolean;
+}[] = [
   { key: "vehicle_category", label: "Catégorie de véhicule", step: 0 },
   { key: "brand", label: "Marque", step: 0 },
   { key: "model", label: "Modèle", step: 0 },
   { key: "body_type", label: "Carrosserie", step: 0 },
   { key: "first_registration_date", label: "Date de 1re mise en circulation", step: 0 },
-  { key: "mileage", label: "Kilométrage", step: 0 },
+  { key: "mileage", label: "Kilométrage", step: 0, appliesTo: (p) => p.hasOdometer },
   { key: "city", label: "Ville", step: 0 },
   { key: "country", label: "Pays", step: 0 },
-  { key: "fuel_type", label: "Énergie", step: 1 },
-  { key: "gross_vehicle_weight", label: "PTAC", step: 1 },
+  { key: "fuel_type", label: "Énergie", step: 1, appliesTo: (p) => p.powered },
+  { key: "gross_vehicle_weight", label: "PTAC / PTC", step: 1 },
   { key: "general_condition", label: "État général", step: 2 },
-  { key: "vehicle_runs", label: "Véhicule roulant", step: 2 },
+  { key: "vehicle_runs", label: "Véhicule roulant", step: 2, appliesTo: (p) => p.powered },
   { key: "desired_price_excl_tax", label: "Prix souhaité HT", step: 4 },
 ];
 
@@ -322,12 +341,14 @@ export const SUBMISSION_REQUIRED_FIELDS: { key: string; label: string; step: num
 export function missingSubmissionFields(
   rec: Record<string, unknown>,
 ): { key: string; label: string; step: number }[] {
+  const profile = categoryProfile(rec["vehicle_category"] as string | null | undefined);
   const missing = SUBMISSION_REQUIRED_FIELDS.filter((f) => {
+    if (f.appliesTo && !f.appliesTo(profile)) return false;
     const v = rec[f.key];
     if (v === null || v === undefined) return true;
     if (typeof v === "string") return v.trim() === "";
     return false;
-  });
+  }).map(({ key, label, step }) => ({ key, label, step }));
   if (rec["body_type"] === "autre" && !String(rec["body_type_other"] ?? "").trim()) {
     missing.push({ key: "body_type_other", label: "Précision carrosserie « Autre »", step: 0 });
   }
