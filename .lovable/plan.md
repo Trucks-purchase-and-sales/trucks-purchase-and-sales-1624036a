@@ -1,122 +1,152 @@
-# FIND-002 — Reference data seeding + form completeness
+# FIND-002 — Seller vehicle-proposal wizard: completeness, relevance, reliability
 
-## Root cause
+## Verified current state
 
-Verified by direct database counts: all eleven `ref_*` tables contain **0 rows**
-(`ref_vehicle_categories`, `ref_vehicle_brands`, `ref_category_brands`, `ref_vehicle_models`,
-`ref_vehicle_types`, `ref_fuel_types`, `ref_gearbox_types`, `ref_euro_standards`,
-`ref_body_types`, `ref_countries`, `ref_equipment`).
+Checked directly against the database and the code before writing this plan.
 
-The wizard reads them through `getReferenceData()`, so:
+- Reference tables are populated and readable with the public key. A direct REST read of
+  `ref_vehicle_brands` and `ref_vehicle_categories` with the publishable key returns rows, both
+  with and without an `Authorization: Bearer` header. So the opaque-key handling is **not** a
+  confirmed root cause of empty selectors; the earlier emptiness came from the tables being empty
+  before seeding. Categories in DB: `utilitaire`, `camion_porteur`, `tracteur_routier`,
+  `semi_remorque`, `remorque`, `engin_special`.
+- `src/lib/reference-data.functions.ts` still maps every result with `data ?? []`, so a genuine
+  query failure (RLS change, network, bad key) is indistinguishable from an empty catalog. That is
+  a real reliability defect even though it is not today's cause.
+- `body_type` / `body_type_other` **are** already rendered in Step 1 with `applies_to` filtering and
+  an "Autre" free-text follow-up, and category change already resets brand/model/body_type. The
+  stated gap no longer exists; this plan verifies rather than re-implements it.
+- `missingSubmissionFields()` in `src/lib/wilmet-constants.ts` is already the single source of truth
+  and is called both client-side (`submitAll`) and server-side (`submitOpportunity`).
 
-- Category, brand and country comboboxes render with an empty list and no explanation.
-- Category → brand → model cascading cannot work (no `ref_category_brands` rows).
-- Country picker filters on EU-27 against an empty table, so no country can be chosen.
+## Real remaining defects
 
-Two other verified defects:
+1. **Silent reference failures.** `data ?? []` hides errors; `getReferenceData` cannot report a
+   partial failure, so a broken table degrades to "no options" with no signal.
+2. **Category-blind required fields.** `SUBMISSION_REQUIRED_FIELDS` demands `fuel_type`, `mileage`
+   and `gross_vehicle_weight` from every category. A `semi_remorque` / `remorque` has no engine and
+   no odometer, so a seller of a trailer is blocked by fields that do not exist for the asset.
+3. **Engine fields shown for non-powered assets.** Step 2 renders Énergie, Boîte, Norme Euro,
+   puissance for trailers as well.
+4. **Hard-coded lists where a referential exists.** Énergie and Boîte read `FUEL_OPTIONS` /
+   `GEARBOX_OPTIONS` constants while `ref_fuel_types` and `ref_gearbox_types` are seeded; Euro
+   already reads the referential. This is the inconsistency to close.
+5. **Weak numeric input constraints.** `mileage` has only `min=0`; `gross_vehicle_weight` is a free
+   text string ("3.5 t, 19 t…"), price has no bound; no unit suffixes on several numeric fields.
+6. **No visible retry affordance at catalog level.** `RefCombobox` handles per-field fallback, but
+   there is no single banner telling the seller the catalog failed and offering one retry.
+7. **No test tooling.** Repo has no vitest/jest; only `eslint` and TypeScript.
 
-- `PHOTO_CATEGORIES` in `src/lib/wilmet-constants.ts` defines no entry with `required: true`,
-  so `REQUIRED_PHOTO_CATEGORIES` is `[]` and both the client check and the server check in
-  `submitOpportunity` pass trivially. The Aug 9 plan explicitly requires the manufacturer
-  plate / VIN photo. Note: the dashboard photo category was already consolidated into a single
-  `tableau_de_bord` labelled "Tableau de bord avec moteur allumé", so no new enum value is needed.
-- `body_type` / `body_type_other` exist in the DB and in the wizard state type, but the wizard
-  renders no carrosserie selector.
+## Planned changes
 
-## Migration — idempotent reference seeding
+### 1. Reference-data loading, honest errors
 
-One migration, all statements `INSERT ... ON CONFLICT (pk) DO UPDATE` so re-running is safe and
-never duplicates. No schema change, no RLS or GRANT change.
+`src/lib/reference-data.functions.ts`:
+- Keep the publishable server client, but align its fetch with `client.server.ts`: send `apikey`
+  and drop a `Bearer <opaque key>` Authorization header, so the function is immune to key-format
+  changes.
+- Collect per-table errors instead of swallowing them. Return
+  `{ ...lists, failed: string[] }`. If **every** table errors, throw so the query enters an error
+  state; if some fail, return the good lists plus `failed` so the UI can warn precisely.
 
-- **Categories** (`ref_vehicle_categories`): utilitaire, camion-porteur, tracteur-routier,
-  semi-remorque, remorque, engin/matériel spécifique.
-- **Vehicle types** (`ref_vehicle_types`): aligned with the existing `vehicle_type` DB enum values
-  only (utilitaire, camion_porteur, tracteur_routier, semi_remorque, remorque, benne,
-  frigorifique, plateau, fourgon, autre) so stored values stay enum-compatible.
-- **Brands** (`ref_vehicle_brands`): established European players —
-  Mercedes-Benz, MAN, Scania, Volvo, DAF, Iveco, Renault (Renault Trucks merged in, per the
-  Aug 3 plan), Ford Trucks, Fiat, Peugeot, Citroën, Opel, Nissan, Toyota, Volkswagen,
-  Isuzu, Mitsubishi Fuso, plus trailer makers Schmitz Cargobull, Krone, Kögel, Lecitrailer,
-  Fruehauf, Chereau, Benalu, Samro, Wielton, Berger, Legras, Autre.
-- **Category → brand** (`ref_category_brands`): LCV brands mapped to `utilitaire`; truck brands to
-  porteur/tracteur; trailer brands to semi-remorque/remorque. `Autre` is mapped to every category
-  as a safety valve.
-- **Models** (`ref_vehicle_models`): a realistic, non-exhaustive set per brand (e.g. Actros,
-  Atego, Axor, Sprinter, Vito; TGX, TGS, TGL, TGM; R-Series, S-Series, P-Series; FH, FM, FL;
-  XF, CF, LF; Stralis, S-Way, Eurocargo, Daily; T, D, Master, Trafic, Kangoo; Transit,
-  Ducato, Boxer, Jumper, Crafter, Movano, Sprinter …). The UI keeps a free-text fallback when the
-  brand has no models, so gaps never block a seller.
-- **Body types** (`ref_body_types`) with `applies_to`: exact Aug 3 business lists.
-  - Porteur: Fourgon, Frigo, Tautliner, Benne, Plateau, Ampliroll, Châssis, BDF, Citerne,
-    Malaxeur, Porte-engins, Porte-voitures, Nacelle, Dépannage, Grumier, BOM, Balayeuse,
-    Aspirateur, Transport animal, Porte-boissons, Autre.
-  - Semi-remorque: Fourgon, Frigo, Tautliner, Benne, Plateau, Citerne, Autre.
-  - Shared slugs get `applies_to` containing both categories.
-- **Fuel** (`ref_fuel_types`) and **gearbox** (`ref_gearbox_types`): slugs identical to the
-  `fuel_type` and `gearbox` DB enums (diesel/essence/electrique/hybride/gnv/autre;
-  manuelle/automatique — `robotisee` intentionally omitted per the Aug 3 plan).
-- **Euro standards** (`ref_euro_standards`): euro_3, euro_4, euro_5, euro_6 only.
-- **Countries** (`ref_countries`): the full EU-27 with FR/EN names, France/Belgium/Netherlands/
-  Germany/Spain/Italy given higher priority for ordering.
-- **Equipment** (`ref_equipment`): only items not already covered by a dedicated field —
-  groupe froid, GPS, caméra de recul, régulateur de vitesse, ralentisseur, attelage remorque,
-  double couchette, boîte à outils, essieu relevable, roue de secours, chariot embarqué.
+`opportunities.new.tsx`:
+- Add a `staleTime` (5 min) and `retry: 1` on the `reference-data` query.
+- Render a single dismissible banner above the wizard steps when `refState.error` or
+  `failed.length > 0`: "Catalogue indisponible — la saisie libre reste possible" + a **Réessayer**
+  button wired to `refetch`. Per-field `RefCombobox` fallback behaviour stays as-is.
 
-## Form changes
+### 2. Dependent selects and stale resets
 
-### New field — Carrosserie
+Centralise the cascade in one helper (`applyCategoryChange`, `applyBrandChange`) instead of inline
+`set(...)` chains, so every reset path is identical:
+- Category change → clear `brand`, `model`, `body_type`, `body_type_other`, and any
+  category-irrelevant technical values (see §3).
+- Brand change → clear `model` only.
+- Body type change away from `autre` → clear `body_type_other`.
+- Keep the existing "unknown current value is kept as a selectable option" behaviour so old drafts
+  (e.g. literal "Renault Trucks") never lose their value.
+- Model stays a combobox with free-text fallback when the brand has no seeded model.
 
-Added to Step 1, right after Modèle: a combobox on `ref_body_types` filtered by the selected
-category (`applies_to`), plus a conditional required free-text `body_type_other` when
-`Autre` is chosen. Free-text fallback if the lookup returns nothing. No duplicate: the existing
-`vehicle_type` field is kept as-is and is not touched.
+### 3. Category-aware relevance (`src/lib/wilmet-constants.ts`)
 
-### Reference-data states
+Introduce one exported classifier used by both UI and validation:
 
-`getReferenceData` is wrapped so the wizard can show, per selector:
-loading skeleton, error with a retry, and an explicit "referential unavailable — enter freely"
-fallback that swaps the combobox for a text input instead of a dead empty dropdown.
+```ts
+export type CategoryProfile = { powered: boolean; hasOdometer: boolean; hasPtac: boolean };
+export function categoryProfile(slug?: string | null): CategoryProfile;
+```
 
-### Required photos
+- `utilitaire`, `camion_porteur`, `tracteur_routier`, `engin_special` → powered, odometer, PTAC.
+- `semi_remorque`, `remorque` → not powered, no odometer; weight captured as PTC rather than PTAC.
+- Unknown / null category → treated as powered (permissive default, never blocks).
 
-Marked `required: true` on `plaque_vin` (manufacturer plate / VIN) and `tableau_de_bord`
-(dashboard, engine running). This automatically activates the already-written client-side and
-server-side blocking checks. Draft saving is unaffected.
+Step 2 hides Énergie, Boîte de vitesses, Norme Euro, puissance and Kilométrage for non-powered
+categories, and relabels the weight field "PTC" for trailers.
 
-### Final-submission validation (draft stays permissive)
+### 4. Validation, one shared source of truth
 
-Enforced only on submit, mirrored client-side (toast + jump to the offending step) and
-server-side in `submitOpportunity` (integrity):
+`SUBMISSION_REQUIRED_FIELDS` entries gain an optional `appliesTo?: (p: CategoryProfile) => boolean`:
 
-- vehicle_category, brand, model
-- body_type (+ body_type_other when `autre`)
-- first_registration_date, mileage
-- fuel_type, gross_vehicle_weight
-- general_condition, vehicle_runs
-- city, country
-- desired_price_excl_tax
-- the two required photo categories
+- always required: `vehicle_category`, `brand`, `model`, `body_type` (+ `body_type_other` if
+  `autre`), `first_registration_date`, `city`, `country`, `general_condition`,
+  `desired_price_excl_tax`.
+- powered only: `fuel_type`, `mileage`, `vehicle_runs`.
+- weight (`gross_vehicle_weight`) required for all, label switching PTAC/PTC.
 
-Existing conditional rules (immobilisation reason, CT validity date) are preserved unchanged.
-Everything else remains optional.
+`missingSubmissionFields(rec)` reads `rec.vehicle_category`, derives the profile and filters
+accordingly. Both callers are unchanged, so client and server stay in lockstep by construction.
+`submitOpportunity` must also `select` any newly consulted column. Existing conditional rules
+(immobilisation reason, CT validity date) are preserved, with the immobilisation rule only applying
+to powered categories. Drafts (`saveOpportunity`) stay fully permissive — no change.
+
+### 5. Input constraints and microcopy
+
+Light touch, no new form library:
+- `mileage`: `type=number`, `min=0`, `max=3000000`, `step=1000`, suffix "km", hint "Compteur actuel".
+- `desired_price_excl_tax`: `min=0`, `max=2000000`, suffix "€ HT".
+- `first_registration_date`: `max` = today, `min` = 1980-01-01.
+- Weight: keep the existing text column (no schema change) but add `inputMode="decimal"`,
+  placeholder "19", suffix "t", and a light client-side sanity hint above 60 t.
+- Dimension fields keep mm units in their labels.
+- Values are clamped only on blur, never while typing, so nothing fights the user.
+
+### 6. Referential-driven fuel and gearbox
+
+Énergie and Boîte switch to `refs.fuelTypes` / `refs.gearboxTypes` with `FUEL_OPTIONS` /
+`GEARBOX_OPTIONS` kept as the hard-coded fallback when the referential is empty or failed. Slugs
+already match the DB enums, so stored values are unchanged.
+
+### 7. Verification
+
+No test framework exists and none will be added. Verification uses repo tooling plus a scripted
+browser pass:
+- `tsgo` typecheck and `eslint` clean on changed files.
+- A Playwright script (kept under `/tmp`, not committed) signed in as a seller that: loads
+  `/opportunities/new`, asserts the category/brand/country comboboxes have options, picks
+  `camion_porteur` → Mercedes-Benz → Actros → Fourgon, checks the model list changes with the brand,
+  then switches the category to `semi_remorque` and asserts engine fields disappear and the reset
+  fired.
+- A submit attempt on an empty draft to confirm the toast lists exactly the required fields and
+  jumps to the right step, and that saving a draft still succeeds with nothing filled.
 
 ## Files expected to change
 
-- `supabase/migrations/<ts>_seed_reference_data.sql` (new, via the migration tool)
-- `src/lib/wilmet-constants.ts` — `required` flags on photo categories; submission-required field list
-- `src/lib/reference-data.functions.ts` — expose `body_types.applies_to` cleanly (already selected) and error surfacing
-- `src/routes/_authenticated/opportunities.new.tsx` — carrosserie field, loading/error/empty states, submit validation
-- `src/lib/opportunities.functions.ts` — server-side submit validation of the required business fields
+- `src/lib/reference-data.functions.ts` — key-safe fetch, per-table error surfacing, `failed[]`.
+- `src/lib/wilmet-constants.ts` — `categoryProfile`, `appliesTo` on required fields, updated
+  `missingSubmissionFields`.
+- `src/lib/opportunities.functions.ts` — select the columns the validator needs; unchanged rules
+  otherwise.
+- `src/routes/_authenticated/opportunities.new.tsx` — catalog error banner + retry, cascade helpers,
+  category-aware Step 2, referential-driven fuel/gearbox, numeric constraints and units.
 
-## Risks and compatibility
+No migration, no schema change, no RLS/grant/role change, no change to OCR, voice, photos, autosave,
+the seller gate or the FIND-001 fixes.
 
-- Seeding is upsert-based, so existing manual rows are updated, never duplicated; no data loss.
-- Slugs are deliberately kept enum-compatible for fuel, gearbox and vehicle type; body types are
-  free-form text in the DB so no enum risk there.
-- New submit-time requirements can block sellers who already have an old draft missing a field.
-  Mitigation: the error message names the field and the wizard jumps to its step; drafts remain
-  saveable at any completeness level.
-- Renault Trucks merged into Renault at the referential level only. Existing opportunities holding
-  the literal string "Renault Trucks" keep their value; the UI's "keep current value" fallback
-  makes sure it still displays and remains selectable.
-- No RLS, GRANT, routing or authorization change. No publish.
+## Risks
+
+- Making some fields conditional relaxes validation for trailers; that is intentional and matches
+  the Aug 3 business spec.
+- Sellers with old powered drafts are unaffected — the required set for powered categories is
+  identical to today.
+- Referential-driven fuel/gearbox could shift labels if the seeded labels differ from the constants;
+  slugs are identical, so stored data cannot drift.
