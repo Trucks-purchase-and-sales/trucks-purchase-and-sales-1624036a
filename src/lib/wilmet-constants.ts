@@ -286,8 +286,8 @@ export const PHOTO_CATEGORIES: {
   { value: "vue_arriere", label: "Vue arrière", helper: "Face arrière complète." },
   { value: "cote_gauche", label: "Côté gauche", helper: "Profil gauche entier." },
   { value: "cote_droit", label: "Côté droit", helper: "Profil droit entier." },
-  { value: "tableau_de_bord", label: "Tableau de bord avec moteur allumé", helper: "Moteur en marche : kilométrage lisible et absence de voyants de défaut." },
-  { value: "plaque_vin", label: "Plaque constructeur / VIN", helper: "Plaque constructeur ou numéro de châssis." },
+  { value: "tableau_de_bord", label: "Tableau de bord avec moteur allumé", helper: "Moteur en marche : kilométrage lisible et absence de voyants de défaut.", required: true },
+  { value: "plaque_vin", label: "Plaque constructeur / VIN", helper: "Plaque constructeur ou numéro de châssis.", required: true },
   { value: "interieur_cabine", label: "Intérieur cabine", helper: "Sièges, volant, planche de bord." },
   { value: "pneus", label: "Photos de tous les pneus", helper: "État des pneumatiques." },
   { value: "moteur", label: "Moteur", helper: "Compartiment moteur, si accessible." },
@@ -297,6 +297,43 @@ export const PHOTO_CATEGORIES: {
 ];
 
 export const REQUIRED_PHOTO_CATEGORIES = PHOTO_CATEGORIES.filter((c) => c.required);
+
+/**
+ * Business minimum enforced at FINAL SUBMISSION only (drafts stay permissive).
+ * `step` is the 0-based wizard step the user is sent back to.
+ */
+export const SUBMISSION_REQUIRED_FIELDS: { key: string; label: string; step: number }[] = [
+  { key: "vehicle_category", label: "Catégorie de véhicule", step: 0 },
+  { key: "brand", label: "Marque", step: 0 },
+  { key: "model", label: "Modèle", step: 0 },
+  { key: "body_type", label: "Carrosserie", step: 0 },
+  { key: "first_registration_date", label: "Date de 1re mise en circulation", step: 0 },
+  { key: "mileage", label: "Kilométrage", step: 0 },
+  { key: "city", label: "Ville", step: 0 },
+  { key: "country", label: "Pays", step: 0 },
+  { key: "fuel_type", label: "Énergie", step: 1 },
+  { key: "gross_vehicle_weight", label: "PTAC", step: 1 },
+  { key: "general_condition", label: "État général", step: 2 },
+  { key: "vehicle_runs", label: "Véhicule roulant", step: 2 },
+  { key: "desired_price_excl_tax", label: "Prix souhaité HT", step: 4 },
+];
+
+/** Returns the labels of the missing required fields for a candidate record. */
+export function missingSubmissionFields(
+  rec: Record<string, unknown>,
+): { key: string; label: string; step: number }[] {
+  const missing = SUBMISSION_REQUIRED_FIELDS.filter((f) => {
+    const v = rec[f.key];
+    if (v === null || v === undefined) return true;
+    if (typeof v === "string") return v.trim() === "";
+    return false;
+  });
+  if (rec["body_type"] === "autre" && !String(rec["body_type_other"] ?? "").trim()) {
+    missing.push({ key: "body_type_other", label: "Précision carrosserie « Autre »", step: 0 });
+  }
+  return missing;
+}
+
 
 
 export function formatPrice(n: number | null | undefined) {

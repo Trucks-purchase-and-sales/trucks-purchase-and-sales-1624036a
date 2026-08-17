@@ -34,7 +34,7 @@ import {
   EQUIPMENT_OPTIONS, EU27_CODES, EURO_OPTIONS, FUEL_OPTIONS, GEARBOX_OPTIONS,
   NEGOTIABLE_OPTIONS, PHOTO_CATEGORIES, REQUIRED_PHOTO_CATEGORIES,
   KEYS_COUNT_OPTIONS, VISIBILITY_OPTIONS,
-  SUSPENSION_OPTIONS, YES_NO_OPTIONS, TAIL_LIFT_CONDITION_OPTIONS,
+  SUSPENSION_OPTIONS, YES_NO_OPTIONS, TAIL_LIFT_CONDITION_OPTIONS, missingSubmissionFields,
   labelFor, formatPrice,
 
 } from "@/lib/wilmet-constants";
@@ -187,7 +187,11 @@ function WizardPage() {
   const reorderFn = useServerFn(reorderPhotos);
 
   const refFn = useServerFn(getReferenceData);
-  const { data: refData } = useQuery({ queryKey: ["reference-data"], queryFn: () => refFn() });
+  const {
+    data: refData, isLoading: refLoading, isError: refError, refetch: refRefetch,
+  } = useQuery({ queryKey: ["reference-data"], queryFn: () => refFn() });
+  const refState: RefState = { loading: refLoading, error: refError, retry: () => { void refRefetch(); } };
+
 
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
 
@@ -245,7 +249,15 @@ function WizardPage() {
   }
 
   async function submitAll() {
+    const missingFields = missingSubmissionFields(opp as unknown as Record<string, unknown>);
+    if (missingFields.length > 0) {
+      toast.error("Informations obligatoires manquantes", {
+        description: missingFields.map((f) => f.label).join(", "),
+      });
+      setStep(missingFields[0].step); return;
+    }
     if (opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) {
+
       toast.error("Motif d'immobilisation obligatoire", { description: "Précisez pourquoi le véhicule ne roule pas (étape 3)." });
       setStep(2); return;
     }
@@ -452,8 +464,9 @@ function WizardPage() {
 
       <Card className="border-border/70">
         <CardContent className="p-5 sm:p-8">
-          {step === 0 && <Step1 opp={opp} set={set} applyOcr={(f: Partial<OppState>) => setOpp((o) => ({ ...o, ...f }))} refs={refData} />}
+          {step === 0 && <Step1 opp={opp} set={set} applyOcr={(f: Partial<OppState>) => setOpp((o) => ({ ...o, ...f }))} refs={refData} refState={refState} />}
           {step === 1 && <Step2 opp={opp} set={set} refs={refData} />}
+
           {step === 2 && <Step3 opp={opp} set={set} />}
           {step === 3 && (
             <Step4
@@ -504,6 +517,49 @@ function WizardPage() {
 
 type Set = <K extends keyof OppState>(k: K, v: OppState[K]) => void;
 type Refs = Awaited<ReturnType<typeof getReferenceData>> | undefined;
+type RefState = { loading: boolean; error: boolean; retry: () => void };
+
+/**
+ * Combobox backed by the reference tables. Never dead-ends: while loading it is
+ * disabled with an explicit message, on error it offers a retry, and when the
+ * referential comes back empty it degrades to a free-text input.
+ */
+function RefCombobox({
+  value, onChange, options, placeholder, state, emptyPlaceholder,
+}: {
+  value: string | null | undefined;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+  state: RefState;
+  emptyPlaceholder?: string;
+}) {
+  if (state.loading && options.length === 0) {
+    return <Input disabled placeholder="Chargement des référentiels…" />;
+  }
+  if (state.error && options.length === 0) {
+    return (
+      <div className="space-y-1.5">
+        <Input value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={emptyPlaceholder ?? "Saisie libre"} />
+        <button type="button" onClick={state.retry} className="text-[11px] font-medium text-accent underline">
+          Référentiel indisponible — réessayer
+        </button>
+      </div>
+    );
+  }
+  if (options.length === 0) {
+    return <Input value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={emptyPlaceholder ?? placeholder} />;
+  }
+  return (
+    <SearchableCombobox
+      value={value ?? undefined}
+      onChange={onChange}
+      options={options}
+      placeholder={placeholder}
+    />
+  );
+}
+
 
 function Field({ label, hint, children, action }: { label: string; hint?: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
@@ -577,7 +633,7 @@ function DatePickerField({
   );
 }
 
-function Step1({ opp, set, applyOcr, refs }: { opp: OppState; set: Set; applyOcr: (f: Partial<OppState>) => void; refs: Refs }) {
+function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set; applyOcr: (f: Partial<OppState>) => void; refs: Refs; refState: RefState }) {
   const ai = useAiFeatures();
   function handleOcrApply(fields: Record<string, string>) {
     const intFields = new Set([
@@ -640,6 +696,19 @@ function Step1({ opp, set, applyOcr, refs }: { opp: OppState; set: Set; applyOcr
     [refs],
   );
 
+  /** Carrosseries available for the selected category (all when no category yet). */
+  const bodyTypeOptions = useMemo(() => {
+    const all = refs?.bodyTypes ?? [];
+    const scoped = opp.vehicle_category
+      ? all.filter((b) => (b.applies_to ?? []).includes(opp.vehicle_category as string))
+      : all;
+    const list = (scoped.length > 0 ? scoped : all).map((b) => ({ value: b.slug, label: b.label_fr }));
+    return opp.body_type && !list.some((o) => o.value === opp.body_type)
+      ? [{ value: opp.body_type, label: opp.body_type }, ...list]
+      : list;
+  }, [refs, opp.vehicle_category, opp.body_type]);
+
+
   return (
     <div className="space-y-6">
       {ai.ocr && (
@@ -661,19 +730,22 @@ function Step1({ opp, set, applyOcr, refs }: { opp: OppState; set: Set; applyOcr
       <SectionTitle title="Informations générales" hint="Ces éléments identifient le véhicule." />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Catégorie de véhicule">
-          <SearchableCombobox
-            value={opp.vehicle_category ?? undefined}
-            onChange={(v) => { set("vehicle_category", v); set("brand", null); set("model", null); }}
+          <RefCombobox
+            value={opp.vehicle_category}
+            onChange={(v) => { set("vehicle_category", v); set("brand", null); set("model", null); set("body_type", null); }}
             options={categoryOptions}
             placeholder="Sélectionner une catégorie"
+            state={refState}
           />
         </Field>
         <Field label="Marque">
-          <SearchableCombobox
-            value={opp.brand ?? undefined}
+          <RefCombobox
+            value={opp.brand}
             onChange={(v) => { set("brand", v); set("model", null); }}
             options={brandOptions}
             placeholder={opp.vehicle_category ? "Sélectionner une marque" : "Sélectionnez d'abord une catégorie"}
+            emptyPlaceholder="Saisir la marque"
+            state={refState}
           />
         </Field>
         <Field label="Modèle">
@@ -688,6 +760,22 @@ function Step1({ opp, set, applyOcr, refs }: { opp: OppState; set: Set; applyOcr
             <Input value={opp.model ?? ""} onChange={(e) => set("model", e.target.value)} placeholder={opp.brand ? "Saisir le modèle" : "Sélectionnez d'abord une marque"} />
           )}
         </Field>
+        <Field label="Carrosserie" hint="Type de carrosserie du véhicule.">
+          <RefCombobox
+            value={opp.body_type}
+            onChange={(v) => { set("body_type", v); if (v !== "autre") set("body_type_other", null); }}
+            options={bodyTypeOptions}
+            placeholder="Sélectionner une carrosserie"
+            emptyPlaceholder="Saisir la carrosserie"
+            state={refState}
+          />
+        </Field>
+        {opp.body_type === "autre" && (
+          <Field label="Précisez la carrosserie">
+            <Input value={opp.body_type_other ?? ""} onChange={(e) => set("body_type_other", e.target.value)} placeholder="ex : porte-conteneurs" />
+          </Field>
+        )}
+
 
         <Field label="Date de 1re mise en circulation">
           <DatePickerField
@@ -708,13 +796,16 @@ function Step1({ opp, set, applyOcr, refs }: { opp: OppState; set: Set; applyOcr
         <Field label="Ville"><Input value={opp.city ?? ""} onChange={(e) => set("city", e.target.value)} /></Field>
         <Field label="Code postal"><Input value={opp.postal_code ?? ""} onChange={(e) => set("postal_code", e.target.value)} /></Field>
         <Field label="Pays (UE-27)">
-          <SearchableCombobox
-            value={opp.country ?? undefined}
+          <RefCombobox
+            value={opp.country}
             onChange={(v) => set("country", v)}
             options={countryOptions}
             placeholder="Sélectionner un pays"
+            emptyPlaceholder="Saisir le pays"
+            state={refState}
           />
         </Field>
+
       </div>
       <Field label="Lien de localisation (optionnel)" hint="Lien Google Maps ou adresse précise du lieu où se trouve le véhicule.">
         <Input value={opp.location_url ?? ""} onChange={(e) => set("location_url", e.target.value)} placeholder="https://maps.google.com/…" />

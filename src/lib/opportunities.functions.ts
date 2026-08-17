@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { REQUIRED_PHOTO_CATEGORIES } from "@/lib/wilmet-constants";
+import { REQUIRED_PHOTO_CATEGORIES, missingSubmissionFields } from "@/lib/wilmet-constants";
 
 // Full draft schema — all optional to allow saving partial drafts.
 const opportunityInput = z.object({
@@ -130,17 +130,22 @@ export const submitOpportunity = createServerFn({ method: "POST" })
 
     const { data: current, error: readErr } = await supabase
       .from("vehicle_opportunities")
-      .select("vehicle_runs, not_running_reason, technical_inspection_status, inspection_valid_until, assigned_group, referred_by, referral_code, reference_number, brand, model")
+      .select("vehicle_runs, not_running_reason, technical_inspection_status, inspection_valid_until, assigned_group, referred_by, referral_code, reference_number, brand, model, vehicle_category, body_type, body_type_other, first_registration_date, mileage, city, country, fuel_type, gross_vehicle_weight, general_condition, desired_price_excl_tax")
       .eq("id", data.id)
       .eq("partenaire_id", userId)
       .single();
     if (readErr) { console.error("[opportunities.functions]", readErr); throw new Error("Une erreur est survenue, veuillez réessayer."); }
+    const missingFields = missingSubmissionFields(current as unknown as Record<string, unknown>);
+    if (missingFields.length > 0) {
+      throw new Error(`Informations obligatoires manquantes : ${missingFields.map((f) => f.label).join(", ")}.`);
+    }
     if (current.vehicle_runs === "non" && !current.not_running_reason?.trim()) {
       throw new Error("Précisez pourquoi le véhicule ne roule pas avant l'envoi.");
     }
     if (current.technical_inspection_status === "oui" && !current.inspection_valid_until) {
       throw new Error("Indiquez la date de validité du contrôle technique avant l'envoi.");
     }
+
     const { data: pics, error: picErr } = await supabase
       .from("vehicle_photos").select("category").eq("vehicle_opportunity_id", data.id);
     if (picErr) { console.error("[opportunities.functions]", picErr); throw new Error("Une erreur est survenue, veuillez réessayer."); }
