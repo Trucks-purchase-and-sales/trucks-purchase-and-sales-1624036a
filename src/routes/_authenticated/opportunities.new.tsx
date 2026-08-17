@@ -32,7 +32,7 @@ import { useAiFeatures } from "@/hooks/useAiFeatures";
 import {
   AVAILABILITY_OPTIONS, AXLE_CONFIG_OPTIONS, CABIN_OPTIONS, CONDITION_OPTIONS,
   EQUIPMENT_OPTIONS, EU27_CODES, EURO_OPTIONS, FUEL_OPTIONS, GEARBOX_OPTIONS,
-  NEGOTIABLE_OPTIONS, PHOTO_CATEGORIES, requiredPhotoCategories,
+  ACCIDENT_OPTIONS, NEGOTIABLE_OPTIONS, PHOTO_CATEGORIES, requiredPhotoCategories,
   KEYS_COUNT_OPTIONS, VISIBILITY_OPTIONS,
   SUSPENSION_OPTIONS, YES_NO_OPTIONS, TAIL_LIFT_CONDITION_OPTIONS, missingSubmissionFields,
   categoryProfile,
@@ -99,6 +99,7 @@ type OppState = {
   box_width_mm?: number | null;
   box_depth_mm?: number | null;
   not_running_reason?: string | null;
+  has_accident?: string | null;
   inspection_valid_until?: string | null;
   has_service_book?: string | null;
   key_code?: string | null;
@@ -1036,7 +1037,7 @@ function Step3({ opp, set }: { opp: OppState; set: Set }) {
           </Field>
         )}
         <Field label="Entretien à jour ?"><Selector value={opp.maintenance_status} onChange={(v) => set("maintenance_status", v)} options={YES_NO_OPTIONS} /></Field>
-        <Field label="Véhicule accidenté ?" hint="Sinistre déclaré ou réparation structurelle connue."><Selector value={opp.has_accident} onChange={(v) => set("has_accident", v)} options={YES_NO_OPTIONS} /></Field>
+        <Field label="Véhicule accidenté ?" hint="Sinistre déclaré ou réparation structurelle connue."><Selector value={opp.has_accident} onChange={(v) => set("has_accident", v)} options={ACCIDENT_OPTIONS} /></Field>
         
         <Field label="Carnet d'entretien disponible ?"><Selector value={opp.has_service_book} onChange={(v) => set("has_service_book", v)} options={YES_NO_OPTIONS} /></Field>
         <Field label="Nombre de clés">
