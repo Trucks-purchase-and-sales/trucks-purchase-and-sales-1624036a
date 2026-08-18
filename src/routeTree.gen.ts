@@ -31,6 +31,7 @@ import { Route as AuthenticatedMesDemandesClientsRouteImport } from './routes/_a
 import { Route as AuthenticatedMesDemandesRouteImport } from './routes/_authenticated/mes-demandes'
 import { Route as AuthenticatedMesCommissionsRouteImport } from './routes/_authenticated/mes-commissions'
 import { Route as AuthenticatedManagerRouteImport } from './routes/_authenticated/manager'
+import { Route as AuthenticatedEspaceAcheteurRouteImport } from './routes/_authenticated/espace-acheteur'
 import { Route as AuthenticatedDirectionRouteImport } from './routes/_authenticated/direction'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -179,6 +180,12 @@ const AuthenticatedManagerRoute = AuthenticatedManagerRouteImport.update({
   path: '/manager',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEspaceAcheteurRoute =
+  AuthenticatedEspaceAcheteurRouteImport.update({
+    id: '/espace-acheteur',
+    path: '/espace-acheteur',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDirectionRoute = AuthenticatedDirectionRouteImport.update({
   id: '/direction',
   path: '/direction',
@@ -385,6 +392,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/direction': typeof AuthenticatedDirectionRouteWithChildren
+  '/espace-acheteur': typeof AuthenticatedEspaceAcheteurRoute
   '/manager': typeof AuthenticatedManagerRouteWithChildren
   '/mes-commissions': typeof AuthenticatedMesCommissionsRoute
   '/mes-demandes': typeof AuthenticatedMesDemandesRoute
@@ -439,6 +447,7 @@ export interface FileRoutesByTo {
   '/mentions-legales': typeof MentionsLegalesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/espace-acheteur': typeof AuthenticatedEspaceAcheteurRoute
   '/mes-commissions': typeof AuthenticatedMesCommissionsRoute
   '/mes-demandes': typeof AuthenticatedMesDemandesRoute
   '/mes-demandes-clients': typeof AuthenticatedMesDemandesClientsRoute
@@ -494,6 +503,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/direction': typeof AuthenticatedDirectionRouteWithChildren
+  '/_authenticated/espace-acheteur': typeof AuthenticatedEspaceAcheteurRoute
   '/_authenticated/manager': typeof AuthenticatedManagerRouteWithChildren
   '/_authenticated/mes-commissions': typeof AuthenticatedMesCommissionsRoute
   '/_authenticated/mes-demandes': typeof AuthenticatedMesDemandesRoute
@@ -553,6 +563,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/direction'
+    | '/espace-acheteur'
     | '/manager'
     | '/mes-commissions'
     | '/mes-demandes'
@@ -607,6 +618,7 @@ export interface FileRouteTypes {
     | '/mentions-legales'
     | '/reset-password'
     | '/dashboard'
+    | '/espace-acheteur'
     | '/mes-commissions'
     | '/mes-demandes'
     | '/mes-demandes-clients'
@@ -661,6 +673,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/_authenticated/direction'
+    | '/_authenticated/espace-acheteur'
     | '/_authenticated/manager'
     | '/_authenticated/mes-commissions'
     | '/_authenticated/mes-demandes'
@@ -879,6 +892,13 @@ declare module '@tanstack/react-router' {
       path: '/manager'
       fullPath: '/manager'
       preLoaderRoute: typeof AuthenticatedManagerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/espace-acheteur': {
+      id: '/_authenticated/espace-acheteur'
+      path: '/espace-acheteur'
+      fullPath: '/espace-acheteur'
+      preLoaderRoute: typeof AuthenticatedEspaceAcheteurRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/direction': {
@@ -1245,6 +1265,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDirectionRoute: typeof AuthenticatedDirectionRouteWithChildren
+  AuthenticatedEspaceAcheteurRoute: typeof AuthenticatedEspaceAcheteurRoute
   AuthenticatedManagerRoute: typeof AuthenticatedManagerRouteWithChildren
   AuthenticatedMesCommissionsRoute: typeof AuthenticatedMesCommissionsRoute
   AuthenticatedMesDemandesRoute: typeof AuthenticatedMesDemandesRoute
@@ -1262,6 +1283,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDirectionRoute: AuthenticatedDirectionRouteWithChildren,
+  AuthenticatedEspaceAcheteurRoute: AuthenticatedEspaceAcheteurRoute,
   AuthenticatedManagerRoute: AuthenticatedManagerRouteWithChildren,
   AuthenticatedMesCommissionsRoute: AuthenticatedMesCommissionsRoute,
   AuthenticatedMesDemandesRoute: AuthenticatedMesDemandesRoute,
