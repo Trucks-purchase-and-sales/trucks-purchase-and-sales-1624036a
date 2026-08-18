@@ -27,6 +27,7 @@ import { SearchableCombobox } from "@/components/pickers/SearchableCombobox";
 import { YearPicker } from "@/components/pickers/YearPicker";
 import { MultiSelectBadges } from "@/components/pickers/MultiSelectBadges";
 import { getReferenceData } from "@/lib/reference-data.functions";
+import { submitBuyerLeadAuthenticated } from "@/lib/buyer-leads.functions";
 import { buyerLeadSchema, BUYER_FIELD_LABELS, type BuyerLeadInput } from "@/lib/buyer-leads.schema";
 import { EU27_CODES } from "@/lib/wilmet-constants";
 import { AssistantWidget } from "@/components/public/AssistantWidget";
@@ -491,6 +492,16 @@ function BuyerLeadPage() {
 
                 {step === 3 && (
                   <div className="space-y-4">
+                    {auth.status === "authenticated" && auth.partnerKind === "client" && (
+                      <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                        Connecté en tant que <span className="font-medium text-foreground">{auth.email}</span> — cette demande sera enregistrée dans votre espace acheteur.
+                      </p>
+                    )}
+                    {auth.status === "authenticated" && auth.partnerKind !== "client" && (
+                      <p className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                        Votre compte n'est pas un compte acheteur. Déconnectez-vous pour envoyer une demande, ou contactez Wilmet.
+                      </p>
+                    )}
                     <RequestRecap form={form} labels={{
                       category: categoryOptions.find((o) => o.value === form.watch("vehicle_category"))?.label,
                       type: (ref?.vehicleTypes ?? []).find((v) => v.slug === form.watch("vehicle_type"))?.label_fr,
@@ -556,7 +567,7 @@ function BuyerLeadPage() {
                   onBack={back}
                   onNext={next}
                   onSubmit={onSubmit}
-                  submitting={submitting}
+                  submitting={submitting || auth.status === "loading"}
                   backLabel={t("buyer.actions.back")}
                   nextLabel={t("buyer.actions.next")}
                   submitLabel={t("buyer.actions.submit")}
