@@ -99,8 +99,12 @@ function buildNav(roles: Set<Role>, kind: Kind, scope: Scope, isExternalStaff: b
   }
 
 
-  // Partner surfaces
-  const partner: NavItem[] = [{ to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, exact: true }];
+  // Partner surfaces — buyers get their own dashboard route, sellers keep /dashboard.
+  const partner: NavItem[] = [
+    kind === "client"
+      ? { to: "/espace-acheteur", label: "Tableau de bord", icon: LayoutDashboard, exact: true }
+      : { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, exact: true },
+  ];
   if (kind === "seller") {
     partner.push({ to: "/opportunities/new", label: "Proposer un véhicule", icon: Plus });
     partner.push({ to: "/mes-echanges", label: "Mes échanges", icon: Handshake });
