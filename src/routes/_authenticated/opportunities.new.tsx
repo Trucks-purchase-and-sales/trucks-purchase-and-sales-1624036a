@@ -46,6 +46,32 @@ import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 
+/**
+ * Defensive: never show a raw JSON / Zod issue blob to the seller.
+ * The server already returns readable French messages; this is a backstop
+ * for older builds or transport-level payloads.
+ */
+function readableError(e: unknown): string {
+  const raw = e instanceof Error ? e.message : String(e ?? "");
+  const trimmed = raw.trim();
+  if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) return trimmed || "Erreur inconnue.";
+  try {
+    const parsed = JSON.parse(trimmed);
+    const issues = Array.isArray(parsed) ? parsed : (parsed.issues ?? parsed.errors);
+    if (Array.isArray(issues) && issues.length) {
+      const fields = Array.from(
+        new Set(issues.map((i: { path?: unknown[] }) => String(i?.path?.[0] ?? "")).filter(Boolean))
+      );
+      if (fields.length) return `Données du formulaire invalides : ${fields.join(", ")}.`;
+    }
+    if (typeof parsed?.message === "string") return parsed.message;
+  } catch {
+    /* fall through */
+  }
+  return "Données du formulaire invalides. Vérifiez les champs de l'étape en cours.";
+}
+
+
 type OppState = {
   id?: string;
   reference_number?: string | null;
@@ -239,7 +265,7 @@ function WizardPage() {
       setOpp((o) => ({ ...o, id: res.id, reference_number: res.reference_number }));
       return res.id;
     } catch (e) {
-      toast.error("Sauvegarde impossible", { description: (e as Error).message });
+      toast.error("Sauvegarde impossible", { description: readableError(e) });
       return null;
     } finally {
       setSaving(false);

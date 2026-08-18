@@ -2,108 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requiredPhotoCategories, missingSubmissionFields, categoryProfile } from "@/lib/wilmet-constants";
-
-// Full draft schema — all optional to allow saving partial drafts.
-const opportunityInput = z.object({
-  id: z.string().uuid().optional(),
-  vehicle_type: z.string().optional().nullable(),
-  vehicle_category: z.string().optional().nullable(),
-  brand: z.string().optional().nullable(),
-  model: z.string().optional().nullable(),
-  version: z.string().optional().nullable(),
-  // `year` is no longer collected: it is derived from first_registration_date.
-  first_registration_date: z.string().optional().nullable(),
-  mileage: z.number().int().optional().nullable(),
-  registration_number: z.string().optional().nullable(),
-  vin: z.string().optional().nullable(),
-  city: z.string().optional().nullable(),
-  postal_code: z.string().optional().nullable(),
-  country: z.string().optional().nullable(),
-  visible_on_site: z.string().optional().nullable(),
-  fuel_type: z.string().optional().nullable(),
-  gearbox: z.string().optional().nullable(),
-  power: z.string().optional().nullable(),
-  euro_standard: z.string().optional().nullable(),
-  gross_vehicle_weight: z.string().optional().nullable(),
-  payload: z.string().optional().nullable(),
-  axle_configuration: z.string().optional().nullable(),
-  cabin_type: z.string().optional().nullable(),
-  equipment: z.array(z.string()).optional().nullable(),
-  general_condition: z.string().optional().nullable(),
-  vehicle_runs: z.string().optional().nullable(),
-  technical_inspection_status: z.string().optional().nullable(),
-  maintenance_status: z.string().optional().nullable(),
-  known_defects: z.string().optional().nullable(),
-  expected_repairs: z.string().optional().nullable(),
-  additional_comments: z.string().optional().nullable(),
-  desired_price_excl_tax: z.number().optional().nullable(),
-  price_negotiable: z
-    .enum(["oui", "non", "a_discuter"], {
-      message: "Valeur de négociabilité invalide : choisissez Oui, Non ou À discuter.",
-    })
-    .optional()
-    .nullable(),
-  availability: z
-    .enum(["immediate", "sous_7_jours", "sous_30_jours", "a_confirmer"], {
-      message:
-        "Valeur de disponibilité invalide : choisissez Immédiate, Sous 7 jours, Sous 30 jours ou À confirmer.",
-    })
-    .optional()
-    .nullable(),
-  free_of_commitment: z.string().optional().nullable(),
-  special_conditions: z.string().optional().nullable(),
-  onsite_contact_name: z.string().optional().nullable(),
-  onsite_contact_phone: z.string().optional().nullable(),
-  onsite_contact_email: z.string().optional().nullable(),
-  vat_recoverable: z.string().optional().nullable(),
-  has_accident: z.string().optional().nullable(),
-  has_breakdown: z.string().optional().nullable(),
-  maintenance_history: z.string().optional().nullable(),
-  body_type: z.string().optional().nullable(),
-  body_type_other: z.string().optional().nullable(),
-  wheelbase_mm: z.number().int().optional().nullable(),
-  suspension_type: z.string().optional().nullable(),
-  tyre_size: z.string().optional().nullable(),
-  box_height_mm: z.number().int().optional().nullable(),
-  box_width_mm: z.number().int().optional().nullable(),
-  box_depth_mm: z.number().int().optional().nullable(),
-  not_running_reason: z.string().optional().nullable(),
-  inspection_valid_until: z.string().optional().nullable(),
-  has_service_book: z.string().optional().nullable(),
-  key_code: z.string().optional().nullable(),
-  keys_count: z.number().int().min(1).max(4).optional().nullable(),
-  defects_and_comments: z.string().optional().nullable(),
-  free_of_pledge: z.string().optional().nullable(),
-
-  has_air_conditioning: z.string().optional().nullable(),
-  has_heating: z.string().optional().nullable(),
-  has_hydraulic_hook: z.string().optional().nullable(),
-  has_crane: z.string().optional().nullable(),
-  crane_details: z.string().optional().nullable(),
-  other_equipment_details: z.string().optional().nullable(),
-  location_url: z.string().optional().nullable(),
-  tail_lift_present: z.string().optional().nullable(),
-  tail_lift_homologated: z.string().optional().nullable(),
-  tail_lift_homologation_book: z.string().optional().nullable(),
-  tail_lift_maintenance_book: z.string().optional().nullable(),
-  tail_lift_condition: z.string().optional().nullable(),
-  tail_lift_comment: z.string().optional().nullable(),
-});
-
-// Normalise: empty strings -> null.
-function clean(v: unknown) {
-  if (v === "" || v === undefined) return null;
-  return v;
-}
-function normalise<T extends Record<string, unknown>>(obj: T): T {
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(obj)) out[k] = Array.isArray(v) ? v : clean(v);
-  return out as T;
-}
+import { parseOpportunityInput, normalise } from "@/lib/opportunity-input";
 
 export const saveOpportunity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => opportunityInput.parse(d))
+  .inputValidator((d: unknown) => parseOpportunityInput(d))
+
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { id, ...rest } = data;
