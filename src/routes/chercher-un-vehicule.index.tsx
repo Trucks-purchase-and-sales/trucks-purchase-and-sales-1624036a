@@ -109,7 +109,8 @@ function BuyerLeadPage() {
       fill("company_name", profile.company_name);
       fill("email", profile.email ?? user.email);
       fill("phone", profile.phone);
-      fill("country", profile.country);
+      // Profiles may store a full country name; the form expects an ISO-2 code.
+      if (profile.country && /^[a-z]{2}$/i.test(profile.country)) fill("country", profile.country.toUpperCase());
       fill("city", profile.city);
     };
 
@@ -147,7 +148,6 @@ function BuyerLeadPage() {
   const [submitting, setSubmitting] = useState(false);
   const onSubmit = form.handleSubmit(
     async (data) => {
-      console.log('[dbg] submit valid', auth.status);
       if (submitting) return; // no double submit
       if (auth.status === "loading") {
         toast.error("Vérification de votre session en cours. Merci de patienter une seconde.");
@@ -227,7 +227,6 @@ function BuyerLeadPage() {
     },
 
     (errors) => {
-      console.log('[dbg] submit invalid', Object.keys(errors));
       // Surface validation errors so the form never silently no-ops (F35).
       const firstBadStep = STEP_KEYS.findIndex((_, i) =>
         stepFields[i].some((f) => (errors as Record<string, unknown>)[f as string]),
