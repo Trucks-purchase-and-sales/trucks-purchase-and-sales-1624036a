@@ -260,7 +260,7 @@ export const EU27_CODES = new Set([
 export const NEGOTIABLE_OPTIONS = [
   { value: "oui", label: "Oui" },
   { value: "non", label: "Non" },
-  
+  { value: "a_discuter", label: "À discuter" },
 ];
 
 export const TRISTATE_YNV = [
