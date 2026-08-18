@@ -239,7 +239,7 @@ function WizardPage() {
       setOpp((o) => ({ ...o, id: res.id, reference_number: res.reference_number }));
       return res.id;
     } catch (e) {
-      toast.error("Sauvegarde impossible", { description: (e as Error).message });
+      toast.error("Sauvegarde impossible", { description: readableError(e) });
       return null;
     } finally {
       setSaving(false);
