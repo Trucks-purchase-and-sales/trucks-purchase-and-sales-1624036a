@@ -27,7 +27,7 @@ import { SearchableCombobox } from "@/components/pickers/SearchableCombobox";
 import { YearPicker } from "@/components/pickers/YearPicker";
 import { MultiSelectBadges } from "@/components/pickers/MultiSelectBadges";
 import { getReferenceData } from "@/lib/reference-data.functions";
-import { buyerLeadSchema, type BuyerLeadInput } from "@/lib/buyer-leads.schema";
+import { buyerLeadSchema, BUYER_FIELD_LABELS, type BuyerLeadInput } from "@/lib/buyer-leads.schema";
 import { EU27_CODES } from "@/lib/wilmet-constants";
 import { AssistantWidget } from "@/components/public/AssistantWidget";
 
@@ -305,7 +305,7 @@ function BuyerLeadPage() {
                         )} />
                       </Field>
                       <Field label={t("buyer.fields.maxMileage")}>
-                        <Input inputMode="numeric" type="number" min={0} step={1000} {...form.register("max_mileage", { valueAsNumber: true, setValueAs: (v) => (v === "" || Number.isNaN(v) ? null : Number(v)) })} />
+                        <Input inputMode="numeric" type="number" min={0} step={1000} {...form.register("max_mileage", { setValueAs: (v) => (v === "" || v === null || v === undefined ? null : v) })} />
                       </Field>
                       <Field label={t("buyer.fields.minEuro")}>
                         <Controller name="min_euro_norm" control={form.control} render={({ field }) => (
@@ -326,10 +326,10 @@ function BuyerLeadPage() {
                         )} />
                       </Field>
                       <Field label={t("buyer.fields.ptac")}>
-                        <Input inputMode="numeric" type="number" min={0} {...form.register("ptac_kg", { valueAsNumber: true, setValueAs: (v) => (v === "" || Number.isNaN(v) ? null : Number(v)) })} />
+                        <Input inputMode="numeric" type="number" min={0} {...form.register("ptac_kg", { setValueAs: (v) => (v === "" || v === null || v === undefined ? null : v) })} />
                       </Field>
                       <Field label={t("buyer.fields.payload")}>
-                        <Input inputMode="numeric" type="number" min={0} {...form.register("payload_kg", { valueAsNumber: true, setValueAs: (v) => (v === "" || Number.isNaN(v) ? null : Number(v)) })} />
+                        <Input inputMode="numeric" type="number" min={0} {...form.register("payload_kg", { setValueAs: (v) => (v === "" || v === null || v === undefined ? null : v) })} />
                       </Field>
                     </div>
                     <Field label={t("buyer.fields.requiredEquipment")}>
@@ -352,7 +352,7 @@ function BuyerLeadPage() {
                     <div className="grid gap-4 sm:grid-cols-3">
                       <div className="sm:col-span-2">
                         <Field label={t("buyer.fields.maxBudget")}>
-                          <Input inputMode="decimal" type="number" min={0} step={100} {...form.register("max_budget_ht", { valueAsNumber: true, setValueAs: (v) => (v === "" || Number.isNaN(v) ? null : Number(v)) })} />
+                          <Input inputMode="decimal" type="number" min={0} step={100} {...form.register("max_budget_ht", { setValueAs: (v) => (v === "" || v === null || v === undefined ? null : v) })} />
                         </Field>
                       </div>
                       <Field label={t("buyer.fields.currency")}>
@@ -486,6 +486,23 @@ function BuyerLeadPage() {
       <AssistantWidget />
     </div>
   );
+}
+
+/** Never show a raw JSON/serialized error blob to the user. */
+function readableError(raw: unknown, fallback: string): string {
+  if (typeof raw !== "string" || !raw.trim()) return fallback;
+  const text = raw.trim();
+  if (!text.startsWith("{") && !text.startsWith("[")) return text;
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    if (typeof parsed === "string") return parsed;
+    if (parsed && typeof parsed === "object") {
+      const obj = parsed as Record<string, unknown>;
+      if (typeof obj["error"] === "string") return obj["error"] as string;
+      if (typeof obj["message"] === "string") return obj["message"] as string;
+    }
+  } catch { /* fall through */ }
+  return fallback;
 }
 
 function Field({ label, children, required, error }: { label: string; children: React.ReactNode; required?: boolean; error?: string }) {
