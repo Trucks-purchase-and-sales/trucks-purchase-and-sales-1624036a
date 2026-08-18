@@ -18,13 +18,12 @@ type Scope = "purchase" | "sales" | "both";
 type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }>; exact?: boolean };
 type NavGroup = { label: string; items: NavItem[] };
 
-function buildNav(roles: Set<Role>, kind: Kind, scope: Scope, isExternalStaff: boolean): NavGroup[] {
+function buildNav(roles: Set<Role>, kind: Kind, scope: Scope): NavGroup[] {
   const isAdmin = roles.has("admin") || roles.has("platform_admin");
   const isDirection = roles.has("company_management");
   const isManager = roles.has("sales_manager");
   const isAgent = roles.has("sales_agent");
-  // An external contractor is identified by the explicit external_agent role.
-  const isExternalAgent = roles.has("external_agent") || (isExternalStaff && roles.has("sales_agent"));
+  const isExternalAgent = roles.has("external_agent");
   const isInternal = isAdmin || isDirection || isManager || isAgent || isExternalAgent;
 
   if (isInternal) {
@@ -52,15 +51,12 @@ function buildNav(roles: Set<Role>, kind: Kind, scope: Scope, isExternalStaff: b
         pipeline.push({ to: "/admin/buyer-leads", label: "Demandes acheteurs", icon: Search });
         pipeline.push({ to: "/admin/demand-opportunities", label: "Opportunités demande", icon: Target });
         pipeline.push({ to: "/admin/sale-listings", label: "Offres de vente", icon: Tag });
-
       }
       if (agentOnly) {
         pipeline.push({ to: "/mes-demandes-clients", label: "Mes demandes clients", icon: Briefcase });
       }
       pipeline.push({ to: "/admin/matching", label: "Matching IA", icon: Sparkles });
     }
-
-
 
     const finance: NavItem[] = [];
     if (isAdmin || isManager || isDirection) finance.push({ to: "/admin/commissions", label: "Commissions", icon: Coins });
@@ -69,11 +65,9 @@ function buildNav(roles: Set<Role>, kind: Kind, scope: Scope, isExternalStaff: b
     const dir: NavItem[] = [];
     if (isManager && !isAdmin) dir.push({ to: "/admin/partenaires", label: "Partenaires", icon: Users });
 
-
     const settings: NavItem[] = [];
     if (isAdmin) {
       settings.push({ to: "/admin/users", label: "Utilisateurs", icon: Users });
-
       settings.push({ to: "/admin/reference", label: "Référentiels", icon: Database });
       settings.push({ to: "/admin/content", label: "Contenu", icon: FileText });
       settings.push({ to: "/admin/notifications", label: "Notifications", icon: Bell });
@@ -98,7 +92,6 @@ function buildNav(roles: Set<Role>, kind: Kind, scope: Scope, isExternalStaff: b
     return groups;
   }
 
-
   // Partner surfaces — buyers get their own dashboard route, sellers keep /dashboard.
   const partner: NavItem[] = [
     kind === "client"
@@ -120,15 +113,13 @@ function buildNav(roles: Set<Role>, kind: Kind, scope: Scope, isExternalStaff: b
   }
   partnerGroups.push({ label: "Compte", items: [{ to: "/profile", label: "Mon profil", icon: User }] });
   return partnerGroups;
-
 }
 
-export function AppSidebar({ roles, partnerKind, staffScope, isExternalStaff }: { roles: Role[] | undefined; partnerKind: Kind; staffScope?: Scope; isExternalStaff?: boolean }) {
+export function AppSidebar({ roles, partnerKind, staffScope }: { roles: Role[] | undefined; partnerKind: Kind; staffScope?: Scope }) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const groups = buildNav(new Set(roles ?? []), partnerKind, staffScope ?? "both", isExternalStaff === true);
-
+  const groups = buildNav(new Set(roles ?? []), partnerKind, staffScope ?? "both");
 
   const isActive = (to: string, exact?: boolean) =>
     exact ? pathname === to : pathname === to || pathname.startsWith(to + "/");

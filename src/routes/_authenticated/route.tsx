@@ -42,7 +42,7 @@ function AuthedLayout() {
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("partner_kind, staff_scope, is_active, is_external")
+        .select("partner_kind, staff_scope, is_active")
         .eq("id", userId)
         .maybeSingle();
       return data ?? null;
@@ -52,7 +52,6 @@ function AuthedLayout() {
   const profileMissing = profileLoaded && profile === null;
   const partnerKind = (profile?.partner_kind ?? null) as "client" | "seller" | null;
   const staffScope = (profile?.staff_scope ?? "both") as "purchase" | "sales" | "both";
-  const isExternalStaff = (profile as { is_external?: boolean } | null)?.is_external === true;
   const navigate = useNavigate();
   const disabled = profile ? profile.is_active === false : false;
 
@@ -92,7 +91,7 @@ function AuthedLayout() {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-secondary/40">
-        <AppSidebar roles={roles} partnerKind={partnerKind} staffScope={staffScope} isExternalStaff={isExternalStaff} />
+        <AppSidebar roles={roles} partnerKind={partnerKind} staffScope={staffScope} />
 
         <SidebarInset>
           <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border/60 bg-background/85 px-4 backdrop-blur">
@@ -156,7 +155,6 @@ function NotificationBell() {
     }
     await qc.invalidateQueries({ queryKey: ["notifications", userId] });
   }
-
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
