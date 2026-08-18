@@ -14,19 +14,18 @@ const INTERNAL_ROLES = ["admin", "platform_admin", "company_management", "sales_
 type Ctx = { role: string; seesAll: boolean; isExternal: boolean; groupIds: string[] };
 
 async function assertInternal(sb: any, userId: string): Promise<Ctx> {
-  const [{ data: roles, error }, { data: profile }, { data: memberships }] = await Promise.all([
+  const [{ data: roles, error }, { data: memberships }] = await Promise.all([
     sb.from("user_roles").select("role").eq("user_id", userId),
-    sb.from("profiles").select("is_external").eq("id", userId).maybeSingle(),
     sb.from("staff_group_members").select("group_id").eq("user_id", userId),
   ]);
   if (error) fail("assertInternal", error);
   const all = (roles ?? []).map((r: { role: string }) => r.role as string);
   const role = all.find((r: string) => (INTERNAL_ROLES as readonly string[]).includes(r));
   if (!role) throw new Error("Non autorisé");
-  const isExternal = role === "external_agent" || profile?.is_external === true;
+  const isExternal = role === "external_agent";
   return {
     role,
-    seesAll: role !== "sales_agent" && role !== "external_agent" && !isExternal,
+    seesAll: role !== "sales_agent" && role !== "external_agent",
     isExternal,
     groupIds: (memberships ?? []).map((m: { group_id: string }) => m.group_id),
   };
@@ -184,7 +183,6 @@ export const updateSaleListing = createServerFn({ method: "POST" })
     if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await sb.from("sale_listings").update(patch).eq("id", data.id);
     if (error) fail("updateSaleListing", error);
-    // On publication, alert buyers whose open demand matches this vehicle.
     if (data.status === "publiee") {
       const { notifyBuyersForListing } = await import("@/lib/sale-listing-notify.server");
       const { notified } = await notifyBuyersForListing(data.id);

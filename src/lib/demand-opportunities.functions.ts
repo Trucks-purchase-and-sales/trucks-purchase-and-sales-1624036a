@@ -9,13 +9,7 @@ function fail(where: string, err: unknown): never {
 }
 
 const INTERNAL_STAFF = ["admin", "platform_admin", "company_management", "sales_manager"] as const;
-const INTERNAL_ALL = [...INTERNAL_STAFF, "sales_agent"] as const;
-
-/** External contractors (flagged on their profile) only ever see their own files. */
-async function isExternalAgent(sb: any, userId: string): Promise<boolean> {
-  const { data } = await sb.from("profiles").select("is_external").eq("id", userId).maybeSingle();
-  return data?.is_external === true;
-}
+const INTERNAL_ALL = [...INTERNAL_STAFF, "sales_agent", "external_agent"] as const;
 
 async function getRoles(sb: any, userId: string): Promise<string[]> {
   const { data, error } = await sb.from("user_roles").select("role").eq("user_id", userId);
@@ -38,7 +32,6 @@ async function assertInternal(sb: any, userId: string) {
   return roles;
 }
 
-/** Employee scope -> groups. Managers/direction/admins always see both groups. */
 /** Named assignment groups the caller belongs to. */
 async function myGroupIds(sb: any, userId: string): Promise<string[]> {
   const { data } = await sb.from("staff_group_members").select("group_id").eq("user_id", userId);
@@ -51,7 +44,6 @@ async function myGroups(sb: any, userId: string, seesAll: boolean): Promise<("pu
   const scope = (data?.staff_scope ?? "both") as "purchase" | "sales" | "both";
   return scope === "both" ? ["purchase", "sales"] : [scope];
 }
-
 
 /* ---------- Buyer lead detail (admin) ---------- */
 
@@ -92,7 +84,6 @@ export const adminConvertBuyerLead = createServerFn({ method: "POST" })
     if (leadErr) fail("convert.getLead", leadErr);
     if (!lead) throw new Error("Demande introuvable");
 
-    // Check if already converted
     const { data: existing } = await sb.from("demand_opportunities").select("id").eq("buyer_lead_id", data.id).maybeSingle();
     if (existing?.id) {
       return { id: existing.id, alreadyExisted: true };
@@ -129,7 +120,6 @@ export const adminConvertBuyerLead = createServerFn({ method: "POST" })
       .eq("id", lead.id);
     if (updErr) fail("convert.updateLead", updErr);
 
-    // Notify the assigned agent, if any (group-owned demands stay in the shared pool).
     if (agentId) {
       await sb.from("notifications").insert({
         user_id: agentId,
@@ -166,7 +156,6 @@ export const assignDemandOpportunity = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
-
 
 /* ---------- Request info / Reject on buyer lead ---------- */
 
@@ -210,6 +199,7 @@ export const listDemandOpportunities = createServerFn({ method: "GET" })
     const sb = context.supabase as any;
     const roles = await assertInternal(sb, context.userId);
     const isStaff = roles.some((r) => (INTERNAL_STAFF as readonly string[]).includes(r));
+    const isExternal = roles.includes("external_agent");
 
     let q = sb.from("demand_opportunities")
       .select("id, reference_number, status, stage, assigned_sales_agent_id, assigned_group, assigned_group_id, brand, model, max_budget_ht, city, country, buyer_lead_id, created_at")
@@ -218,11 +208,9 @@ export const listDemandOpportunities = createServerFn({ method: "GET" })
 
     if (data.scope === "mine") {
       q = q.eq("assigned_sales_agent_id", context.userId);
-    } else if (await isExternalAgent(sb, context.userId)) {
-      // External agent: strictly their own demands.
+    } else if (isExternal) {
       q = q.eq("assigned_sales_agent_id", context.userId);
     } else if (!isStaff) {
-      // Sales agent: own demands, their named groups, plus the unassigned pool of their scope.
       const [groups, groupIds] = await Promise.all([
         myGroups(sb, context.userId, false),
         myGroupIds(sb, context.userId),
@@ -233,11 +221,9 @@ export const listDemandOpportunities = createServerFn({ method: "GET" })
       q = q.or(parts.join(","));
     }
 
-
     const { data: rows, error } = await q;
     if (error) fail("list", error);
 
-    // Fetch buyer lead contacts
     const buyerIds = Array.from(new Set((rows ?? []).map((r: any) => r.buyer_lead_id).filter(Boolean)));
     let buyerMap: Record<string, any> = {};
     if (buyerIds.length) {
