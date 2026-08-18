@@ -210,7 +210,6 @@ export const staffUpdate = createServerFn({ method: "POST" })
     if (data.lastName !== undefined) patch.last_name = data.lastName;
     if (data.phone !== undefined) patch.phone = data.phone;
     if (data.commissionRate !== undefined) patch.commission_rate = data.commissionRate;
-    if (data.isExternal !== undefined) patch.is_external = data.isExternal;
     if (data.scope !== undefined || data.role !== undefined) {
       const nextScope = (data.scope ?? "both") as StaffScope;
       if (data.role !== undefined && (MANAGEMENT_ROLES as readonly string[]).includes(data.role)) {
@@ -219,11 +218,12 @@ export const staffUpdate = createServerFn({ method: "POST" })
         patch.staff_scope = nextScope;
       }
     }
-    // Management roles carry no commission rate and are never external contractors.
-    if (data.role !== undefined && (MANAGEMENT_ROLES as readonly string[]).includes(data.role)) {
-      patch.commission_rate = null;
-      patch.is_external = false;
+    // Externality is derived from the role; management roles carry no commission rate.
+    if (data.role !== undefined) {
+      patch.is_external = derivedIsExternal(data.role);
+      if ((MANAGEMENT_ROLES as readonly string[]).includes(data.role)) patch.commission_rate = null;
     }
+
     const { error: pErr } = await admin.from("profiles").update(patch).eq("id", data.userId);
     if (pErr) fail("staffUpdate.profile", pErr);
 
