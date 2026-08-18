@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { parseBuyerLead } from "@/lib/buyer-leads.schema";
+import { buildBuyerLeadRow } from "@/lib/buyer-leads.shared";
 
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -9,15 +10,12 @@ const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey",
 };
 
-function makeClient(accessToken?: string): SupabaseClient<Database> {
+function makeClient(): SupabaseClient<Database> {
   return createClient<Database>(
     process.env["SUPABASE_URL"]!,
     process.env["SUPABASE_PUBLISHABLE_KEY"]!,
     {
       auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-      ...(accessToken
-        ? { global: { headers: { Authorization: `Bearer ${accessToken}` } } }
-        : {}),
     },
   );
 }
