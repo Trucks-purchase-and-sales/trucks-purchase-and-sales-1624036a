@@ -137,9 +137,8 @@ export const VISIBILITY_OPTIONS = [
 
 export const AVAILABILITY_OPTIONS = [
   { value: "immediate", label: "Immédiate" },
-  { value: "moins_15_jours", label: "< 15 jours" },
-  { value: "15_30_jours", label: "15-30 jours" },
-  { value: "plus_30_jours", label: "> 30 jours" },
+  { value: "sous_7_jours", label: "Sous 7 jours" },
+  { value: "sous_30_jours", label: "Sous 30 jours" },
   { value: "a_confirmer", label: "À confirmer" },
 ];
 
@@ -261,7 +260,7 @@ export const EU27_CODES = new Set([
 export const NEGOTIABLE_OPTIONS = [
   { value: "oui", label: "Oui" },
   { value: "non", label: "Non" },
-  
+  { value: "a_discuter", label: "À discuter" },
 ];
 
 export const TRISTATE_YNV = [
