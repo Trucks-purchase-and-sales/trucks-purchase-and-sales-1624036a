@@ -186,7 +186,9 @@ const UpdateInput = z.object({
   role: z.enum(STAFF_ROLES).optional(),
   scope: z.enum(["purchase", "sales", "both"]).optional(),
   commissionRate: z.number().min(0).max(100).nullable().optional(),
+  // Accepted for backward compatibility but ignored: externality comes from the role.
   isExternal: z.boolean().optional(),
+
 });
 
 export const staffUpdate = createServerFn({ method: "POST" })
