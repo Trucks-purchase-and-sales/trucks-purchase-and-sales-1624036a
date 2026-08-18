@@ -162,7 +162,7 @@ export const staffCreate = createServerFn({ method: "POST" })
       staff_scope: effectiveScope(data.role, data.scope),
       // Management roles carry no commission rate and are never external contractors.
       commission_rate: (MANAGEMENT_ROLES as readonly string[]).includes(data.role) ? null : (data.commissionRate ?? null),
-      is_external: (MANAGEMENT_ROLES as readonly string[]).includes(data.role) ? false : (data.isExternal ?? false),
+      is_external: derivedIsExternal(data.role),
       partner_kind: null,
       is_active: true,
     });
