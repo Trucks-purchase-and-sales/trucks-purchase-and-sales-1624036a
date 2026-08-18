@@ -1,13 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { buyerLeadSchema } from "@/lib/buyer-leads.schema";
+import { parseBuyerLead } from "@/lib/buyer-leads.schema";
 
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey",
 };
+
+function makeClient(accessToken?: string): SupabaseClient<Database> {
+  return createClient<Database>(
+    process.env["SUPABASE_URL"]!,
+    process.env["SUPABASE_PUBLISHABLE_KEY"]!,
+    {
+      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+      ...(accessToken
+        ? { global: { headers: { Authorization: `Bearer ${accessToken}` } } }
+        : {}),
+    },
+  );
+}
 
 export const Route = createFileRoute("/api/public/buyer-leads")({
   server: {
@@ -55,10 +68,12 @@ export const Route = createFileRoute("/api/public/buyer-leads")({
         try { payload = await request.json(); }
         catch { return Response.json({ error: "Corps JSON invalide" }, { status: 400, headers: corsHeaders }); }
 
-        const parsed = buyerLeadSchema.safeParse(payload);
-        if (!parsed.success) {
+        const parsed = parseBuyerLead(payload);
+        if (!parsed.ok) {
+          // Detailed issues stay server-side; the client only gets a readable sentence.
+          console.error("[api/public/buyer-leads] validation failed", parsed.issues);
           return Response.json(
-            { error: "Champs invalides", details: parsed.error.flatten() },
+            { error: parsed.message, fields: parsed.fields },
             { status: 400, headers: corsHeaders },
           );
         }
@@ -69,12 +84,42 @@ export const Route = createFileRoute("/api/public/buyer-leads")({
           return Response.json({ id: "ok", reference: null }, { status: 201, headers: corsHeaders });
         }
 
+        // Authenticated buyers submit as themselves so the lead shows up in "Mes demandes".
+        // The owner id always comes from the verified token, never from the request body.
+        const authHeader = request.headers.get("authorization") ?? "";
+        const accessToken = authHeader.toLowerCase().startsWith("bearer ")
+          ? authHeader.slice(7).trim()
+          : "";
+        let ownerUserId: string | null = null;
 
-        const sb = createClient<Database>(
-          process.env.SUPABASE_URL!,
-          process.env.SUPABASE_PUBLISHABLE_KEY!,
-          { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-        );
+        if (accessToken && accessToken.split(".").length === 3) {
+          const authed = makeClient(accessToken);
+          const { data: userRes, error: userErr } = await authed.auth.getUser(accessToken);
+          if (userErr || !userRes?.user) {
+            return Response.json(
+              { error: "Session expirée. Merci de vous reconnecter puis de réessayer." },
+              { status: 401, headers: corsHeaders },
+            );
+          }
+          const { data: profile } = await authed
+            .from("profiles")
+            .select("partner_kind")
+            .eq("id", userRes.user.id)
+            .maybeSingle();
+          if (profile?.partner_kind !== "client") {
+            return Response.json(
+              {
+                error:
+                  "Votre compte n'est pas un compte acheteur. Déconnectez-vous pour envoyer une demande, ou contactez Wilmet.",
+              },
+              { status: 403, headers: corsHeaders },
+            );
+          }
+          ownerUserId = userRes.user.id;
+        }
+
+        // Anonymous visitors keep the publishable-key (anon) path with user_id NULL.
+        const sb = ownerUserId ? makeClient(accessToken) : makeClient();
 
         const cleanText = (v?: string | null) => (v && v.length ? v : null);
 
@@ -99,9 +144,13 @@ export const Route = createFileRoute("/api/public/buyer-leads")({
           console.error("[api/public/buyer-leads] lead_assignment settings read failed", e);
         }
 
+        // The row id is generated here: anonymous visitors have no SELECT policy on
+        // buyer_leads, so an INSERT ... RETURNING would be rejected by RLS.
+        const id = crypto.randomUUID();
 
-
-        const { data, error } = await sb.from("buyer_leads").insert({
+        const { error } = await sb.from("buyer_leads").insert({
+          id,
+          user_id: ownerUserId,
           vehicle_category: cleanText(d.vehicle_category),
           assigned_group: assignedGroup,
           vehicle_type: cleanText(d.vehicle_type),
@@ -139,7 +188,7 @@ export const Route = createFileRoute("/api/public/buyer-leads")({
           referral_code: ref?.code ?? null,
           assigned_sales_agent_id: ref?.canOwnLeads ? ref.ownerId : null,
 
-        }).select("id, reference_number").single();
+        });
 
         if (error) {
           console.error("[api/public/buyer-leads] insert failed", error);
@@ -149,10 +198,17 @@ export const Route = createFileRoute("/api/public/buyer-leads")({
           );
         }
 
-        return Response.json(
-          { id: data.id, reference: data.reference_number },
-          { status: 201, headers: corsHeaders },
-        );
+        // Reference number is produced by a database trigger; read it back through a
+        // narrow security-definer helper that only returns that one column.
+        let reference: string | null = null;
+        try {
+          const { data: refNum } = await sb.rpc("buyer_lead_reference" as never, { p_id: id } as never);
+          reference = (refNum as unknown as string | null) ?? null;
+        } catch (e) {
+          console.error("[api/public/buyer-leads] reference lookup failed", e);
+        }
+
+        return Response.json({ id, reference }, { status: 201, headers: corsHeaders });
       },
     },
   },
