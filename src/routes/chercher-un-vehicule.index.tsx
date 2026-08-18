@@ -242,6 +242,17 @@ function BuyerLeadPage() {
               <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
                 {step === 0 && (
                   <div className="space-y-4">
+                    {refLoading && (
+                      <p className="rounded-md border border-border bg-muted/40 p-2 text-xs text-muted-foreground">
+                        Chargement des référentiels…
+                      </p>
+                    )}
+                    {refError && (
+                      <div className="flex items-center justify-between gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+                        <span>Les listes de référence sont momentanément indisponibles.</span>
+                        <button type="button" className="underline" onClick={() => void refRefetch()}>Réessayer</button>
+                      </div>
+                    )}
                     <Field label={t("buyer.fields.vehicleCategory", { defaultValue: "Catégorie de véhicule" })} error={form.formState.errors.vehicle_category?.message} required>
                       <Controller name="vehicle_category" control={form.control} render={({ field }) => (
                         <SearchableCombobox
@@ -274,6 +285,7 @@ function BuyerLeadPage() {
                         <Controller name="preferred_brand" control={form.control} render={({ field }) => (
                           <SearchableCombobox value={field.value || undefined} onChange={(v) => { field.onChange(v); form.setValue("preferred_model", ""); }}
                             options={brandOptions}
+                            disabled={!category}
                             placeholder={category ? t("common.select") : t("buyer.fields.pickCategoryFirst", { defaultValue: "Sélectionnez d'abord une catégorie" })} />
                         )} />
                       </Field>
@@ -281,7 +293,7 @@ function BuyerLeadPage() {
                         <Controller name="preferred_model" control={form.control} render={({ field }) => (
                           modelOptions.length > 0
                             ? <SearchableCombobox value={field.value || undefined} onChange={field.onChange} options={modelOptions} placeholder={t("common.select")} />
-                            : <Input {...field} value={field.value ?? ""} placeholder={t("common.other")} />
+                            : <Input {...field} value={field.value ?? ""} disabled={!brandSlug} placeholder={brandSlug ? "Saisie libre" : "Sélectionnez d'abord une marque"} />
                         )} />
                       </Field>
                     </div>
@@ -299,12 +311,12 @@ function BuyerLeadPage() {
                 {step === 1 && (
                   <div className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label={t("buyer.fields.minYear")}>
+                      <Field label={t("buyer.fields.minYear")} error={form.formState.errors.min_year?.message}>
                         <Controller name="min_year" control={form.control} render={({ field }) => (
                           <YearPicker value={field.value ?? undefined} onChange={(v) => field.onChange(v ?? null)} />
                         )} />
                       </Field>
-                      <Field label={t("buyer.fields.maxMileage")}>
+                      <Field label={t("buyer.fields.maxMileage")} hint="en km" error={form.formState.errors.max_mileage?.message}>
                         <Input inputMode="numeric" type="number" min={0} step={1000} {...form.register("max_mileage", { setValueAs: (v) => (v === "" || v === null || v === undefined ? null : v) })} />
                       </Field>
                       <Field label={t("buyer.fields.minEuro")}>
@@ -325,20 +337,20 @@ function BuyerLeadPage() {
                             options={(ref?.gearboxTypes ?? []).map((v) => ({ value: v.slug, label: (i18n.language === "fr" ? v.label_fr : v.label_en) || v.label_fr }))} placeholder={t("common.select")} />
                         )} />
                       </Field>
-                      <Field label={t("buyer.fields.ptac")}>
+                      <Field label={t("buyer.fields.ptac")} hint="Poids total autorisé en charge, en kg" error={form.formState.errors.ptac_kg?.message}>
                         <Input inputMode="numeric" type="number" min={0} {...form.register("ptac_kg", { setValueAs: (v) => (v === "" || v === null || v === undefined ? null : v) })} />
                       </Field>
-                      <Field label={t("buyer.fields.payload")}>
+                      <Field label={t("buyer.fields.payload")} hint="Charge utile en kg — laissez vide si sans importance" error={form.formState.errors.payload_kg?.message}>
                         <Input inputMode="numeric" type="number" min={0} {...form.register("payload_kg", { setValueAs: (v) => (v === "" || v === null || v === undefined ? null : v) })} />
                       </Field>
                     </div>
-                    <Field label={t("buyer.fields.requiredEquipment")}>
+                    <Field label={t("buyer.fields.requiredEquipment")} hint="Sans ces équipements, le véhicule ne convient pas.">
                       <Controller name="required_equipment" control={form.control} render={({ field }) => (
                         <MultiSelectBadges value={field.value ?? []} onChange={field.onChange}
                           options={(ref?.equipment ?? []).map((e) => ({ value: e.slug, label: (i18n.language === "fr" ? e.label_fr : e.label_en) || e.label_fr }))} />
                       )} />
                     </Field>
-                    <Field label={t("buyer.fields.wantedEquipment")}>
+                    <Field label={t("buyer.fields.wantedEquipment")} hint="Un plus appréciable, mais non bloquant.">
                       <Controller name="wanted_equipment" control={form.control} render={({ field }) => (
                         <MultiSelectBadges value={field.value ?? []} onChange={field.onChange}
                           options={(ref?.equipment ?? []).map((e) => ({ value: e.slug, label: (i18n.language === "fr" ? e.label_fr : e.label_en) || e.label_fr }))} />
@@ -351,7 +363,7 @@ function BuyerLeadPage() {
                   <div className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-3">
                       <div className="sm:col-span-2">
-                        <Field label={t("buyer.fields.maxBudget")}>
+                        <Field label={t("buyer.fields.maxBudget")} hint="Budget maximum hors taxes (HT)" error={form.formState.errors.max_budget_ht?.message}>
                           <Input inputMode="decimal" type="number" min={0} step={100} {...form.register("max_budget_ht", { setValueAs: (v) => (v === "" || v === null || v === undefined ? null : v) })} />
                         </Field>
                       </div>
@@ -505,11 +517,17 @@ function readableError(raw: unknown, fallback: string): string {
   return fallback;
 }
 
-function Field({ label, children, required, error }: { label: string; children: React.ReactNode; required?: boolean; error?: string }) {
+function Field({ label, children, required, error, hint }: { label: string; children: React.ReactNode; required?: boolean; error?: string; hint?: string }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm font-medium">{label}{required && <span className="text-destructive"> *</span>}</Label>
+      <Label className="text-sm font-medium">
+        {label}
+        {required
+          ? <span className="text-destructive"> *</span>
+          : <span className="ml-1 text-xs font-normal text-muted-foreground">(facultatif)</span>}
+      </Label>
       {children}
+      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
