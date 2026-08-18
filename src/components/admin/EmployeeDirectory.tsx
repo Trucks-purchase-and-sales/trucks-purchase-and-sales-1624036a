@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription,
 } from "@/components/ui/dialog";
@@ -25,6 +24,7 @@ export const ROLE_LABELS: Record<StaffRole, string> = {
   company_management: "Direction",
   sales_manager: "Manager commercial",
   sales_agent: "Commercial",
+  external_agent: "Commercial externe",
 };
 
 export const SCOPE_LABELS: Record<StaffScope, string> = {
@@ -210,12 +210,11 @@ function CreateEmployeeDialog({ onDone }: { onDone: () => void }) {
   const [role, setRole] = useState<StaffRole>("sales_agent");
   const [scope, setScope] = useState<StaffScope>("both");
   const [commissionRate, setCommissionRate] = useState("");
-  const [isExternal, setIsExternal] = useState(false);
   const [password, setPassword] = useState(() => randomPassword());
   const createFn = useServerFn(staffCreate);
 
   const create = useMutation({
-    mutationFn: () => createFn({ data: { email, firstName, lastName, phone: phone || null, role, scope, commissionRate: isManagementRole(role) || commissionRate === "" ? null : Number(commissionRate), isExternal: isManagementRole(role) ? false : isExternal, password } }),
+    mutationFn: () => createFn({ data: { email, firstName, lastName, phone: phone || null, role, scope, commissionRate: isManagementRole(role) || commissionRate === "" ? null : Number(commissionRate), password } }),
     onSuccess: () => {
       toast.success("Employé créé", { description: `Mot de passe temporaire : ${password}` });
       setOpen(false);
@@ -256,14 +255,6 @@ function CreateEmployeeDialog({ onDone }: { onDone: () => void }) {
                 <Label>Taux de commission (%)</Label>
                 <Input inputMode="decimal" value={commissionRate} onChange={(e) => setCommissionRate(e.target.value)} placeholder="ex. 2,5" />
               </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label className="flex items-center gap-2">
-                  <Switch checked={isExternal} onCheckedChange={setIsExternal} /> Prestataire externe
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Un prestataire externe travaille pour Wilmet mais ne voit que ses propres dossiers.
-                </p>
-              </div>
             </>
           )}
         </div>
@@ -284,11 +275,10 @@ function EditEmployeeDialog({ row, onDone }: { row: StaffRow; onDone: () => void
   const [role, setRole] = useState<StaffRole>(row.role);
   const [scope, setScope] = useState<StaffScope>((row.staff_scope ?? "both") as StaffScope);
   const [commissionRate, setCommissionRate] = useState(row.commission_rate == null ? "" : String(row.commission_rate));
-  const [isExternal, setIsExternal] = useState(row.is_external === true);
   const updateFn = useServerFn(staffUpdate);
 
   const update = useMutation({
-    mutationFn: () => updateFn({ data: { userId: row.id, firstName, lastName, phone: phone || null, role, scope, commissionRate: isManagementRole(role) || commissionRate === "" ? null : Number(commissionRate), isExternal: isManagementRole(role) ? false : isExternal } }),
+    mutationFn: () => updateFn({ data: { userId: row.id, firstName, lastName, phone: phone || null, role, scope, commissionRate: isManagementRole(role) || commissionRate === "" ? null : Number(commissionRate) } }),
     onSuccess: () => { toast.success("Employé mis à jour"); setOpen(false); onDone(); },
     onError: (e: unknown) => toast.error("Échec", { description: e instanceof Error ? e.message : "" }),
   });
@@ -310,14 +300,6 @@ function EditEmployeeDialog({ row, onDone }: { row: StaffRow; onDone: () => void
               <div className="space-y-1.5">
                 <Label>Taux de commission (%)</Label>
                 <Input inputMode="decimal" value={commissionRate} onChange={(e) => setCommissionRate(e.target.value)} placeholder="ex. 2,5" />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label className="flex items-center gap-2">
-                  <Switch checked={isExternal} onCheckedChange={setIsExternal} /> Prestataire externe
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Un prestataire externe travaille pour Wilmet mais ne voit que ses propres dossiers.
-                </p>
               </div>
             </>
           )}
@@ -368,7 +350,7 @@ function DeleteEmployeeDialog({ row, staff, onDone }: { row: StaffRow; staff: St
   const [transferTo, setTransferTo] = useState<string>("");
   const fn = useServerFn(staffDelete);
   const others = useMemo(
-    () => staff.filter((s) => s.id !== row.id && s.is_active && (s.role === "sales_agent" || s.role === "sales_manager")),
+    () => staff.filter((s) => s.id !== row.id && s.is_active && (s.role === "sales_agent" || s.role === "external_agent" || s.role === "sales_manager")),
     [staff, row.id],
   );
   const del = useMutation({

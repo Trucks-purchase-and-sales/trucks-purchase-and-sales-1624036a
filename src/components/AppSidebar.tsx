@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sidebar";
 import wilmetLogo from "@/assets/wilmet-logo.png.asset.json";
 
-type Role = "admin" | "platform_admin" | "sales_manager" | "sales_agent" | "company_management" | "partenaire";
+type Role = "admin" | "platform_admin" | "sales_manager" | "sales_agent" | "external_agent" | "company_management" | "partenaire";
 type Kind = "client" | "seller" | null;
 type Scope = "purchase" | "sales" | "both";
 
@@ -23,8 +23,8 @@ function buildNav(roles: Set<Role>, kind: Kind, scope: Scope, isExternalStaff: b
   const isDirection = roles.has("company_management");
   const isManager = roles.has("sales_manager");
   const isAgent = roles.has("sales_agent");
-  // An external contractor is a staff member flagged on their profile, not a separate role.
-  const isExternalAgent = isExternalStaff && (roles.has("sales_agent") || roles.has("sales_manager"));
+  // An external contractor is identified by the explicit external_agent role.
+  const isExternalAgent = roles.has("external_agent") || (isExternalStaff && roles.has("sales_agent"));
   const isInternal = isAdmin || isDirection || isManager || isAgent || isExternalAgent;
 
   if (isInternal) {

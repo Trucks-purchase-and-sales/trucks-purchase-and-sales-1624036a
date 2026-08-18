@@ -29,7 +29,7 @@ export const salesAgentKpis = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const sb = context.supabase as any;
     const userId = context.userId;
-    const ok = await hasAnyRoleServer(sb, userId, ["sales_agent", "sales_manager", "platform_admin", "admin"]);
+    const ok = await hasAnyRoleServer(sb, userId, ["sales_agent", "external_agent", "sales_manager", "platform_admin", "admin"]);
     if (!ok) throw new Error("Non autorisé");
 
     const countBy = async (filter: (q: any) => any) => {

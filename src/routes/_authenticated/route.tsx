@@ -33,7 +33,7 @@ function AuthedLayout() {
     queryKey: ["user_roles", userId],
     queryFn: async () => {
       const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-      return (data ?? []).map((r) => r.role as "admin" | "platform_admin" | "sales_manager" | "sales_agent" | "company_management" | "partenaire");
+      return (data ?? []).map((r) => r.role as "admin" | "platform_admin" | "sales_manager" | "sales_agent" | "external_agent" | "company_management" | "partenaire");
     },
     staleTime: 60_000,
   });
