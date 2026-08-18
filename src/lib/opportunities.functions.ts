@@ -37,8 +37,19 @@ const opportunityInput = z.object({
   expected_repairs: z.string().optional().nullable(),
   additional_comments: z.string().optional().nullable(),
   desired_price_excl_tax: z.number().optional().nullable(),
-  price_negotiable: z.string().optional().nullable(),
-  availability: z.string().optional().nullable(),
+  price_negotiable: z
+    .enum(["oui", "non", "a_discuter"], {
+      message: "Valeur de négociabilité invalide : choisissez Oui, Non ou À discuter.",
+    })
+    .optional()
+    .nullable(),
+  availability: z
+    .enum(["immediate", "sous_7_jours", "sous_30_jours", "a_confirmer"], {
+      message:
+        "Valeur de disponibilité invalide : choisissez Immédiate, Sous 7 jours, Sous 30 jours ou À confirmer.",
+    })
+    .optional()
+    .nullable(),
   free_of_commitment: z.string().optional().nullable(),
   special_conditions: z.string().optional().nullable(),
   onsite_contact_name: z.string().optional().nullable(),
