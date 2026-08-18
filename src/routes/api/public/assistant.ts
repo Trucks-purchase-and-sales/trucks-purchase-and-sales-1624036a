@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { LOVABLE_AI_BASE_URL } from "@/lib/ai-gateway.server";
 import { persistAnonymousBuyerLead } from "@/lib/anonymous-buyer-lead.server";
+import { finalizeAssistantLead } from "@/lib/assistant-lead-finalization.server";
 import { parseAssistantRequest } from "@/lib/assistant-request.schema";
 import { readBoundedJson } from "@/lib/public-api.server";
 
@@ -24,9 +25,9 @@ Ton objectif : qualifier un besoin d'achat de véhicule et recueillir les inform
 - pays d'utilisation
 - prénom, nom, e-mail (obligatoires), téléphone et société si possible
 
-Quand tu as au minimum le type de véhicule, le prénom, le nom et l'e-mail, termine par un court message de confirmation
-suivi, sur la toute dernière ligne, d'un bloc JSON unique :
+Quand tu as au minimum le type de véhicule, le prénom, le nom et l'e-mail, indique seulement que tu as les informations nécessaires, puis ajoute sur la toute dernière ligne un bloc JSON unique :
 <<<LEAD{"vehicle_type":"...","preferred_brand":"...","preferred_model":"...","max_budget_ht":123456,"buy_timeline":"...","usage_country":"...","first_name":"...","last_name":"...","email":"...","phone":"...","company_name":"...","message":"résumé du besoin"}LEAD>>>
+N'affirme jamais que la demande est enregistrée, envoyée, transmise ou confirmée : seul le serveur peut confirmer l'enregistrement réel.
 Omets les clés inconnues. N'affiche jamais ce bloc autrement qu'en dernière ligne. Ne promets aucun prix ni disponibilité.
 Tu n'es pas un conseiller juridique ou financier. Si la question sort du cadre, invite à laisser ses coordonnées.`;
 
@@ -105,7 +106,7 @@ export const Route = createFileRoute("/api/public/assistant")({
           return Response.json({ error: "Assistant indisponible." }, { status: 503, headers: corsHeaders });
         }
 
-        let reply = "";
+        let modelReply = "";
         try {
           const res = await fetch(`${LOVABLE_AI_BASE_URL}/chat/completions`, {
             method: "POST",
@@ -121,88 +122,40 @@ export const Route = createFileRoute("/api/public/assistant")({
             return Response.json({ error: "Assistant momentanément indisponible." }, { status: 503, headers: corsHeaders });
           }
           const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-          reply = json.choices?.[0]?.message?.content ?? "";
+          modelReply = json.choices?.[0]?.message?.content ?? "";
         } catch (e) {
           console.error("[api/public/assistant] gateway call failed", e);
           return Response.json({ error: "Assistant momentanément indisponible." }, { status: 503, headers: corsHeaders });
         }
 
-        // Extract the structured lead block, if the assistant produced one.
-        let reference: string | null = null;
-        const match = reply.match(/<<<LEAD([\s\S]*?)LEAD>>>/);
-        if (match) {
-          reply = reply.replace(match[0], "").trim();
-          try {
-            const raw = JSON.parse(match[1]!) as Record<string, unknown>;
-            const str = (k: string, max = 200) => {
-              const v = raw[k];
-              return typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
-            };
-            const email = str("email");
-            const first = str("first_name", 80);
-            const last = str("last_name", 80);
-            const vType = str("vehicle_type", 80);
-            if (email && /.+@.+\..+/.test(email) && first && last) {
-              const rawBudget = raw.max_budget_ht;
-              const budget =
-                typeof rawBudget === "number" &&
-                Number.isFinite(rawBudget) &&
-                rawBudget >= 0 &&
-                rawBudget <= 10_000_000
-                  ? rawBudget
-                  : null;
-
-              const persisted = await persistAnonymousBuyerLead(
-                {
-                  vehicle_type: vType,
-                  preferred_brand: str("preferred_brand", 80),
-                  preferred_model: str("preferred_model", 80),
-                  usage_country: str("usage_country", 80),
-                  buy_timeline: str("buy_timeline", 40),
-                  max_budget_ht: budget,
-                  currency: "EUR",
-                  first_name: first,
-                  last_name: last,
-                  company_name: str("company_name", 120),
-                  email,
-                  phone: str("phone", 40),
-                  message: str("message", 2000),
-                  // Safe because parseAssistantRequest accepts only literal true.
-                  gdpr_consent: true,
-                  locale: "fr",
-                  source: "ai_assistant",
-                  assigned_group: "sales",
-                },
-                {
-                  insert: (row) => sb.from("buyer_leads").insert(row as never),
-                  lookupReference: async (id) => {
-                    const { data, error } = await sb.rpc(
-                      "buyer_lead_reference" as never,
-                      { p_id: id } as never,
-                    );
-                    return { data, error };
-                  },
-                },
+        const finalized = await finalizeAssistantLead(modelReply, (row) =>
+          persistAnonymousBuyerLead(row, {
+            insert: (leadRow) => sb.from("buyer_leads").insert(leadRow as never),
+            lookupReference: async (id) => {
+              const { data, error } = await sb.rpc(
+                "buyer_lead_reference" as never,
+                { p_id: id } as never,
               );
+              return { data, error };
+            },
+          }),
+        );
 
-              if (!persisted.ok) {
-                console.error("[api/public/assistant] lead insert failed", persisted.error);
-              } else {
-                if (persisted.referenceError) {
-                  console.error(
-                    "[api/public/assistant] reference lookup failed",
-                    persisted.referenceError,
-                  );
-                }
-                reference = persisted.reference;
-              }
-            }
-          } catch (e) {
-            console.error("[api/public/assistant] lead block parse failed", e);
-          }
+        if (finalized.persistenceError) {
+          console.error("[api/public/assistant] lead insert failed", finalized.persistenceError);
+        }
+        if (finalized.referenceError) {
+          console.error("[api/public/assistant] reference lookup failed", finalized.referenceError);
         }
 
-        return Response.json({ available: true, reply, reference }, { status: 200, headers: corsHeaders });
+        return Response.json(
+          {
+            available: true,
+            reply: finalized.reply,
+            reference: finalized.reference,
+          },
+          { status: finalized.status, headers: corsHeaders },
+        );
       },
     },
   },
