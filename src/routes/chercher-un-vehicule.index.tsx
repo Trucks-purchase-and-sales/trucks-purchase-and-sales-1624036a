@@ -27,7 +27,7 @@ import { SearchableCombobox } from "@/components/pickers/SearchableCombobox";
 import { YearPicker } from "@/components/pickers/YearPicker";
 import { MultiSelectBadges } from "@/components/pickers/MultiSelectBadges";
 import { getReferenceData } from "@/lib/reference-data.functions";
-import { buyerLeadSchema, type BuyerLeadInput } from "@/lib/buyer-leads.schema";
+import { buyerLeadSchema, BUYER_FIELD_LABELS, type BuyerLeadInput } from "@/lib/buyer-leads.schema";
 import { EU27_CODES } from "@/lib/wilmet-constants";
 import { AssistantWidget } from "@/components/public/AssistantWidget";
 
@@ -50,7 +50,8 @@ function BuyerLeadPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const fn = useServerFn(getReferenceData);
-  const { data: ref } = useQuery({ queryKey: ["reference-data"], queryFn: () => fn() });
+  const { data: ref, isLoading: refLoading, isError: refError, refetch: refRefetch } =
+    useQuery({ queryKey: ["reference-data"], queryFn: () => fn() });
 
   const [step, setStep] = useState(0);
   const containerRef = useStepScroll(step);
@@ -64,10 +65,44 @@ function BuyerLeadPage() {
     },
   });
 
+  // Signed-in buyers: prefill contact details from their profile without ever
+  // overwriting something they already typed.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: auth } = await supabase.auth.getUser();
+      const user = auth?.user;
+      if (!user || cancelled) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, company_name, email, phone, country, city, partner_kind")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!profile || cancelled) return;
+      const fill = (key: keyof BuyerLeadInput, value: string | null | undefined) => {
+        if (!value) return;
+        const current = form.getValues(key);
+        if (current === undefined || current === null || current === "") {
+          form.setValue(key, value as never, { shouldDirty: false });
+        }
+      };
+      fill("first_name", profile.first_name);
+      fill("last_name", profile.last_name);
+      fill("company_name", profile.company_name);
+      fill("email", profile.email ?? user.email);
+      fill("phone", profile.phone);
+      fill("country", profile.country);
+      fill("city", profile.city);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const stepFields: (keyof BuyerLeadInput)[][] = [
     ["vehicle_category", "vehicle_type"],
-    [],
-    [],
+    ["min_year", "max_mileage", "ptac_kg", "payload_kg"],
+    ["max_budget_ht"],
     ["first_name", "last_name", "email", "gdpr_consent"],
   ];
 
@@ -81,11 +116,19 @@ function BuyerLeadPage() {
   const [submitting, setSubmitting] = useState(false);
   const onSubmit = form.handleSubmit(
     async (data) => {
+      if (submitting) return; // no double submit
       setSubmitting(true);
       try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: session } = await supabase.auth.getSession();
+        const token = session.session?.access_token;
+
         const r = await fetch("/api/public/buyer-leads", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify({
             ...data,
             locale: i18n.language || "fr",
@@ -93,9 +136,23 @@ function BuyerLeadPage() {
           }),
 
         });
-        if (!r.ok) throw new Error(String(r.status));
-        const body = (await r.json()) as { id: string; reference: string };
-        navigate({ to: "/chercher-un-vehicule/merci", search: { ref: body.reference } as never });
+
+        if (!r.ok) {
+          const body = (await r.json().catch(() => null)) as { error?: string } | null;
+          const fallback =
+            r.status === 429
+              ? "Trop de demandes. Merci de réessayer dans quelques minutes."
+              : r.status === 401
+                ? "Session expirée. Merci de vous reconnecter puis de réessayer."
+                : r.status >= 500
+                  ? t("buyer.errors.submit")
+                  : "Merci de vérifier les informations saisies.";
+          toast.error(readableError(body?.error, fallback));
+          return;
+        }
+
+        const body = (await r.json()) as { id: string; reference: string | null };
+        navigate({ to: "/chercher-un-vehicule/merci", search: { ref: body.reference ?? "" } as never });
       } catch (e) {
         console.error(e);
         toast.error(t("buyer.errors.submit"));
@@ -103,30 +160,22 @@ function BuyerLeadPage() {
     },
     (errors) => {
       // Surface validation errors so the form never silently no-ops (F35).
-      const fieldOrder: (keyof BuyerLeadInput)[] = [
-        "vehicle_category", "vehicle_type", "first_name", "last_name", "email", "gdpr_consent",
-      ];
       const firstBadStep = STEP_KEYS.findIndex((_, i) =>
         stepFields[i].some((f) => (errors as Record<string, unknown>)[f as string]),
       );
       if (firstBadStep >= 0 && firstBadStep !== step) setStep(firstBadStep);
+      const fieldOrder = stepFields.flat();
       const firstField = fieldOrder.find((f) => (errors as Record<string, unknown>)[f as string])
         ?? (Object.keys(errors)[0] as keyof BuyerLeadInput | undefined);
-      const labelMap: Record<string, string> = {
-        vehicle_category: t("buyer.fields.vehicleCategory", { defaultValue: "Catégorie de véhicule" }),
-        vehicle_type: t("buyer.fields.vehicleType"),
-        first_name: t("buyer.fields.firstName", { defaultValue: "Prénom" }),
-        last_name: t("buyer.fields.lastName", { defaultValue: "Nom" }),
-        email: "Email",
-        gdpr_consent: t("buyer.fields.gdpr", { defaultValue: "Consentement RGPD" }),
-      };
-      const label = firstField ? labelMap[firstField as string] ?? String(firstField) : "";
+      const label = firstField ? BUYER_FIELD_LABELS[firstField as string] ?? String(firstField) : "";
       toast.error(
         t("buyer.errors.validation", { defaultValue: "Merci de compléter les champs requis." }),
         label ? { description: `${t("common.field", { defaultValue: "Champ" })} : ${label}` } : undefined,
       );
     },
   );
+
+
 
   const labels = STEP_KEYS.map((k) => t(`buyer.steps.${k}`));
 
@@ -193,6 +242,17 @@ function BuyerLeadPage() {
               <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
                 {step === 0 && (
                   <div className="space-y-4">
+                    {refLoading && (
+                      <p className="rounded-md border border-border bg-muted/40 p-2 text-xs text-muted-foreground">
+                        Chargement des référentiels…
+                      </p>
+                    )}
+                    {refError && (
+                      <div className="flex items-center justify-between gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+                        <span>Les listes de référence sont momentanément indisponibles.</span>
+                        <button type="button" className="underline" onClick={() => void refRefetch()}>Réessayer</button>
+                      </div>
+                    )}
                     <Field label={t("buyer.fields.vehicleCategory", { defaultValue: "Catégorie de véhicule" })} error={form.formState.errors.vehicle_category?.message} required>
                       <Controller name="vehicle_category" control={form.control} render={({ field }) => (
                         <SearchableCombobox
@@ -225,6 +285,7 @@ function BuyerLeadPage() {
                         <Controller name="preferred_brand" control={form.control} render={({ field }) => (
                           <SearchableCombobox value={field.value || undefined} onChange={(v) => { field.onChange(v); form.setValue("preferred_model", ""); }}
                             options={brandOptions}
+                            disabled={!category}
                             placeholder={category ? t("common.select") : t("buyer.fields.pickCategoryFirst", { defaultValue: "Sélectionnez d'abord une catégorie" })} />
                         )} />
                       </Field>
@@ -232,7 +293,7 @@ function BuyerLeadPage() {
                         <Controller name="preferred_model" control={form.control} render={({ field }) => (
                           modelOptions.length > 0
                             ? <SearchableCombobox value={field.value || undefined} onChange={field.onChange} options={modelOptions} placeholder={t("common.select")} />
-                            : <Input {...field} value={field.value ?? ""} placeholder={t("common.other")} />
+                            : <Input {...field} value={field.value ?? ""} disabled={!brandSlug} placeholder={brandSlug ? "Saisie libre" : "Sélectionnez d'abord une marque"} />
                         )} />
                       </Field>
                     </div>
@@ -250,13 +311,13 @@ function BuyerLeadPage() {
                 {step === 1 && (
                   <div className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label={t("buyer.fields.minYear")}>
+                      <Field label={t("buyer.fields.minYear")} error={form.formState.errors.min_year?.message}>
                         <Controller name="min_year" control={form.control} render={({ field }) => (
                           <YearPicker value={field.value ?? undefined} onChange={(v) => field.onChange(v ?? null)} />
                         )} />
                       </Field>
-                      <Field label={t("buyer.fields.maxMileage")}>
-                        <Input inputMode="numeric" type="number" min={0} step={1000} {...form.register("max_mileage", { valueAsNumber: true, setValueAs: (v) => (v === "" || Number.isNaN(v) ? null : Number(v)) })} />
+                      <Field label={t("buyer.fields.maxMileage")} hint="en km" error={form.formState.errors.max_mileage?.message}>
+                        <Input inputMode="numeric" type="number" min={0} step={1000} {...form.register("max_mileage", { setValueAs: (v) => (v === "" || v === null || v === undefined ? null : v) })} />
                       </Field>
                       <Field label={t("buyer.fields.minEuro")}>
                         <Controller name="min_euro_norm" control={form.control} render={({ field }) => (
@@ -276,20 +337,20 @@ function BuyerLeadPage() {
                             options={(ref?.gearboxTypes ?? []).map((v) => ({ value: v.slug, label: (i18n.language === "fr" ? v.label_fr : v.label_en) || v.label_fr }))} placeholder={t("common.select")} />
                         )} />
                       </Field>
-                      <Field label={t("buyer.fields.ptac")}>
-                        <Input inputMode="numeric" type="number" min={0} {...form.register("ptac_kg", { valueAsNumber: true, setValueAs: (v) => (v === "" || Number.isNaN(v) ? null : Number(v)) })} />
+                      <Field label={t("buyer.fields.ptac")} hint="Poids total autorisé en charge, en kg" error={form.formState.errors.ptac_kg?.message}>
+                        <Input inputMode="numeric" type="number" min={0} {...form.register("ptac_kg", { setValueAs: (v) => (v === "" || v === null || v === undefined ? null : v) })} />
                       </Field>
-                      <Field label={t("buyer.fields.payload")}>
-                        <Input inputMode="numeric" type="number" min={0} {...form.register("payload_kg", { valueAsNumber: true, setValueAs: (v) => (v === "" || Number.isNaN(v) ? null : Number(v)) })} />
+                      <Field label={t("buyer.fields.payload")} hint="Charge utile en kg — laissez vide si sans importance" error={form.formState.errors.payload_kg?.message}>
+                        <Input inputMode="numeric" type="number" min={0} {...form.register("payload_kg", { setValueAs: (v) => (v === "" || v === null || v === undefined ? null : v) })} />
                       </Field>
                     </div>
-                    <Field label={t("buyer.fields.requiredEquipment")}>
+                    <Field label={t("buyer.fields.requiredEquipment")} hint="Sans ces équipements, le véhicule ne convient pas.">
                       <Controller name="required_equipment" control={form.control} render={({ field }) => (
                         <MultiSelectBadges value={field.value ?? []} onChange={field.onChange}
                           options={(ref?.equipment ?? []).map((e) => ({ value: e.slug, label: (i18n.language === "fr" ? e.label_fr : e.label_en) || e.label_fr }))} />
                       )} />
                     </Field>
-                    <Field label={t("buyer.fields.wantedEquipment")}>
+                    <Field label={t("buyer.fields.wantedEquipment")} hint="Un plus appréciable, mais non bloquant.">
                       <Controller name="wanted_equipment" control={form.control} render={({ field }) => (
                         <MultiSelectBadges value={field.value ?? []} onChange={field.onChange}
                           options={(ref?.equipment ?? []).map((e) => ({ value: e.slug, label: (i18n.language === "fr" ? e.label_fr : e.label_en) || e.label_fr }))} />
@@ -302,8 +363,8 @@ function BuyerLeadPage() {
                   <div className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-3">
                       <div className="sm:col-span-2">
-                        <Field label={t("buyer.fields.maxBudget")}>
-                          <Input inputMode="decimal" type="number" min={0} step={100} {...form.register("max_budget_ht", { valueAsNumber: true, setValueAs: (v) => (v === "" || Number.isNaN(v) ? null : Number(v)) })} />
+                        <Field label={t("buyer.fields.maxBudget")} hint="Budget maximum hors taxes (HT)" error={form.formState.errors.max_budget_ht?.message}>
+                          <Input inputMode="decimal" type="number" min={0} step={100} {...form.register("max_budget_ht", { setValueAs: (v) => (v === "" || v === null || v === undefined ? null : v) })} />
                         </Field>
                       </div>
                       <Field label={t("buyer.fields.currency")}>
@@ -364,6 +425,11 @@ function BuyerLeadPage() {
 
                 {step === 3 && (
                   <div className="space-y-4">
+                    <RequestRecap form={form} labels={{
+                      category: categoryOptions.find((o) => o.value === form.watch("vehicle_category"))?.label,
+                      type: (ref?.vehicleTypes ?? []).find((v) => v.slug === form.watch("vehicle_type"))?.label_fr,
+                      body: bodyTypeOptions.find((o) => o.value === form.watch("body_type"))?.label,
+                    }} />
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Field label={t("buyer.fields.firstName")} required error={form.formState.errors.first_name?.message}>
                         <Input autoComplete="given-name" {...form.register("first_name")} />
@@ -439,11 +505,74 @@ function BuyerLeadPage() {
   );
 }
 
-function Field({ label, children, required, error }: { label: string; children: React.ReactNode; required?: boolean; error?: string }) {
+/** Never show a raw JSON/serialized error blob to the user. */
+function readableError(raw: unknown, fallback: string): string {
+  if (typeof raw !== "string" || !raw.trim()) return fallback;
+  const text = raw.trim();
+  if (!text.startsWith("{") && !text.startsWith("[")) return text;
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    if (typeof parsed === "string") return parsed;
+    if (parsed && typeof parsed === "object") {
+      const obj = parsed as Record<string, unknown>;
+      if (typeof obj["error"] === "string") return obj["error"] as string;
+      if (typeof obj["message"] === "string") return obj["message"] as string;
+    }
+  } catch { /* fall through */ }
+  return fallback;
+}
+
+function RequestRecap({ form, labels }: {
+  form: ReturnType<typeof useForm<BuyerLeadInput>>;
+  labels: { category?: string; type?: string; body?: string };
+}) {
+  const v = form.watch();
+  const num = (n: unknown, suffix: string) =>
+    typeof n === "number" && Number.isFinite(n) ? `${n.toLocaleString("fr-FR")} ${suffix}` : null;
+  const rows: [string, string | null][] = [
+    ["Véhicule", [labels.category, labels.type, labels.body].filter(Boolean).join(" · ") || null],
+    ["Marque / modèle", [v.preferred_brand, v.preferred_model].filter(Boolean).join(" ") || null],
+    ["Critères", [
+      v.min_year ? `à partir de ${v.min_year}` : null,
+      num(v.max_mileage, "km max"),
+      v.min_euro_norm || null,
+      v.fuel_type || null,
+      v.gearbox || null,
+      num(v.ptac_kg, "kg PTAC"),
+      num(v.payload_kg, "kg charge utile"),
+    ].filter(Boolean).join(" · ") || null],
+    ["Budget & délai", [
+      num(v.max_budget_ht, `${v.currency ?? "EUR"} HT max`),
+      v.buy_timeline || null,
+      v.financing_needed ? `financement : ${v.financing_needed}` : null,
+    ].filter(Boolean).join(" · ") || null],
+  ];
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Récapitulatif de votre demande</p>
+      <dl className="space-y-1">
+        {rows.map(([k, val]) => (
+          <div key={k} className="flex gap-2">
+            <dt className="w-36 shrink-0 text-muted-foreground">{k}</dt>
+            <dd className="flex-1">{val ?? "—"}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+function Field({ label, children, required, error, hint }: { label: string; children: React.ReactNode; required?: boolean; error?: string; hint?: string }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-sm font-medium">{label}{required && <span className="text-destructive"> *</span>}</Label>
+      <Label className="text-sm font-medium">
+        {label}
+        {required
+          ? <span className="text-destructive"> *</span>
+          : <span className="ml-1 text-xs font-normal text-muted-foreground">(facultatif)</span>}
+      </Label>
       {children}
+      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );

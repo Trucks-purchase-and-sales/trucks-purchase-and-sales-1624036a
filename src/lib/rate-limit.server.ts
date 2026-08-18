@@ -29,7 +29,9 @@ export async function checkRateLimit(opts: {
   maxEvents: number;
 }): Promise<RateLimitResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin.schema("private" as never).rpc(
+  // Exposed via a service-role-only wrapper in the public schema: PostgREST does
+  // not expose the private schema, so calling it there always failed (fail-open).
+  const { data, error } = await supabaseAdmin.rpc(
     "rate_limit_check" as never,
     {
       _bucket: opts.bucket,
