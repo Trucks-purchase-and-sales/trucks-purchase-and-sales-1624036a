@@ -2,12 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { LOVABLE_AI_BASE_URL } from "@/lib/ai-gateway.server";
+import { readBoundedJson } from "@/lib/public-api.server";
 
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
+
+const MAX_ASSISTANT_BODY_BYTES = 64 * 1024;
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -49,6 +52,12 @@ export const Route = createFileRoute("/api/public/assistant")({
           windowSeconds: 600,
           maxEvents: 20,
         });
+        if (!rl.limiterAvailable) {
+          return Response.json(
+            { error: "Assistant momentanément indisponible." },
+            { status: 503, headers: { ...corsHeaders, "Retry-After": String(rl.retryAfterSeconds) } },
+          );
+        }
         if (!rl.allowed) {
           return Response.json(
             { error: "Trop de messages. Merci de réessayer dans quelques minutes." },
@@ -56,9 +65,14 @@ export const Route = createFileRoute("/api/public/assistant")({
           );
         }
 
-        let body: { messages?: Msg[] };
-        try { body = (await request.json()) as { messages?: Msg[] }; }
-        catch { return Response.json({ error: "Corps JSON invalide" }, { status: 400, headers: corsHeaders }); }
+        const parsedBody = await readBoundedJson<{ messages?: Msg[] }>(request, MAX_ASSISTANT_BODY_BYTES);
+        if (!parsedBody.ok) {
+          return Response.json(
+            { error: parsedBody.error },
+            { status: parsedBody.status, headers: corsHeaders },
+          );
+        }
+        const body = parsedBody.data;
 
         const history = (body.messages ?? [])
           .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
@@ -124,7 +138,14 @@ export const Route = createFileRoute("/api/public/assistant")({
             const last = str("last_name", 80);
             const vType = str("vehicle_type", 80);
             if (email && /.+@.+\..+/.test(email) && first && last) {
-              const budget = typeof raw['max_budget_ht'] === "number" ? raw['max_budget_ht'] : null;
+              const rawBudget = raw.max_budget_ht;
+              const budget =
+                typeof rawBudget === "number" &&
+                Number.isFinite(rawBudget) &&
+                rawBudget >= 0 &&
+                rawBudget <= 10_000_000
+                  ? rawBudget
+                  : null;
               const { data, error } = await sb.from("buyer_leads").insert({
                 vehicle_type: vType,
                 preferred_brand: str("preferred_brand", 80),

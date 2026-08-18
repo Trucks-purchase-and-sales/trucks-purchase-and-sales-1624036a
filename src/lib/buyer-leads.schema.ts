@@ -54,8 +54,9 @@ export const buyerLeadSchema = z.object({
   message: z.string().trim().max(2000).optional().or(z.literal("")),
   gdpr_consent: z.literal(true),
   locale: z.string().max(5).default("fr"),
-  // Anti-spam honeypot — must remain empty. Real users don't see this field.
-  website: z.string().max(0).optional().or(z.literal("")),
+  // Anti-spam honeypot. A non-empty value is intentionally accepted here so
+  // the API can silently drop the submission instead of revealing detection.
+  website: z.string().max(200).optional().or(z.literal("")),
   // Affiliate attribution: code carried from ?ref= on any public page.
   referral_code: z.string().trim().max(40).optional().or(z.literal("")),
 

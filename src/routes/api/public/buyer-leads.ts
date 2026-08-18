@@ -3,12 +3,15 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { parseBuyerLead } from "@/lib/buyer-leads.schema";
 import { buildBuyerLeadRow } from "@/lib/buyer-leads.shared";
+import { readBoundedJson } from "@/lib/public-api.server";
 
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey",
 };
+
+const MAX_BUYER_LEAD_BODY_BYTES = 32 * 1024;
 
 function makeClient(): SupabaseClient<Database> {
   return createClient<Database>(
@@ -37,6 +40,15 @@ export const Route = createFileRoute("/api/public/buyer-leads")({
           windowSeconds: 600,
           maxEvents: 5,
         });
+        if (!short.limiterAvailable) {
+          return Response.json(
+            { error: "Service momentanément indisponible. Merci de réessayer." },
+            {
+              status: 503,
+              headers: { ...corsHeaders, "Retry-After": String(short.retryAfterSeconds) },
+            },
+          );
+        }
         if (!short.allowed) {
           return Response.json(
             { error: "Trop de demandes. Merci de réessayer dans quelques minutes." },
@@ -52,6 +64,15 @@ export const Route = createFileRoute("/api/public/buyer-leads")({
           windowSeconds: 3600,
           maxEvents: 20,
         });
+        if (!long.limiterAvailable) {
+          return Response.json(
+            { error: "Service momentanément indisponible. Merci de réessayer." },
+            {
+              status: 503,
+              headers: { ...corsHeaders, "Retry-After": String(long.retryAfterSeconds) },
+            },
+          );
+        }
         if (!long.allowed) {
           return Response.json(
             { error: "Limite horaire atteinte. Merci de réessayer plus tard." },
@@ -62,11 +83,15 @@ export const Route = createFileRoute("/api/public/buyer-leads")({
           );
         }
 
-        let payload: unknown;
-        try { payload = await request.json(); }
-        catch { return Response.json({ error: "Corps JSON invalide" }, { status: 400, headers: corsHeaders }); }
+        const body = await readBoundedJson<unknown>(request, MAX_BUYER_LEAD_BODY_BYTES);
+        if (!body.ok) {
+          return Response.json(
+            { error: body.error },
+            { status: body.status, headers: corsHeaders },
+          );
+        }
 
-        const parsed = parseBuyerLead(payload);
+        const parsed = parseBuyerLead(body.data);
         if (!parsed.ok) {
           // Detailed issues stay server-side; the client only gets a readable sentence.
           console.error("[api/public/buyer-leads] validation failed", parsed.issues);
@@ -128,7 +153,6 @@ export const Route = createFileRoute("/api/public/buyer-leads")({
           .insert(
             buildBuyerLeadRow({ id, data: d, ownerUserId: null, referrer: ref, assignedGroup }) as never,
           );
-
 
         if (error) {
           console.error("[api/public/buyer-leads] insert failed", error);

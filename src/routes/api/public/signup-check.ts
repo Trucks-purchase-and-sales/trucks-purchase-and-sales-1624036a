@@ -25,6 +25,19 @@ export const Route = createFileRoute("/api/public/signup-check")({
           windowSeconds: 600,
           maxEvents: 3,
         });
+        if (!r.limiterAvailable) {
+          return Response.json(
+            {
+              allowed: false,
+              retryAfterSeconds: r.retryAfterSeconds,
+              error: "Service d'inscription momentanément indisponible. Merci de réessayer.",
+            },
+            {
+              status: 503,
+              headers: { ...corsHeaders, "Retry-After": String(r.retryAfterSeconds) },
+            },
+          );
+        }
         if (!r.allowed) {
           return Response.json(
             {

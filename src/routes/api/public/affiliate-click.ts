@@ -1,9 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { readBoundedJson } from "@/lib/public-api.server";
 
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
+};
+
+const MAX_AFFILIATE_CLICK_BODY_BYTES = 8 * 1024;
+
+type AffiliateClickBody = {
+  code?: unknown;
+  path?: unknown;
+  referer?: unknown;
+  locale?: unknown;
 };
 
 /** Records a click on a personal affiliate link. Returns nothing sensitive. */
@@ -23,23 +33,39 @@ export const Route = createFileRoute("/api/public/affiliate-click")({
           windowSeconds: 600,
           maxEvents: 30,
         });
+        if (!rl.limiterAvailable) {
+          return Response.json(
+            { ok: false },
+            {
+              status: 503,
+              headers: { ...corsHeaders, "Retry-After": String(rl.retryAfterSeconds) },
+            },
+          );
+        }
         if (!rl.allowed) {
-          return Response.json({ ok: false }, { status: 429, headers: corsHeaders });
+          return Response.json(
+            { ok: false },
+            {
+              status: 429,
+              headers: { ...corsHeaders, "Retry-After": String(rl.retryAfterSeconds) },
+            },
+          );
         }
 
-        let body: { code?: unknown; path?: unknown; referer?: unknown; locale?: unknown };
-        try { body = (await request.json()) as typeof body; }
-        catch { return Response.json({ ok: false }, { status: 400, headers: corsHeaders }); }
+        const body = await readBoundedJson<AffiliateClickBody>(request, MAX_AFFILIATE_CLICK_BODY_BYTES);
+        if (!body.ok) {
+          return Response.json({ ok: false }, { status: body.status, headers: corsHeaders });
+        }
 
         const { resolveReferrer, recordClick } = await import("@/lib/affiliate.server");
-        const ref = await resolveReferrer(body.code);
+        const ref = await resolveReferrer(body.data.code);
         if (!ref) return Response.json({ ok: false }, { status: 200, headers: corsHeaders });
 
         await recordClick({
           linkId: ref.linkId,
-          path: typeof body.path === "string" ? body.path : null,
-          referer: typeof body.referer === "string" ? body.referer : null,
-          locale: typeof body.locale === "string" ? body.locale : null,
+          path: typeof body.data.path === "string" ? body.data.path : null,
+          referer: typeof body.data.referer === "string" ? body.data.referer : null,
+          locale: typeof body.data.locale === "string" ? body.data.locale : null,
           fingerprintHash: keyHash,
         });
         return Response.json({ ok: true }, { status: 200, headers: corsHeaders });

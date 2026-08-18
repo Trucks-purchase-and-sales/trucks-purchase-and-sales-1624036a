@@ -3,7 +3,10 @@
 import { createHash } from "node:crypto";
 
 export type RateLimitResult = {
+  /** Whether the request is under the configured limit. */
   allowed: boolean;
+  /** False when the limiter itself could not make a trustworthy decision. */
+  limiterAvailable: boolean;
   currentCount: number;
   retryAfterSeconds: number;
 };
@@ -30,7 +33,7 @@ export async function checkRateLimit(opts: {
 }): Promise<RateLimitResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // Exposed via a service-role-only wrapper in the public schema: PostgREST does
-  // not expose the private schema, so calling it there always failed (fail-open).
+  // not expose the private schema directly.
   const { data, error } = await supabaseAdmin.rpc(
     "rate_limit_check" as never,
     {
@@ -40,16 +43,34 @@ export async function checkRateLimit(opts: {
       _max_events: opts.maxEvents,
     } as never,
   );
+
   if (error) {
-    // Fail open — never block legit traffic on infra failure. Log server-side.
+    // Public endpoints must not become unlimited when the abuse-control
+    // dependency is degraded. Callers translate this into a temporary 503.
     console.error("[rate-limit] rpc failed", error);
-    return { allowed: true, currentCount: 0, retryAfterSeconds: 0 };
+    return {
+      allowed: false,
+      limiterAvailable: false,
+      currentCount: 0,
+      retryAfterSeconds: 60,
+    };
   }
+
   const row = Array.isArray(data) ? data[0] : data;
   const r = row as { allowed: boolean; current_count: number; retry_after_seconds: number } | null;
-  if (!r) return { allowed: true, currentCount: 0, retryAfterSeconds: 0 };
+  if (!r) {
+    console.error("[rate-limit] rpc returned no decision");
+    return {
+      allowed: false,
+      limiterAvailable: false,
+      currentCount: 0,
+      retryAfterSeconds: 60,
+    };
+  }
+
   return {
     allowed: r.allowed,
+    limiterAvailable: true,
     currentCount: r.current_count,
     retryAfterSeconds: r.retry_after_seconds,
   };
