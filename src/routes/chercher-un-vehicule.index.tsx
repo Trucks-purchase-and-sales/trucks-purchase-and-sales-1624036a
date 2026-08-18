@@ -425,6 +425,11 @@ function BuyerLeadPage() {
 
                 {step === 3 && (
                   <div className="space-y-4">
+                    <RequestRecap form={form} labels={{
+                      category: categoryOptions.find((o) => o.value === form.watch("vehicle_category"))?.label,
+                      type: (ref?.vehicleTypes ?? []).find((v) => v.slug === form.watch("vehicle_type"))?.label_fr,
+                      body: bodyTypeOptions.find((o) => o.value === form.watch("body_type"))?.label,
+                    }} />
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Field label={t("buyer.fields.firstName")} required error={form.formState.errors.first_name?.message}>
                         <Input autoComplete="given-name" {...form.register("first_name")} />
@@ -515,6 +520,46 @@ function readableError(raw: unknown, fallback: string): string {
     }
   } catch { /* fall through */ }
   return fallback;
+}
+
+function RequestRecap({ form, labels }: {
+  form: ReturnType<typeof useForm<BuyerLeadInput>>;
+  labels: { category?: string; type?: string; body?: string };
+}) {
+  const v = form.watch();
+  const num = (n: unknown, suffix: string) =>
+    typeof n === "number" && Number.isFinite(n) ? `${n.toLocaleString("fr-FR")} ${suffix}` : null;
+  const rows: [string, string | null][] = [
+    ["Véhicule", [labels.category, labels.type, labels.body].filter(Boolean).join(" · ") || null],
+    ["Marque / modèle", [v.preferred_brand, v.preferred_model].filter(Boolean).join(" ") || null],
+    ["Critères", [
+      v.min_year ? `à partir de ${v.min_year}` : null,
+      num(v.max_mileage, "km max"),
+      v.min_euro_norm || null,
+      v.fuel_type || null,
+      v.gearbox || null,
+      num(v.ptac_kg, "kg PTAC"),
+      num(v.payload_kg, "kg charge utile"),
+    ].filter(Boolean).join(" · ") || null],
+    ["Budget & délai", [
+      num(v.max_budget_ht, `${v.currency ?? "EUR"} HT max`),
+      v.buy_timeline || null,
+      v.financing_needed ? `financement : ${v.financing_needed}` : null,
+    ].filter(Boolean).join(" · ") || null],
+  ];
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Récapitulatif de votre demande</p>
+      <dl className="space-y-1">
+        {rows.map(([k, val]) => (
+          <div key={k} className="flex gap-2">
+            <dt className="w-36 shrink-0 text-muted-foreground">{k}</dt>
+            <dd className="flex-1">{val ?? "—"}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
 }
 
 function Field({ label, children, required, error, hint }: { label: string; children: React.ReactNode; required?: boolean; error?: string; hint?: string }) {
