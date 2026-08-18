@@ -14,6 +14,7 @@ export const STAFF_ROLES = [
   "company_management",
   "sales_manager",
   "sales_agent",
+  "external_agent",
 ] as const;
 export type StaffRole = (typeof STAFF_ROLES)[number];
 export type StaffScope = "purchase" | "sales" | "both";
@@ -25,6 +26,15 @@ const MANAGEMENT_ROLES = ["platform_admin", "admin", "company_management", "sale
 function effectiveScope(role: StaffRole | undefined, scope: StaffScope): StaffScope {
   return role && (MANAGEMENT_ROLES as readonly string[]).includes(role) ? "both" : scope;
 }
+
+/**
+ * profiles.is_external is derived metadata only: authorization comes from the
+ * explicit external_agent role, never from this flag.
+ */
+function derivedIsExternal(role: StaffRole): boolean {
+  return role === "external_agent";
+}
+
 
 async function assertAdmin(sb: any, userId: string) {
   const { data, error } = await sb
