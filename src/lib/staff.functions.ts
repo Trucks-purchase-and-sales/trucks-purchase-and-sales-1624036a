@@ -341,13 +341,16 @@ export const myStaffContext = createServerFn({ method: "GET" })
       sb.from("profiles").select("staff_scope, is_active, is_external").eq("id", context.userId).maybeSingle(),
       sb.from("staff_group_members").select("group_id").eq("user_id", context.userId),
     ]);
+    const role = ((roles ?? [])[0]?.role ?? null) as StaffRole | "partenaire" | null;
     return {
-      role: ((roles ?? [])[0]?.role ?? null) as StaffRole | "partenaire" | null,
+      role,
       scope: (profile?.staff_scope ?? "both") as StaffScope,
       isActive: profile?.is_active !== false,
-      isExternal: profile?.is_external === true,
+      // Authoritative signal is the role; the profile flag is legacy metadata.
+      isExternal: role === "external_agent" || profile?.is_external === true,
       groupIds: (memberships ?? []).map((m: any) => m.group_id as string),
     };
+
   });
 
 /* ---------------- Assignment groups ---------------- */
