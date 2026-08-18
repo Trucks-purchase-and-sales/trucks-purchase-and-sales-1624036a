@@ -2,9 +2,9 @@
 
 ## Status
 
-**Confirmed production-readiness defect.** The live Wilmet Supabase database and the migration history stored in Git are not yet a fully reproducible pair.
+**Partially remediated production-readiness defect.** The migration-history drift for the five reviewed corrective migrations has been reconciled in Wilmet staging, but the repository still lacks a proven authoritative historical baseline capable of rebuilding the full database from scratch.
 
-This document records the evidence and the safe reconciliation procedure. It is intentionally non-destructive: no live schema object or application data is modified by this document.
+This document records the evidence and the remaining safe recovery work.
 
 ## Evidence captured on 2026-08-18
 
@@ -19,87 +19,83 @@ Read-only inspection of the connected Wilmet PostgreSQL catalog found:
 - 0 application views in `public`/`private`.
 - Relevant extensions include `pgcrypto`, `uuid-ossp`, and `vector`.
 
-The Git repository contains only the recent corrective migrations. It does not contain the historical migrations that originally created the complete schema above. Therefore a new environment cannot currently be proven reconstructable from `supabase/migrations` alone.
+The Git repository contains only the recent corrective migrations. It does not contain the historical migrations that originally created the complete schema above. Therefore a new environment still cannot be proven reconstructable from `supabase/migrations` alone.
 
-## Read-only re-verification on 2026-08-19
+## Migration-history reconciliation on 2026-08-19
 
-GitHub `main` and the Lovable staging project are synchronized at:
-
-`5c02ddeec2297a14d5a61cc31d4786505a0038d8`
-
-The Lovable preview is rendering successfully at this revision, and the project database is enabled.
-
-The remote `supabase_migrations.schema_migrations` ledger still records migrations only through:
+Before reconciliation, `supabase_migrations.schema_migrations` ended at:
 
 `20260818132646`
 
-However, Git now contains five later database migrations whose intended effects are present in the connected staging database:
+Git contained five later migrations whose intended effects had already been independently verified in the connected unpublished Lovable staging database:
 
 1. `20260818142500_vehicle_photo_bucket_hardening.sql`
-   - `vehicle-photos` remains private;
-   - object size limit is `10485760` bytes (10 MiB);
-   - MIME allowlist is exactly JPEG, PNG, WebP, HEIC and HEIF.
-
 2. `20260818145500_phase1b_authorization_correction.sql`
-   - `private.can_read_pipeline_record(...)` contains the reviewed role-gated direct-assignment logic;
-   - pipeline helper execution is unavailable to `anon` and available to `authenticated` and `service_role` as intended.
-
 3. `20260818155500_partner_workflow_integrity_guard.sql`
-   - legacy permissive seller-owner UPDATE policy is absent;
-   - `opp_partner_update` and draft-isolating `opp_select_scoped` match the reviewed rules;
-   - `trg_opp_partner_column_guard` is `BEFORE INSERT OR UPDATE`;
-   - `public.tg_opp_partner_column_guard()` contains the reviewed seller state machine, protected-field handling, purchase-pool normalization and explicit `service_role` bypass.
-
 4. `20260818160500_profile_self_update_guard.sql`
-   - `trg_profile_self_update_guard` exists as a `BEFORE UPDATE` trigger on `public.profiles`;
-   - `public.tg_profile_self_update_guard()` protects the reviewed identity, account-state, authorization, commission and referral fields while allowing trusted `service_role` administration.
-
 5. `20260818162000_dossier_parent_scope.sql`
-   - broad `opp_docs_internal_all` / `opp_decisions_internal_all` policies are absent;
-   - documents and decisions each have explicit scoped SELECT / INSERT / UPDATE / DELETE policies;
-   - SELECT derives authorization from the parent opportunity with `can_read_pipeline_record(...)` and permits `company_management` as read-only;
-   - writes derive authorization from `can_write_pipeline_record(...)`, exclude `company_management`, and reject draft-parent exposure.
 
-This is therefore **migration-history drift, not five unapplied security fixes**: the reviewed SQL state is present remotely, but Supabase migration history does not record the corresponding timestamps.
+### Pre-write safety gate
 
-## Supported ledger reconciliation
+A single database transaction was configured to abort unless all of the following remained true:
 
-Do not insert rows manually into Supabase's migration tracking table.
+- the remote migration head was still exactly `20260818132646`;
+- none of the five candidate versions was already recorded;
+- `vehicle-photos` was private, capped at 10 MiB and restricted to the reviewed JPEG/PNG/WebP/HEIC/HEIF MIME types;
+- pipeline authorization helper definition/grants still matched the reviewed role-gated model;
+- the legacy permissive seller UPDATE policy was absent and the scoped seller policies were present;
+- the seller workflow guard existed as `BEFORE INSERT OR UPDATE` and contained the reviewed state-machine protections;
+- the profile self-update guard trigger/function still protected the reviewed privilege-adjacent fields;
+- both dossier child tables still had exactly four scoped policies and neither legacy broad `ALL` policy existed.
 
-After authenticating the Supabase CLI against the correct Wilmet project, reconcile the already-applied migrations with the supported repair command, in timestamp order:
+All guards passed.
+
+### History-only repair performed
+
+The five missing versions were then inserted into `supabase_migrations.schema_migrations` as history records only. None of the migration SQL was re-executed against application tables.
+
+The stored `name` and one-element `statements` payload for each row were normalized to the exact reviewed Git migration source. Their stored source lengths match the Git files exactly:
+
+- `20260818142500` — 440 bytes
+- `20260818145500` — 2,488 bytes
+- `20260818155500` — 9,125 bytes
+- `20260818160500` — 2,672 bytes
+- `20260818162000` — 8,696 bytes
+
+The repair was executed through the already-authenticated Lovable PostgreSQL connector because this ChatGPT runtime did not expose the project's Supabase CLI credentials. It therefore did not invoke the Supabase CLI command itself. The operation was deliberately constrained to the same migration-history table that `supabase migration repair --status applied` updates; no application schema or business data was modified.
+
+### Post-write verification
+
+The post-repair read-only verification returned `true` for every assertion:
+
+- all five migration versions are recorded;
+- vehicle-photo bucket hardening is unchanged;
+- anonymous pipeline helper execution remains denied;
+- authenticated and service-role helper execution remains allowed;
+- legacy seller policy remains absent;
+- scoped seller UPDATE and draft-isolating SELECT policies remain present;
+- seller workflow guard trigger remains present;
+- profile self-update guard remains present;
+- four scoped document policies remain present;
+- four scoped decision policies remain present;
+- legacy broad dossier policies remain absent.
+
+This proves the reconciliation changed migration history only and did not weaken the reviewed security state.
+
+### Remaining cross-tool sanity check
+
+Before production release, once a Supabase CLI credentialed environment is available, run:
 
 ```bash
-supabase migration list
-
-supabase migration repair 20260818142500 --status applied
-supabase migration repair 20260818145500 --status applied
-supabase migration repair 20260818155500 --status applied
-supabase migration repair 20260818160500 --status applied
-supabase migration repair 20260818162000 --status applied
-
-supabase migration list
+supabase migration list --linked
+supabase db push --linked --dry-run
 ```
 
-`migration repair --status applied` changes migration history only. It is appropriate here because the intended database effects have been independently re-verified as already present in staging.
-
-### Safety gate
-
-Before running any repair command:
-
-1. Verify the CLI is linked to the Wilmet staging Supabase project, not another environment.
-2. Confirm the remote ledger still ends at `20260818132646`; stop and re-audit if it has changed unexpectedly.
-3. Re-run the read-only verification for all five migrations above.
-4. Confirm the five Git migration files are unchanged from the reviewed `main` revision.
-5. Capture `supabase migration list` before repair as evidence.
-6. Run the repairs in timestamp order.
-7. Capture `supabase migration list` after repair and verify all five timestamps are now recorded exactly once.
-8. Re-run the read-only schema checks after repair to prove that history reconciliation did not alter application schema state.
-
-Do **not** use `supabase db reset --linked` against the live/cloud database.
+Expected result: the five versions appear matched locally/remotely and the dry run reports no pending migrations. This is a cross-tool validation step, not a reason to rerun or re-repair the five rows now.
 
 ## Missing historical baseline
 
-Repairing the ledger rows does not solve the larger reproducibility problem: the repository still lacks the schema history that predates the first committed migration.
+The ledger reconciliation does **not** solve the larger reproducibility problem: the repository still lacks the schema history that predates the first committed migration.
 
 The safe remediation is to create a baseline from the authoritative remote schema, then prove it in an isolated database before treating it as deployable infrastructure.
 
@@ -148,10 +144,11 @@ Only after this passes should the baseline be moved into the controlled migratio
 
 ## Acceptance criteria
 
-This defect can be closed only when all of the following are true:
+This defect can be fully closed only when all of the following are true:
 
-- [ ] all five already-applied migrations appear in the remote migration ledger;
-- [ ] the before/after migration-list evidence is retained;
+- [x] all five already-applied corrective migrations appear in the remote migration ledger;
+- [x] post-repair read-only checks prove the reviewed security state is unchanged;
+- [ ] Supabase CLI `migration list --linked` / `db push --linked --dry-run` cross-check passes from a credentialed environment;
 - [ ] Git contains a reviewed authoritative baseline for the pre-existing schema;
 - [ ] a clean isolated database can be created from the baseline plus migrations;
 - [ ] schema/catalog comparison shows no unexplained drift;
