@@ -50,7 +50,8 @@ function BuyerLeadPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const fn = useServerFn(getReferenceData);
-  const { data: ref } = useQuery({ queryKey: ["reference-data"], queryFn: () => fn() });
+  const { data: ref, isLoading: refLoading, isError: refError, refetch: refRefetch } =
+    useQuery({ queryKey: ["reference-data"], queryFn: () => fn() });
 
   const [step, setStep] = useState(0);
   const containerRef = useStepScroll(step);
@@ -64,10 +65,44 @@ function BuyerLeadPage() {
     },
   });
 
+  // Signed-in buyers: prefill contact details from their profile without ever
+  // overwriting something they already typed.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: auth } = await supabase.auth.getUser();
+      const user = auth?.user;
+      if (!user || cancelled) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, company_name, email, phone, country, city, partner_kind")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!profile || cancelled) return;
+      const fill = (key: keyof BuyerLeadInput, value: string | null | undefined) => {
+        if (!value) return;
+        const current = form.getValues(key);
+        if (current === undefined || current === null || current === "") {
+          form.setValue(key, value as never, { shouldDirty: false });
+        }
+      };
+      fill("first_name", profile.first_name);
+      fill("last_name", profile.last_name);
+      fill("company_name", profile.company_name);
+      fill("email", profile.email ?? user.email);
+      fill("phone", profile.phone);
+      fill("country", profile.country);
+      fill("city", profile.city);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const stepFields: (keyof BuyerLeadInput)[][] = [
     ["vehicle_category", "vehicle_type"],
-    [],
-    [],
+    ["min_year", "max_mileage", "ptac_kg", "payload_kg"],
+    ["max_budget_ht"],
     ["first_name", "last_name", "email", "gdpr_consent"],
   ];
 
@@ -81,11 +116,19 @@ function BuyerLeadPage() {
   const [submitting, setSubmitting] = useState(false);
   const onSubmit = form.handleSubmit(
     async (data) => {
+      if (submitting) return; // no double submit
       setSubmitting(true);
       try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: session } = await supabase.auth.getSession();
+        const token = session.session?.access_token;
+
         const r = await fetch("/api/public/buyer-leads", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify({
             ...data,
             locale: i18n.language || "fr",
@@ -93,9 +136,23 @@ function BuyerLeadPage() {
           }),
 
         });
-        if (!r.ok) throw new Error(String(r.status));
-        const body = (await r.json()) as { id: string; reference: string };
-        navigate({ to: "/chercher-un-vehicule/merci", search: { ref: body.reference } as never });
+
+        if (!r.ok) {
+          const body = (await r.json().catch(() => null)) as { error?: string } | null;
+          const fallback =
+            r.status === 429
+              ? "Trop de demandes. Merci de réessayer dans quelques minutes."
+              : r.status === 401
+                ? "Session expirée. Merci de vous reconnecter puis de réessayer."
+                : r.status >= 500
+                  ? t("buyer.errors.submit")
+                  : "Merci de vérifier les informations saisies.";
+          toast.error(readableError(body?.error, fallback));
+          return;
+        }
+
+        const body = (await r.json()) as { id: string; reference: string | null };
+        navigate({ to: "/chercher-un-vehicule/merci", search: { ref: body.reference ?? "" } as never });
       } catch (e) {
         console.error(e);
         toast.error(t("buyer.errors.submit"));
@@ -103,30 +160,22 @@ function BuyerLeadPage() {
     },
     (errors) => {
       // Surface validation errors so the form never silently no-ops (F35).
-      const fieldOrder: (keyof BuyerLeadInput)[] = [
-        "vehicle_category", "vehicle_type", "first_name", "last_name", "email", "gdpr_consent",
-      ];
       const firstBadStep = STEP_KEYS.findIndex((_, i) =>
         stepFields[i].some((f) => (errors as Record<string, unknown>)[f as string]),
       );
       if (firstBadStep >= 0 && firstBadStep !== step) setStep(firstBadStep);
+      const fieldOrder = stepFields.flat();
       const firstField = fieldOrder.find((f) => (errors as Record<string, unknown>)[f as string])
         ?? (Object.keys(errors)[0] as keyof BuyerLeadInput | undefined);
-      const labelMap: Record<string, string> = {
-        vehicle_category: t("buyer.fields.vehicleCategory", { defaultValue: "Catégorie de véhicule" }),
-        vehicle_type: t("buyer.fields.vehicleType"),
-        first_name: t("buyer.fields.firstName", { defaultValue: "Prénom" }),
-        last_name: t("buyer.fields.lastName", { defaultValue: "Nom" }),
-        email: "Email",
-        gdpr_consent: t("buyer.fields.gdpr", { defaultValue: "Consentement RGPD" }),
-      };
-      const label = firstField ? labelMap[firstField as string] ?? String(firstField) : "";
+      const label = firstField ? BUYER_FIELD_LABELS[firstField as string] ?? String(firstField) : "";
       toast.error(
         t("buyer.errors.validation", { defaultValue: "Merci de compléter les champs requis." }),
         label ? { description: `${t("common.field", { defaultValue: "Champ" })} : ${label}` } : undefined,
       );
     },
   );
+
+
 
   const labels = STEP_KEYS.map((k) => t(`buyer.steps.${k}`));
 
