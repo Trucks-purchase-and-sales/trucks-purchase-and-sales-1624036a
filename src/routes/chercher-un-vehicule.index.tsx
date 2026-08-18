@@ -27,6 +27,7 @@ import { SearchableCombobox } from "@/components/pickers/SearchableCombobox";
 import { YearPicker } from "@/components/pickers/YearPicker";
 import { MultiSelectBadges } from "@/components/pickers/MultiSelectBadges";
 import { getReferenceData } from "@/lib/reference-data.functions";
+import { submitBuyerLeadAuthenticated } from "@/lib/buyer-leads.functions";
 import { buyerLeadSchema, BUYER_FIELD_LABELS, type BuyerLeadInput } from "@/lib/buyer-leads.schema";
 import { EU27_CODES } from "@/lib/wilmet-constants";
 import { AssistantWidget } from "@/components/public/AssistantWidget";
@@ -65,21 +66,37 @@ function BuyerLeadPage() {
     },
   });
 
-  // Signed-in buyers: prefill contact details from their profile without ever
-  // overwriting something they already typed.
+  // Explicit auth state. Until it resolves we NEVER guess: submitting as
+  // anonymous while a session exists is exactly the silent downgrade we fix.
+  type AuthState =
+    | { status: "loading" }
+    | { status: "anonymous" }
+    | { status: "authenticated"; userId: string; email: string | null; partnerKind: string | null };
+  const [auth, setAuth] = useState<AuthState>({ status: "loading" });
+
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+
+    const resolve = async () => {
       const { supabase } = await import("@/integrations/supabase/client");
-      const { data: auth } = await supabase.auth.getUser();
-      const user = auth?.user;
-      if (!user || cancelled) return;
+      const { data } = await supabase.auth.getUser();
+      const user = data?.user;
+      if (cancelled) return;
+      if (!user) { setAuth({ status: "anonymous" }); return; }
+
       const { data: profile } = await supabase
         .from("profiles")
         .select("first_name, last_name, company_name, email, phone, country, city, partner_kind")
         .eq("id", user.id)
         .maybeSingle();
-      if (!profile || cancelled) return;
+      if (cancelled) return;
+      setAuth({
+        status: "authenticated",
+        userId: user.id,
+        email: profile?.email ?? user.email ?? null,
+        partnerKind: profile?.partner_kind ?? null,
+      });
+      if (!profile) return;
       const fill = (key: keyof BuyerLeadInput, value: string | null | undefined) => {
         if (!value) return;
         const current = form.getValues(key);
@@ -92,10 +109,23 @@ function BuyerLeadPage() {
       fill("company_name", profile.company_name);
       fill("email", profile.email ?? user.email);
       fill("phone", profile.phone);
-      fill("country", profile.country);
+      // Profiles may store a full country name; the form expects an ISO-2 code.
+      if (profile.country && /^[a-z]{2}$/i.test(profile.country)) fill("country", profile.country.toUpperCase());
       fill("city", profile.city);
+    };
+
+    void resolve();
+
+    let unsub: (() => void) | undefined;
+    void (async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+        if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") void resolve();
+      });
+      unsub = () => sub.subscription.unsubscribe();
     })();
-    return () => { cancelled = true; };
+
+    return () => { cancelled = true; unsub?.(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -113,28 +143,64 @@ function BuyerLeadPage() {
   };
   const back = () => setStep((s) => Math.max(0, s - 1));
 
+  const submitAuthenticated = useServerFn(submitBuyerLeadAuthenticated);
+
   const [submitting, setSubmitting] = useState(false);
   const onSubmit = form.handleSubmit(
     async (data) => {
       if (submitting) return; // no double submit
+      if (auth.status === "loading") {
+        toast.error("Vérification de votre session en cours. Merci de patienter une seconde.");
+        return;
+      }
+      if (auth.status === "authenticated" && auth.partnerKind !== "client") {
+        toast.error(
+          "Votre compte n'est pas un compte acheteur. Déconnectez-vous pour envoyer une demande, ou contactez Wilmet.",
+        );
+        return;
+      }
       setSubmitting(true);
+      const payload = {
+        ...data,
+        locale: i18n.language || "fr",
+        referral_code: getStoredRef() ?? "",
+      };
       try {
-        const { supabase } = await import("@/integrations/supabase/client");
-        const { data: session } = await supabase.auth.getSession();
-        const token = session.session?.access_token;
+        // Authenticated buyers: ONE path only, no anonymous fallback ever.
+        if (auth.status === "authenticated") {
+          const { supabase } = await import("@/integrations/supabase/client");
+          const { data: sess } = await supabase.auth.getSession();
+          if (!sess.session?.access_token) {
+            toast.error(
+              "Votre session a expiré. Reconnectez-vous pour enregistrer cette demande dans votre espace.",
+            );
+            return;
+          }
+          try {
+            const res = await submitAuthenticated({ data: payload });
+            navigate({
+              to: "/chercher-un-vehicule/merci",
+              search: { ref: res.reference ?? "", tracked: 1 } as never,
+            });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : "";
+            toast.error(
+              readableError(
+                msg,
+                /unauthorized|401/i.test(msg)
+                  ? "Votre session a expiré. Reconnectez-vous pour enregistrer cette demande dans votre espace."
+                  : t("buyer.errors.submit"),
+              ),
+            );
+          }
+          return;
+        }
 
+        // Explicitly anonymous visitors.
         const r = await fetch("/api/public/buyer-leads", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({
-            ...data,
-            locale: i18n.language || "fr",
-            referral_code: getStoredRef() ?? "",
-          }),
-
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
         });
 
         if (!r.ok) {
@@ -142,22 +208,24 @@ function BuyerLeadPage() {
           const fallback =
             r.status === 429
               ? "Trop de demandes. Merci de réessayer dans quelques minutes."
-              : r.status === 401
-                ? "Session expirée. Merci de vous reconnecter puis de réessayer."
-                : r.status >= 500
-                  ? t("buyer.errors.submit")
-                  : "Merci de vérifier les informations saisies.";
+              : r.status >= 500
+                ? t("buyer.errors.submit")
+                : "Merci de vérifier les informations saisies.";
           toast.error(readableError(body?.error, fallback));
           return;
         }
 
         const body = (await r.json()) as { id: string; reference: string | null };
-        navigate({ to: "/chercher-un-vehicule/merci", search: { ref: body.reference ?? "" } as never });
+        navigate({
+          to: "/chercher-un-vehicule/merci",
+          search: { ref: body.reference ?? "", tracked: 0 } as never,
+        });
       } catch (e) {
         console.error(e);
         toast.error(t("buyer.errors.submit"));
       } finally { setSubmitting(false); }
     },
+
     (errors) => {
       // Surface validation errors so the form never silently no-ops (F35).
       const firstBadStep = STEP_KEYS.findIndex((_, i) =>
@@ -425,6 +493,16 @@ function BuyerLeadPage() {
 
                 {step === 3 && (
                   <div className="space-y-4">
+                    {auth.status === "authenticated" && auth.partnerKind === "client" && (
+                      <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                        Connecté en tant que <span className="font-medium text-foreground">{auth.email}</span> — cette demande sera enregistrée dans votre espace acheteur.
+                      </p>
+                    )}
+                    {auth.status === "authenticated" && auth.partnerKind !== "client" && (
+                      <p className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                        Votre compte n'est pas un compte acheteur. Déconnectez-vous pour envoyer une demande, ou contactez Wilmet.
+                      </p>
+                    )}
                     <RequestRecap form={form} labels={{
                       category: categoryOptions.find((o) => o.value === form.watch("vehicle_category"))?.label,
                       type: (ref?.vehicleTypes ?? []).find((v) => v.slug === form.watch("vehicle_type"))?.label_fr,
@@ -490,7 +568,7 @@ function BuyerLeadPage() {
                   onBack={back}
                   onNext={next}
                   onSubmit={onSubmit}
-                  submitting={submitting}
+                  submitting={submitting || auth.status === "loading"}
                   backLabel={t("buyer.actions.back")}
                   nextLabel={t("buyer.actions.next")}
                   submitLabel={t("buyer.actions.submit")}
