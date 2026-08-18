@@ -2406,7 +2406,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      buyer_lead_reference: { Args: { p_id: string }; Returns: string }
+      rate_limit_check: {
+        Args: {
+          _bucket: string
+          _key_hash: string
+          _max_events: number
+          _window_seconds: number
+        }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          retry_after_seconds: number
+        }[]
+      }
     }
     Enums: {
       app_role:
