@@ -121,7 +121,9 @@ const CreateInput = z.object({
   role: z.enum(STAFF_ROLES),
   scope: z.enum(["purchase", "sales", "both"]),
   commissionRate: z.number().min(0).max(100).nullable().optional(),
+  // Accepted for backward compatibility but ignored: externality comes from the role.
   isExternal: z.boolean().optional(),
+
   password: z.string().min(10).max(72),
 });
 
