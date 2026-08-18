@@ -14,7 +14,7 @@ export async function resolveRoleHome(userId: string): Promise<string> {
   if (roles.has("admin") || roles.has("platform_admin")) return "/admin";
   if (roles.has("company_management")) return "/direction";
   if (roles.has("sales_manager")) return "/manager";
-  if (roles.has("sales_agent")) return "/sales";
+  if (roles.has("sales_agent") || roles.has("external_agent")) return "/sales";
   if (roles.has("partenaire")) {
     return profile?.partner_kind === "client" ? "/espace-acheteur" : "/dashboard";
   }

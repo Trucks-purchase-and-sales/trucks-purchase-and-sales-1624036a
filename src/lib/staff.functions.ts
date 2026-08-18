@@ -14,6 +14,7 @@ export const STAFF_ROLES = [
   "company_management",
   "sales_manager",
   "sales_agent",
+  "external_agent",
 ] as const;
 export type StaffRole = (typeof STAFF_ROLES)[number];
 export type StaffScope = "purchase" | "sales" | "both";
@@ -25,6 +26,15 @@ const MANAGEMENT_ROLES = ["platform_admin", "admin", "company_management", "sale
 function effectiveScope(role: StaffRole | undefined, scope: StaffScope): StaffScope {
   return role && (MANAGEMENT_ROLES as readonly string[]).includes(role) ? "both" : scope;
 }
+
+/**
+ * profiles.is_external is derived metadata only: authorization comes from the
+ * explicit external_agent role, never from this flag.
+ */
+function derivedIsExternal(role: StaffRole): boolean {
+  return role === "external_agent";
+}
+
 
 async function assertAdmin(sb: any, userId: string) {
   const { data, error } = await sb
@@ -111,7 +121,9 @@ const CreateInput = z.object({
   role: z.enum(STAFF_ROLES),
   scope: z.enum(["purchase", "sales", "both"]),
   commissionRate: z.number().min(0).max(100).nullable().optional(),
+  // Accepted for backward compatibility but ignored: externality comes from the role.
   isExternal: z.boolean().optional(),
+
   password: z.string().min(10).max(72),
 });
 
@@ -150,7 +162,7 @@ export const staffCreate = createServerFn({ method: "POST" })
       staff_scope: effectiveScope(data.role, data.scope),
       // Management roles carry no commission rate and are never external contractors.
       commission_rate: (MANAGEMENT_ROLES as readonly string[]).includes(data.role) ? null : (data.commissionRate ?? null),
-      is_external: (MANAGEMENT_ROLES as readonly string[]).includes(data.role) ? false : (data.isExternal ?? false),
+      is_external: derivedIsExternal(data.role),
       partner_kind: null,
       is_active: true,
     });
@@ -174,7 +186,9 @@ const UpdateInput = z.object({
   role: z.enum(STAFF_ROLES).optional(),
   scope: z.enum(["purchase", "sales", "both"]).optional(),
   commissionRate: z.number().min(0).max(100).nullable().optional(),
+  // Accepted for backward compatibility but ignored: externality comes from the role.
   isExternal: z.boolean().optional(),
+
 });
 
 export const staffUpdate = createServerFn({ method: "POST" })
@@ -198,7 +212,6 @@ export const staffUpdate = createServerFn({ method: "POST" })
     if (data.lastName !== undefined) patch.last_name = data.lastName;
     if (data.phone !== undefined) patch.phone = data.phone;
     if (data.commissionRate !== undefined) patch.commission_rate = data.commissionRate;
-    if (data.isExternal !== undefined) patch.is_external = data.isExternal;
     if (data.scope !== undefined || data.role !== undefined) {
       const nextScope = (data.scope ?? "both") as StaffScope;
       if (data.role !== undefined && (MANAGEMENT_ROLES as readonly string[]).includes(data.role)) {
@@ -207,11 +220,12 @@ export const staffUpdate = createServerFn({ method: "POST" })
         patch.staff_scope = nextScope;
       }
     }
-    // Management roles carry no commission rate and are never external contractors.
-    if (data.role !== undefined && (MANAGEMENT_ROLES as readonly string[]).includes(data.role)) {
-      patch.commission_rate = null;
-      patch.is_external = false;
+    // Externality is derived from the role; management roles carry no commission rate.
+    if (data.role !== undefined) {
+      patch.is_external = derivedIsExternal(data.role);
+      if ((MANAGEMENT_ROLES as readonly string[]).includes(data.role)) patch.commission_rate = null;
     }
+
     const { error: pErr } = await admin.from("profiles").update(patch).eq("id", data.userId);
     if (pErr) fail("staffUpdate.profile", pErr);
 
@@ -327,13 +341,16 @@ export const myStaffContext = createServerFn({ method: "GET" })
       sb.from("profiles").select("staff_scope, is_active, is_external").eq("id", context.userId).maybeSingle(),
       sb.from("staff_group_members").select("group_id").eq("user_id", context.userId),
     ]);
+    const role = ((roles ?? [])[0]?.role ?? null) as StaffRole | "partenaire" | null;
     return {
-      role: ((roles ?? [])[0]?.role ?? null) as StaffRole | "partenaire" | null,
+      role,
       scope: (profile?.staff_scope ?? "both") as StaffScope,
       isActive: profile?.is_active !== false,
-      isExternal: profile?.is_external === true,
+      // Authoritative signal is the role; the profile flag is legacy metadata.
+      isExternal: role === "external_agent" || profile?.is_external === true,
       groupIds: (memberships ?? []).map((m: any) => m.group_id as string),
     };
+
   });
 
 /* ---------------- Assignment groups ---------------- */

@@ -9,7 +9,7 @@ function fail(where: string, err: unknown): never {
 }
 
 const ADMIN_ROLES = ["admin", "platform_admin"] as const;
-const STAFF_ROLES = ["admin", "platform_admin", "company_management", "sales_manager", "sales_agent"] as const;
+const STAFF_ROLES = ["admin", "platform_admin", "company_management", "sales_manager", "sales_agent", "external_agent"] as const;
 
 async function assertAdmin(sb: any, userId: string) {
   const { data, error } = await sb

@@ -45,7 +45,7 @@ async function eligibleIds(admin: any, userIds: string[]): Promise<Set<string>> 
   for (const r of roles ?? []) {
     const uid = (r as any).user_id as string;
     const role = (r as any).role as string;
-    if (role === "sales_agent") out.add(uid);
+    if (role === "sales_agent" || role === "external_agent") out.add(uid);
     if (role === "partenaire" && kindById.get(uid) === "seller") out.add(uid);
   }
   return out;
@@ -226,7 +226,7 @@ export const adminListAffiliateCandidates = createServerFn({ method: "GET" })
       .filter((p: any) => {
         if (withLink.has(p.id) || p.is_active === false) return false;
         const role = roleById.get(p.id);
-        return role === "sales_agent" || (role === "partenaire" && p.partner_kind === "seller");
+        return role === "sales_agent" || role === "external_agent" || (role === "partenaire" && p.partner_kind === "seller");
       })
       .map((p: any) => ({
         userId: p.id as string,

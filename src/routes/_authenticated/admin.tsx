@@ -10,6 +10,7 @@ const INTERNAL_ROLES = [
   "platform_admin",
   "sales_manager",
   "sales_agent",
+  "external_agent",
   "company_management",
 ] as const;
 
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
-      .in("role", INTERNAL_ROLES as unknown as ("admin" | "platform_admin" | "sales_manager" | "sales_agent" | "company_management")[]);
+      .in("role", INTERNAL_ROLES as unknown as ("admin" | "platform_admin" | "sales_manager" | "sales_agent" | "external_agent" | "company_management")[]);
     if (error || !data || data.length === 0) throw redirect({ to: "/dashboard" });
   },
   component: () => <Outlet />,

@@ -19,7 +19,7 @@ async function assertAdmin(sb: any, userId: string) {
   if (!data || data.length === 0) throw new Error("Non autorisé");
 }
 
-const INTERNAL_ROLES = ["admin", "platform_admin", "company_management", "sales_manager", "sales_agent"] as const;
+const INTERNAL_ROLES = ["admin", "platform_admin", "company_management", "sales_manager", "sales_agent", "external_agent"] as const;
 
 export type StaffGroup = "purchase" | "sales";
 
@@ -53,8 +53,8 @@ async function assertInternal(sb: any, userId: string): Promise<InternalCtx> {
   const allRoles = (roles ?? []).map((r: { role: string }) => r.role as string);
   const role = allRoles.find((r: string) => (INTERNAL_ROLES as readonly string[]).includes(r));
   if (!role) throw new Error("Non autorisé");
-  const isExternal = profile?.is_external === true;
-  const seesAll = role !== "sales_agent" && !isExternal;
+  const isExternal = role === "external_agent" || profile?.is_external === true;
+  const seesAll = role !== "sales_agent" && role !== "external_agent" && !isExternal;
   const scope = seesAll ? "both" : ((profile?.staff_scope ?? "both") as "purchase" | "sales" | "both");
   const groupIds = (memberships ?? []).map((m: { group_id: string }) => m.group_id);
   return { role, scope, seesAll, isExternal, groups: groupsForScope(scope), groupIds };
@@ -263,7 +263,7 @@ export const adminListSalesAgents = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const sb = context.supabase as any;
     await assertInternal(sb, context.userId);
-    const { data: roles } = await sb.from("user_roles").select("user_id").in("role", ["sales_agent","sales_manager"]);
+    const { data: roles } = await sb.from("user_roles").select("user_id").in("role", ["sales_agent","external_agent","sales_manager"]);
     const ids = Array.from(new Set((roles ?? []).map((r: { user_id: string }) => r.user_id)));
     if (ids.length === 0) return { agents: [] };
     const { data: profiles } = await sb.from("profiles").select("id, first_name, last_name, email").in("id", ids);

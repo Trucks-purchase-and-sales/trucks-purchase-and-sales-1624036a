@@ -10,7 +10,7 @@ export type ResolvedReferrer = {
   canOwnLeads: boolean;
 };
 
-const SALES_ROLES = ["admin", "platform_admin", "sales_manager", "sales_agent"];
+const SALES_ROLES = ["admin", "platform_admin", "sales_manager", "sales_agent", "external_agent"];
 
 export function normalizeCode(raw: unknown): string | null {
   if (typeof raw !== "string") return null;

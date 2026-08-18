@@ -9,7 +9,7 @@ function fail(where: string, error: unknown): never {
   throw new Error(GENERIC);
 }
 
-const INTERNAL_ROLES = ["admin", "platform_admin", "company_management", "sales_manager", "sales_agent"] as const;
+const INTERNAL_ROLES = ["admin", "platform_admin", "company_management", "sales_manager", "sales_agent", "external_agent"] as const;
 
 type Ctx = { role: string; seesAll: boolean; isExternal: boolean; groupIds: string[] };
 
@@ -23,10 +23,10 @@ async function assertInternal(sb: any, userId: string): Promise<Ctx> {
   const all = (roles ?? []).map((r: { role: string }) => r.role as string);
   const role = all.find((r: string) => (INTERNAL_ROLES as readonly string[]).includes(r));
   if (!role) throw new Error("Non autorisé");
-  const isExternal = profile?.is_external === true;
+  const isExternal = role === "external_agent" || profile?.is_external === true;
   return {
     role,
-    seesAll: role !== "sales_agent" && !isExternal,
+    seesAll: role !== "sales_agent" && role !== "external_agent" && !isExternal,
     isExternal,
     groupIds: (memberships ?? []).map((m: { group_id: string }) => m.group_id),
   };
