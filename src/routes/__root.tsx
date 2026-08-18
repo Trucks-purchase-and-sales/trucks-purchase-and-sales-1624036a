@@ -5,7 +5,6 @@ import {
   createRootRouteWithContext,
   useRouter,
   useRouterState,
-
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -16,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { CookieConsent } from "@/components/CookieConsent";
+import { startAuthBootstrap } from "@/lib/auth-bootstrap";
 import { captureRefFromUrl } from "@/lib/referral";
 
 import "@/i18n";
@@ -135,20 +135,22 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
 
-  useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+  useEffect(() => startAuthBootstrap({
+    client: supabase,
+    onRelevantEvent: (event) => {
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
-    });
-    return () => sub.subscription.unsubscribe();
-  }, [router, queryClient]);
+    },
+    onError: (error) => {
+      // Authentication remains fail-closed on protected routes, but an auth
+      // bootstrap/configuration failure must not take down the public shell.
+      console.error("[root/auth] auth bootstrap failed; public shell remains anonymous", error);
+    },
+  }), [router, queryClient]);
 
   // Affiliate capture: any page can carry ?ref=CODE, so listen on every navigation.
   const pathname = useRouterState({ select: (s) => s.location.pathname + s.location.searchStr });
   useEffect(() => { captureRefFromUrl(); }, [pathname]);
-
-
 
   return (
     <QueryClientProvider client={queryClient}>
