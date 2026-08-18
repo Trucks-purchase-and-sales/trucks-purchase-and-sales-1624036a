@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { LOVABLE_AI_BASE_URL } from "@/lib/ai-gateway.server";
+import { persistAnonymousBuyerLead } from "@/lib/anonymous-buyer-lead.server";
 import { readBoundedJson } from "@/lib/public-api.server";
 
 const corsHeaders: Record<string, string> = {
@@ -146,27 +147,50 @@ export const Route = createFileRoute("/api/public/assistant")({
                 rawBudget <= 10_000_000
                   ? rawBudget
                   : null;
-              const { data, error } = await sb.from("buyer_leads").insert({
-                vehicle_type: vType,
-                preferred_brand: str("preferred_brand", 80),
-                preferred_model: str("preferred_model", 80),
-                usage_country: str("usage_country", 80),
-                buy_timeline: str("buy_timeline", 40),
-                max_budget_ht: budget,
-                currency: "EUR",
-                first_name: first,
-                last_name: last,
-                company_name: str("company_name", 120),
-                email,
-                phone: str("phone", 40),
-                message: str("message", 2000),
-                gdpr_consent: true,
-                locale: "fr",
-                source: "ai_assistant",
-                assigned_group: "sales",
-              }).select("reference_number").single();
-              if (error) console.error("[api/public/assistant] lead insert failed", error);
-              else reference = data.reference_number ?? null;
+
+              const persisted = await persistAnonymousBuyerLead(
+                {
+                  vehicle_type: vType,
+                  preferred_brand: str("preferred_brand", 80),
+                  preferred_model: str("preferred_model", 80),
+                  usage_country: str("usage_country", 80),
+                  buy_timeline: str("buy_timeline", 40),
+                  max_budget_ht: budget,
+                  currency: "EUR",
+                  first_name: first,
+                  last_name: last,
+                  company_name: str("company_name", 120),
+                  email,
+                  phone: str("phone", 40),
+                  message: str("message", 2000),
+                  gdpr_consent: true,
+                  locale: "fr",
+                  source: "ai_assistant",
+                  assigned_group: "sales",
+                },
+                {
+                  insert: (row) => sb.from("buyer_leads").insert(row as never),
+                  lookupReference: async (id) => {
+                    const { data, error } = await sb.rpc(
+                      "buyer_lead_reference" as never,
+                      { p_id: id } as never,
+                    );
+                    return { data, error };
+                  },
+                },
+              );
+
+              if (!persisted.ok) {
+                console.error("[api/public/assistant] lead insert failed", persisted.error);
+              } else {
+                if (persisted.referenceError) {
+                  console.error(
+                    "[api/public/assistant] reference lookup failed",
+                    persisted.referenceError,
+                  );
+                }
+                reference = persisted.reference;
+              }
             }
           } catch (e) {
             console.error("[api/public/assistant] lead block parse failed", e);
