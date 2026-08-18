@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-const INTERNAL_ROLES = [
+const DOSSIER_READ_ROLES = [
   "admin",
   "platform_admin",
   "sales_manager",
@@ -10,14 +10,28 @@ const INTERNAL_ROLES = [
   "company_management",
 ] as const;
 
-type Ctx = { supabase: any; userId: string };
+const DOSSIER_WRITE_ROLES = [
+  "admin",
+  "platform_admin",
+  "sales_manager",
+  "sales_agent",
+] as const;
 
-async function assertInternal(ctx: Ctx) {
+type Ctx = { supabase: any; userId: string };
+type DossierAccess = "read" | "write";
+
+/**
+ * Application-level role gate. PostgreSQL RLS remains authoritative for the
+ * opportunity row scope; this gate keeps API behaviour aligned with the same
+ * role model and gives Direction a clean read-only failure before a write.
+ */
+async function assertInternal(ctx: Ctx, access: DossierAccess = "read") {
+  const allowedRoles = access === "write" ? DOSSIER_WRITE_ROLES : DOSSIER_READ_ROLES;
   const { data, error } = await ctx.supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", ctx.userId)
-    .in("role", INTERNAL_ROLES as unknown as string[]);
+    .in("role", allowedRoles as unknown as string[]);
   if (error) throw new Error("Vérification des droits impossible");
   if (!data || data.length === 0) throw new Error("Accès refusé");
 }
@@ -28,7 +42,7 @@ export const getOpportunityDossier = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ opportunityId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const ctx = context as unknown as Ctx;
-    await assertInternal(ctx);
+    await assertInternal(ctx, "read");
     const [docs, decision] = await Promise.all([
       ctx.supabase
         .from("opportunity_documents")
@@ -61,7 +75,7 @@ export const upsertOpportunityDocument = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const ctx = context as unknown as Ctx;
-    await assertInternal(ctx);
+    await assertInternal(ctx, "write");
     const validated = data.status === "valide";
     const { error } = await ctx.supabase.from("opportunity_documents").upsert(
       {
@@ -92,7 +106,7 @@ export const saveOpportunityDecision = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const ctx = context as unknown as Ctx;
-    await assertInternal(ctx);
+    await assertInternal(ctx, "write");
     const values = Object.values(data.scores);
     const total = values.length
       ? Math.round((values.reduce((s, n) => s + n, 0) / (values.length * 5)) * 100)
@@ -113,7 +127,7 @@ export const saveOpportunityDecision = createServerFn({ method: "POST" })
     return { ok: true, total_score: total };
   });
 
-/** Level 3 — manual market benchmark (internal team only). */
+/** Level 3 — manual market benchmark (internal team only, Direction read-only). */
 export const saveOpportunityBenchmark = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -128,7 +142,7 @@ export const saveOpportunityBenchmark = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const ctx = context as unknown as Ctx;
-    await assertInternal(ctx);
+    await assertInternal(ctx, "write");
     const { data: opp, error: readErr } = await ctx.supabase
       .from("vehicle_opportunities")
       .select("desired_price_excl_tax")
