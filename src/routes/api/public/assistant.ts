@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { LOVABLE_AI_BASE_URL } from "@/lib/ai-gateway.server";
 import { persistAnonymousBuyerLead } from "@/lib/anonymous-buyer-lead.server";
+import { parseAssistantRequest } from "@/lib/assistant-request.schema";
 import { readBoundedJson } from "@/lib/public-api.server";
 
 const corsHeaders: Record<string, string> = {
@@ -12,8 +13,6 @@ const corsHeaders: Record<string, string> = {
 };
 
 const MAX_ASSISTANT_BODY_BYTES = 64 * 1024;
-
-type Msg = { role: "user" | "assistant"; content: string };
 
 const SYSTEM = `Tu es l'assistant virtuel de Wilmet Trucks, négociant européen de véhicules industriels d'occasion.
 Tu réponds en français (ou dans la langue de l'utilisateur), de façon courte, professionnelle et concrète.
@@ -66,22 +65,27 @@ export const Route = createFileRoute("/api/public/assistant")({
           );
         }
 
-        const parsedBody = await readBoundedJson<{ messages?: Msg[] }>(request, MAX_ASSISTANT_BODY_BYTES);
+        const parsedBody = await readBoundedJson<unknown>(request, MAX_ASSISTANT_BODY_BYTES);
         if (!parsedBody.ok) {
           return Response.json(
             { error: parsedBody.error },
             { status: parsedBody.status, headers: corsHeaders },
           );
         }
-        const body = parsedBody.data;
 
-        const history = (body.messages ?? [])
-          .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
-          .slice(-16)
-          .map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }));
-        if (history.length === 0) {
-          return Response.json({ error: "Message manquant" }, { status: 400, headers: corsHeaders });
+        // Consent is checked as a deterministic application field before any
+        // conversation content is sent to the AI gateway or persisted as a lead.
+        const assistantRequest = parseAssistantRequest(parsedBody.data);
+        if (!assistantRequest.ok) {
+          return Response.json(
+            {
+              error: assistantRequest.error,
+              consentRequired: assistantRequest.consentRequired,
+            },
+            { status: assistantRequest.status, headers: corsHeaders },
+          );
         }
+        const history = assistantRequest.messages;
 
         const sb = createClient<Database>(
           process.env.SUPABASE_URL!,
@@ -163,6 +167,7 @@ export const Route = createFileRoute("/api/public/assistant")({
                   email,
                   phone: str("phone", 40),
                   message: str("message", 2000),
+                  // Safe because parseAssistantRequest accepts only literal true.
                   gdpr_consent: true,
                   locale: "fr",
                   source: "ai_assistant",

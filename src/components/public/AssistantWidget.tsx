@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { MessageCircle, Send, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { getAppSettings } from "@/lib/app-settings.functions";
 
@@ -27,6 +28,7 @@ export function AssistantWidget() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [reference, setReference] = useState<string | null>(null);
+  const [gdprConsent, setGdprConsent] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -41,19 +43,37 @@ export function AssistantWidget() {
 
   const send = async () => {
     const text = input.trim();
-    if (!text || busy) return;
+    if (!text || busy || !gdprConsent) return;
     const next = [...messages, { role: "user" as const, content: text }];
     setMessages(next);
     setInput("");
     setBusy(true);
     try {
+      // Keep the wire contract bounded even during long conversations. The
+      // server independently validates the same 16-message / 2,000-char limits.
+      const requestMessages = next.slice(-16).map((message) => ({
+        ...message,
+        content: message.content.slice(0, 2000),
+      }));
       const r = await fetch("/api/public/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: requestMessages, gdprConsent }),
       });
-      const body = (await r.json()) as { reply?: string; reference?: string | null; error?: string; available?: boolean };
-      if (body.available === false) {
+      const body = (await r.json()) as {
+        reply?: string;
+        reference?: string | null;
+        error?: string;
+        available?: boolean;
+        consentRequired?: boolean;
+      };
+      if (body.consentRequired) {
+        setGdprConsent(false);
+        setMessages((m) => [...m, {
+          role: "assistant",
+          content: body.error ?? "Votre consentement est requis pour utiliser l'assistant.",
+        }]);
+      } else if (body.available === false) {
         setMessages((m) => [...m, { role: "assistant", content: "L'assistant n'est pas disponible pour le moment. Utilisez le formulaire « Chercher un véhicule » et nous vous répondons rapidement." }]);
       } else if (body.reply) {
         setMessages((m) => [...m, { role: "assistant", content: body.reply as string }]);
@@ -72,7 +92,7 @@ export function AssistantWidget() {
   return (
     <div className="fixed bottom-4 right-4 z-50 print:hidden">
       {open ? (
-        <div className="flex h-[30rem] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xl">
+        <div className="flex h-[34rem] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xl">
           <div className="flex items-center justify-between border-b border-border bg-primary px-4 py-3 text-primary-foreground">
             <div>
               <p className="text-sm font-semibold">Assistant Wilmet</p>
@@ -104,18 +124,50 @@ export function AssistantWidget() {
             )}
           </div>
 
+          <div className="border-t border-border px-3 pt-3">
+            <div className="flex items-start gap-2 rounded-md bg-muted/50 p-2.5">
+              <Checkbox
+                id="assistant-gdpr-consent"
+                checked={gdprConsent}
+                onCheckedChange={(checked) => setGdprConsent(checked === true)}
+                disabled={busy}
+                aria-describedby="assistant-gdpr-description"
+              />
+              <label
+                id="assistant-gdpr-description"
+                htmlFor="assistant-gdpr-consent"
+                className="cursor-pointer text-[11px] leading-relaxed text-muted-foreground"
+              >
+                J’accepte que mes messages et coordonnées soient traités par Wilmet pour répondre à ma demande.{' '}
+                <a
+                  href="/confidentialite"
+                  className="font-medium text-foreground underline underline-offset-2"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  Politique de confidentialité
+                </a>
+              </label>
+            </div>
+          </div>
+
           <form
-            className="flex items-center gap-2 border-t border-border p-3"
+            className="flex items-center gap-2 p-3"
             onSubmit={(e) => { e.preventDefault(); void send(); }}
           >
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Votre message…"
+              placeholder={gdprConsent ? "Votre message…" : "Acceptez d’abord la confidentialité"}
               aria-label="Votre message"
-              disabled={busy}
+              maxLength={2000}
+              disabled={busy || !gdprConsent}
             />
-            <Button type="submit" size="icon" disabled={busy || !input.trim()} aria-label="Envoyer">
+            <Button
+              type="submit"
+              size="icon"
+              disabled={busy || !gdprConsent || !input.trim()}
+              aria-label="Envoyer"
+            >
               <Send className="h-4 w-4" />
             </Button>
           </form>
