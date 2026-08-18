@@ -51,5 +51,8 @@ jobs:
       - name: Unit tests
         run: bun test
 
+      - name: Compile staging security harness
+        run: bun run check:staging-security
+
       - name: Build
         run: bun run build
