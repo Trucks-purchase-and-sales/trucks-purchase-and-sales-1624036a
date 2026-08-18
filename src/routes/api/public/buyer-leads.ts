@@ -84,44 +84,21 @@ export const Route = createFileRoute("/api/public/buyer-leads")({
           return Response.json({ id: "ok", reference: null }, { status: 201, headers: corsHeaders });
         }
 
-        // Authenticated buyers submit as themselves so the lead shows up in "Mes demandes".
-        // The owner id always comes from the verified token, never from the request body.
+        // This endpoint is the ANONYMOUS path only. Signed-in buyers submit
+        // through `submitBuyerLeadAuthenticated`; a bearer token here is
+        // rejected rather than silently downgraded to an anonymous lead.
         const authHeader = request.headers.get("authorization") ?? "";
-        const accessToken = authHeader.toLowerCase().startsWith("bearer ")
-          ? authHeader.slice(7).trim()
-          : "";
-        let ownerUserId: string | null = null;
-
-        if (accessToken && accessToken.split(".").length === 3) {
-          const authed = makeClient(accessToken);
-          const { data: userRes, error: userErr } = await authed.auth.getUser(accessToken);
-          if (userErr || !userRes?.user) {
-            return Response.json(
-              { error: "Session expirée. Merci de vous reconnecter puis de réessayer." },
-              { status: 401, headers: corsHeaders },
-            );
-          }
-          const { data: profile } = await authed
-            .from("profiles")
-            .select("partner_kind")
-            .eq("id", userRes.user.id)
-            .maybeSingle();
-          if (profile?.partner_kind !== "client") {
-            return Response.json(
-              {
-                error:
-                  "Votre compte n'est pas un compte acheteur. Déconnectez-vous pour envoyer une demande, ou contactez Wilmet.",
-              },
-              { status: 403, headers: corsHeaders },
-            );
-          }
-          ownerUserId = userRes.user.id;
+        if (authHeader.toLowerCase().startsWith("bearer ")) {
+          return Response.json(
+            {
+              error:
+                "Session détectée : cette demande doit être envoyée depuis votre espace connecté. Rechargez la page puis réessayez.",
+            },
+            { status: 409, headers: corsHeaders },
+          );
         }
 
-        // Anonymous visitors keep the publishable-key (anon) path with user_id NULL.
-        const sb = ownerUserId ? makeClient(accessToken) : makeClient();
-
-        const cleanText = (v?: string | null) => (v && v.length ? v : null);
+        const sb = makeClient();
 
         // Affiliate attribution. A sales referrer (internal or external) becomes the
         // lead owner directly and the shared sales queue is skipped; a partner
@@ -148,47 +125,12 @@ export const Route = createFileRoute("/api/public/buyer-leads")({
         // buyer_leads, so an INSERT ... RETURNING would be rejected by RLS.
         const id = crypto.randomUUID();
 
-        const { error } = await sb.from("buyer_leads").insert({
-          id,
-          user_id: ownerUserId,
-          vehicle_category: cleanText(d.vehicle_category),
-          assigned_group: assignedGroup,
-          vehicle_type: cleanText(d.vehicle_type),
-          body_type: cleanText(d.body_type),
-          preferred_brand: cleanText(d.preferred_brand),
-          preferred_model: cleanText(d.preferred_model),
-          intended_use: cleanText(d.intended_use),
-          usage_country: cleanText(d.usage_country),
-          min_year: d.min_year ?? null,
-          max_mileage: d.max_mileage ?? null,
-          min_euro_norm: cleanText(d.min_euro_norm),
-          fuel_type: cleanText(d.fuel_type),
-          gearbox: cleanText(d.gearbox),
-          ptac_kg: d.ptac_kg ?? null,
-          payload_kg: d.payload_kg ?? null,
-          required_equipment: d.required_equipment ?? [],
-          wanted_equipment: d.wanted_equipment ?? [],
-          max_budget_ht: d.max_budget_ht ?? null,
-          currency: d.currency ?? "EUR",
-          budget_flexible: cleanText(d.budget_flexible ?? null),
-          buy_timeline: cleanText(d.buy_timeline ?? null),
-          financing_needed: cleanText(d.financing_needed ?? null),
-          first_name: d.first_name,
-          last_name: d.last_name,
-          company_name: cleanText(d.company_name),
-          email: d.email,
-          phone: cleanText(d.phone),
-          country: cleanText(d.country),
-          city: cleanText(d.city),
-          message: cleanText(d.message),
-          gdpr_consent: d.gdpr_consent,
-          locale: d.locale ?? "fr",
-          source: ref ? `affiliate:${ref.code}` : "public_form",
-          referred_by: ref?.ownerId ?? null,
-          referral_code: ref?.code ?? null,
-          assigned_sales_agent_id: ref?.canOwnLeads ? ref.ownerId : null,
+        const { error } = await sb
+          .from("buyer_leads")
+          .insert(
+            buildBuyerLeadRow({ id, data: d, ownerUserId: null, referrer: ref, assignedGroup }) as never,
+          );
 
-        });
 
         if (error) {
           console.error("[api/public/buyer-leads] insert failed", error);
