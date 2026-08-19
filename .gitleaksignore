@@ -1,0 +1,5 @@
+# Historical false positives from the initial Lovable-generated .env commit.
+# Both findings are Supabase publishable/client keys, not service-role/secret keys.
+# Keep these exceptions fingerprint-specific so any different finding still fails CI.
+eb1f64887596c8a84ee39de8d2e5e76bdbf77563:.env:generic-api-key:2
+eb1f64887596c8a84ee39de8d2e5e76bdbf77563:.env:generic-api-key:5
