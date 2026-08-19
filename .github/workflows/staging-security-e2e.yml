@@ -3,8 +3,16 @@ name: Staging Security E2E
 on:
   workflow_dispatch:
     inputs:
+      auth_mode:
+        description: "Credential model for the reviewed staging backend"
+        required: true
+        type: choice
+        default: lovable-cloud-fixtures
+        options:
+          - lovable-cloud-fixtures
+          - service-role
       confirm_staging_mutations:
-        description: "Create and delete disposable identities/fixtures in Wilmet staging"
+        description: "Mutate only reviewed Wilmet staging fixtures/data"
         required: true
         type: boolean
         default: false
@@ -25,6 +33,7 @@ jobs:
       E2E_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
       E2E_SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY }}
       E2E_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_ROLE_KEY }}
+      E2E_FIXTURE_CREDENTIALS_JSON: ${{ secrets.E2E_FIXTURE_CREDENTIALS_JSON }}
 
     steps:
       - name: Checkout
@@ -39,23 +48,54 @@ jobs:
 
       - name: Verify required staging secrets are configured
         shell: bash
+        env:
+          E2E_AUTH_MODE: ${{ inputs.auth_mode }}
         run: |
           set -euo pipefail
           test -n "${E2E_SUPABASE_URL}" || { echo "Missing E2E_SUPABASE_URL"; exit 1; }
           test -n "${E2E_SUPABASE_ANON_KEY}" || { echo "Missing E2E_SUPABASE_ANON_KEY"; exit 1; }
-          test -n "${E2E_SUPABASE_SERVICE_ROLE_KEY}" || { echo "Missing E2E_SUPABASE_SERVICE_ROLE_KEY"; exit 1; }
+
+          case "${E2E_AUTH_MODE}" in
+            lovable-cloud-fixtures)
+              test -n "${E2E_FIXTURE_CREDENTIALS_JSON}" || {
+                echo "Missing E2E_FIXTURE_CREDENTIALS_JSON for Lovable Cloud fixture mode";
+                exit 1;
+              }
+              ;;
+            service-role)
+              test -n "${E2E_SUPABASE_SERVICE_ROLE_KEY}" || {
+                echo "Missing E2E_SUPABASE_SERVICE_ROLE_KEY for service-role mode";
+                exit 1;
+              }
+              ;;
+            *)
+              echo "Unsupported auth mode: ${E2E_AUTH_MODE}";
+              exit 1;
+              ;;
+          esac
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Run real-JWT staging security suites
-        run: bun test tests/staging/*.staging.ts --timeout 60000
+      - name: Run Lovable Cloud real-JWT fixture suite
+        if: ${{ inputs.auth_mode == 'lovable-cloud-fixtures' }}
+        run: bun test tests/staging/lovable-cloud-fixtures.staging.ts --timeout 60000
+
+      - name: Run service-role real-JWT staging suites
+        if: ${{ inputs.auth_mode == 'service-role' }}
+        run: |
+          bun test \
+            tests/staging/security.staging.ts \
+            tests/staging/photo-handoff.staging.ts \
+            tests/staging/workflow-children.staging.ts \
+            tests/staging/workflow-transactions.staging.ts \
+            --timeout 60000
 
       - name: Retain verification evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: staging-security-e2e-${{ github.run_id }}
+          name: staging-security-e2e-${{ inputs.auth_mode }}-${{ github.run_id }}
           path: test-results/*.json
           if-no-files-found: warn
           retention-days: 30
