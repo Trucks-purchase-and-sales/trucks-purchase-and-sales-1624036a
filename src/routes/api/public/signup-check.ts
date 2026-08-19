@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { publicApiCors, rejectForeignBrowserOrigin } from "@/lib/public-cors.server";
 
-const corsHeaders: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+const corsOptions = {
+  methods: ["POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"],
+} as const;
 
 // Advisory pre-check called by the signup form before supabase.auth.signUp.
 // A determined attacker can bypass this by hitting Supabase Auth directly,
@@ -12,8 +12,16 @@ const corsHeaders: Record<string, string> = {
 export const Route = createFileRoute("/api/public/signup-check")({
   server: {
     handlers: {
-      OPTIONS: () => new Response(null, { status: 204, headers: corsHeaders }),
+      OPTIONS: ({ request }) => {
+        const cors = publicApiCors(request, corsOptions);
+        return new Response(null, { status: cors.allowed ? 204 : 403, headers: cors.headers });
+      },
       POST: async ({ request }) => {
+        const cors = publicApiCors(request, corsOptions);
+        const rejected = rejectForeignBrowserOrigin(cors);
+        if (rejected) return rejected;
+        const corsHeaders = cors.headers;
+
         const { checkRateLimit, clientIpFromRequest, hashKey } = await import(
           "@/lib/rate-limit.server"
         );

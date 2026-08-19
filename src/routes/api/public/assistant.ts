@@ -5,13 +5,13 @@ import { LOVABLE_AI_BASE_URL } from "@/lib/ai-gateway.server";
 import { persistAnonymousBuyerLead } from "@/lib/anonymous-buyer-lead.server";
 import { finalizeAssistantLead } from "@/lib/assistant-lead-finalization.server";
 import { parseAssistantRequest } from "@/lib/assistant-request.schema";
+import { publicApiCors, rejectForeignBrowserOrigin } from "@/lib/public-cors.server";
 import { readBoundedJson } from "@/lib/public-api.server";
 
-const corsHeaders: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+const corsOptions = {
+  methods: ["POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"],
+} as const;
 
 const MAX_ASSISTANT_BODY_BYTES = 64 * 1024;
 
@@ -42,8 +42,16 @@ function withinHours(cfg: { always_on?: boolean; start_hour?: number; end_hour?:
 export const Route = createFileRoute("/api/public/assistant")({
   server: {
     handlers: {
-      OPTIONS: () => new Response(null, { status: 204, headers: corsHeaders }),
+      OPTIONS: ({ request }) => {
+        const cors = publicApiCors(request, corsOptions);
+        return new Response(null, { status: cors.allowed ? 204 : 403, headers: cors.headers });
+      },
       POST: async ({ request }) => {
+        const cors = publicApiCors(request, corsOptions);
+        const rejected = rejectForeignBrowserOrigin(cors);
+        if (rejected) return rejected;
+        const corsHeaders = cors.headers;
+
         // Rate limit: 20 messages / IP / 10 min.
         const { checkRateLimit, clientIpFromRequest, hashKey } = await import("@/lib/rate-limit.server");
         const ip = clientIpFromRequest(request);
@@ -74,15 +82,10 @@ export const Route = createFileRoute("/api/public/assistant")({
           );
         }
 
-        // Consent is checked as a deterministic application field before any
-        // conversation content is sent to the AI gateway or persisted as a lead.
         const assistantRequest = parseAssistantRequest(parsedBody.data);
         if (!assistantRequest.ok) {
           return Response.json(
-            {
-              error: assistantRequest.error,
-              consentRequired: assistantRequest.consentRequired,
-            },
+            { error: assistantRequest.error, consentRequired: assistantRequest.consentRequired },
             { status: assistantRequest.status, headers: corsHeaders },
           );
         }
@@ -94,8 +97,6 @@ export const Route = createFileRoute("/api/public/assistant")({
           { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
         );
 
-        // Configuration is privileged server data. Lead persistence below remains
-        // on this anonymous/RLS-constrained client.
         const { readAssistantSettingsServer } = await import("@/lib/app-settings.server");
         const cfg = await readAssistantSettingsServer();
         if (!cfg.enabled || !withinHours(cfg)) {
@@ -143,19 +144,11 @@ export const Route = createFileRoute("/api/public/assistant")({
           }),
         );
 
-        if (finalized.persistenceError) {
-          console.error("[api/public/assistant] lead insert failed", finalized.persistenceError);
-        }
-        if (finalized.referenceError) {
-          console.error("[api/public/assistant] reference lookup failed", finalized.referenceError);
-        }
+        if (finalized.persistenceError) console.error("[api/public/assistant] lead insert failed", finalized.persistenceError);
+        if (finalized.referenceError) console.error("[api/public/assistant] reference lookup failed", finalized.referenceError);
 
         return Response.json(
-          {
-            available: true,
-            reply: finalized.reply,
-            reference: finalized.reference,
-          },
+          { available: true, reply: finalized.reply, reference: finalized.reference },
           { status: finalized.status, headers: corsHeaders },
         );
       },

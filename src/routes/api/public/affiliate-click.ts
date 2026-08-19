@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { publicApiCors, rejectForeignBrowserOrigin } from "@/lib/public-cors.server";
 import { readBoundedJson } from "@/lib/public-api.server";
 
-const corsHeaders: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+const corsOptions = {
+  methods: ["POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"],
+} as const;
 
 const MAX_AFFILIATE_CLICK_BODY_BYTES = 8 * 1024;
 
@@ -20,8 +20,16 @@ type AffiliateClickBody = {
 export const Route = createFileRoute("/api/public/affiliate-click")({
   server: {
     handlers: {
-      OPTIONS: () => new Response(null, { status: 204, headers: corsHeaders }),
+      OPTIONS: ({ request }) => {
+        const cors = publicApiCors(request, corsOptions);
+        return new Response(null, { status: cors.allowed ? 204 : 403, headers: cors.headers });
+      },
       POST: async ({ request }) => {
+        const cors = publicApiCors(request, corsOptions);
+        const rejected = rejectForeignBrowserOrigin(cors);
+        if (rejected) return rejected;
+        const corsHeaders = cors.headers;
+
         const { checkRateLimit, clientIpFromRequest, hashKey } = await import(
           "@/lib/rate-limit.server"
         );
