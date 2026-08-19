@@ -21,16 +21,12 @@ test.describe("Wilmet public staging smoke", () => {
     expect(reportOnlyCsp).toBeTruthy();
     expect(reportOnlyCsp).toContain("default-src 'self'");
     expect(reportOnlyCsp).toContain("object-src 'none'");
-    expect(reportOnlyCsp).toContain(
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-    );
+    expect(reportOnlyCsp).toContain("connect-src 'self' https://*.supabase.co wss://*.supabase.co");
     expect(headers["content-security-policy"]).toBeUndefined();
 
     expect(headers["x-content-type-options"]).toBe("nosniff");
     expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
-    expect(headers["permissions-policy"]).toBe(
-      "geolocation=(), microphone=(), payment=(), usb=()",
-    );
+    expect(headers["permissions-policy"]).toBe("geolocation=(), microphone=(), payment=(), usb=()");
     expect(headers["strict-transport-security"]).toMatch(/(?:^|;\s*)max-age=\d+/);
   });
 
