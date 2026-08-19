@@ -11,10 +11,11 @@ export function useAiFeatures() {
     staleTime: 5 * 60 * 1000,
   });
   const f = data?.ai_features;
-  const on = f?.enabled ?? true;
+  // Optional external processing is visible only after an explicit admin opt-in.
+  const on = f?.enabled === true;
   return {
-    ocr: on && (f?.ocr ?? false),
-    voice: on && (f?.voice ?? true),
-    dossierAudit: on && (f?.dossier_audit ?? true),
+    ocr: on && f?.ocr === true,
+    voice: on && f?.voice === true,
+    dossierAudit: on && f?.dossier_audit === true,
   };
 }

@@ -2,6 +2,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { LOVABLE_AI_BASE_URL } from "@/lib/ai-gateway.server";
+import { enforceAiAbuseLimits, throwAiHttpError } from "@/lib/ai-abuse.server";
+import {
+  AiInputError,
+  MAX_OCR_AGGREGATE_DATA_URL_CHARS,
+  MAX_OCR_IMAGE_DATA_URL_CHARS,
+  validateOcrImageBudgets,
+} from "@/lib/ai-input-budgets.server";
 
 const GENERIC = "Une erreur est survenue, veuillez réessayer.";
 
@@ -22,8 +29,8 @@ const INT_FIELDS = new Set<string>([
 ]);
 
 const InputImage = z.object({
-  /** data URL (data:image/... or data:application/pdf) — user-selected local file */
-  data_url: z.string().startsWith("data:"),
+  /** base64 data URL for an approved image/PDF MIME — user-selected local file */
+  data_url: z.string().startsWith("data:").max(MAX_OCR_IMAGE_DATA_URL_CHARS),
   /** optional label — plaque / tableau de bord / carte grise / autre */
   hint: z.string().max(40).optional(),
 });
@@ -40,7 +47,10 @@ const RunInput = z.object({
   documents: z.array(InputDocument).max(4).default([]),
 }).refine((v) => v.images.length + v.documents.length > 0, {
   message: "Ajoutez au moins un fichier",
-});
+}).refine(
+  (v) => v.images.reduce((sum, image) => sum + image.data_url.length, 0) <= MAX_OCR_AGGREGATE_DATA_URL_CHARS,
+  { message: "Volume total des fichiers trop important", path: ["images"] },
+);
 
 const SYSTEM_PROMPT = `Tu es un assistant d'extraction documentaire spécialisé dans les véhicules utilitaires et poids-lourds européens.
 On te fournit des photos ou des documents (PDF): plaque constructeur, tableau de bord (compteur), carte grise,
@@ -72,8 +82,6 @@ city, postal_code, country (code ISO 2 lettres, ex FR, BE, DE, NL, ES, IT).
 Réponds avec {"fields":[{"name":"brand","value":"Renault Trucks","confidence":0.92}, ...]}.
 N'inclus que les champs détectés. Aucune prose, uniquement le JSON.`;
 
-
-
 type FieldDetection = { name: OcrField; value: string; confidence: number };
 
 function normalizeValue(name: OcrField, value: string): string {
@@ -103,26 +111,32 @@ async function callGeminiVision(
     });
   }
 
-  const res = await fetch(`${LOVABLE_AI_BASE_URL}/chat/completions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${LOVABLE_AI_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1,
+      }),
+    });
+  } catch (error) {
+    console.error("[ocr.runOcrScan] gateway call failed", error);
+    throwAiHttpError(503, "OCR momentanément indisponible.");
+  }
 
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
-    if (res.status === 429) throw new Error("Trop de requêtes IA, réessayez dans un instant.");
-    if (res.status === 402) throw new Error("Crédits IA insuffisants pour lancer le scan.");
-    throw new Error(`OCR indisponible (${res.status}): ${txt.slice(0, 120)}`);
+    console.error("[ocr.runOcrScan] gateway error", res.status, txt.slice(0, 200));
+    throwAiHttpError(503, "OCR momentanément indisponible.");
   }
+
   const json = await res.json();
   const raw = json?.choices?.[0]?.message?.content ?? "{}";
   let parsed: { fields?: Array<{ name?: string; value?: unknown; confidence?: unknown }> } = {};
@@ -148,12 +162,26 @@ export const runOcrScan = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { assertAiFeatureEnabled } = await import("@/lib/ai-features.server");
     await assertAiFeatureEnabled("ocr");
+    await enforceAiAbuseLimits("ocr", context.userId);
+
+    try {
+      validateOcrImageBudgets(data.images);
+    } catch (error) {
+      if (error instanceof AiInputError) {
+        throwAiHttpError(error.status, error.message);
+      }
+      throw error;
+    }
+
     const sb = context.supabase as any;
     const userId = context.userId as string;
     const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error(GENERIC);
+    if (!apiKey) {
+      console.error("[ocr.runOcrScan] LOVABLE_API_KEY missing");
+      throwAiHttpError(503, "OCR momentanément indisponible.");
+    }
 
-    // 1) Create scan row (en_cours)
+    // Create the audit row only after feature, abuse and payload guards pass.
     const { data: scanRow, error: scanErr } = await sb
       .from("ocr_scans")
       .insert({
