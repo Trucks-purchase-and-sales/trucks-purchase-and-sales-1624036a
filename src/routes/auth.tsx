@@ -11,6 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PROVIDER_TYPE_OPTIONS } from "@/lib/wilmet-constants";
 import { resolveRoleHome } from "@/hooks/useRoleHome";
 import { getStoredRef } from "@/lib/referral";
+import {
+  NEW_PASSWORD_HELP,
+  NEW_PASSWORD_MIN_LENGTH,
+  validateNewPassword,
+} from "@/lib/password-policy";
 
 import wilmetLogo from "@/assets/wilmet-logo.png.asset.json";
 
@@ -110,7 +115,7 @@ function LoginForm({ onForgot, onSuccess }: { onForgot: () => void; onSuccess: (
     <form onSubmit={submit} className="space-y-4">
       <Field label="Email"><Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" /></Field>
       <Field label="Mot de passe">
-        <Input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+        <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
       </Field>
       <div className="flex items-center justify-between">
         <button type="button" onClick={onForgot} className="text-xs font-medium text-accent hover:underline">Mot de passe oublié ?</button>
@@ -140,6 +145,11 @@ function SignupForm({ onSuccess, initialKind }: { onSuccess: () => void; initial
     e.preventDefault();
     if (kind !== "client" && kind !== "seller") {
       toast.error("Type de compte requis", { description: "Indiquez si vous souhaitez vendre ou acheter un véhicule." });
+      return;
+    }
+    const passwordValidation = validateNewPassword(form.password);
+    if (!passwordValidation.valid) {
+      toast.error("Mot de passe trop court", { description: passwordValidation.message });
       return;
     }
     setLoading(true);
@@ -314,7 +324,17 @@ function SignupForm({ onSuccess, initialKind }: { onSuccess: () => void; initial
         <Field label="Ville"><Input required value={form.city} onChange={(e) => set("city", e.target.value)} /></Field>
         <Field label="Pays"><Input required value={form.country} onChange={(e) => set("country", e.target.value)} /></Field>
       </div>
-      <Field label="Mot de passe"><Input type="password" required minLength={6} value={form.password} onChange={(e) => set("password", e.target.value)} autoComplete="new-password" /></Field>
+      <Field label="Mot de passe">
+        <Input
+          type="password"
+          required
+          minLength={NEW_PASSWORD_MIN_LENGTH}
+          value={form.password}
+          onChange={(e) => set("password", e.target.value)}
+          autoComplete="new-password"
+        />
+        <p className="text-xs text-muted-foreground">{NEW_PASSWORD_HELP}</p>
+      </Field>
       <Button disabled={loading} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg">
         {loading ? "Création…" : "Créer mon compte"}
       </Button>

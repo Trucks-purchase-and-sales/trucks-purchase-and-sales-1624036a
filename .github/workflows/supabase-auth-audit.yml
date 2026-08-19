@@ -1,0 +1,74 @@
+name: Supabase Auth Audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_PROJECT_REF: srjnljpjwzhtbdnhksux
+
+jobs:
+  auth-audit:
+    name: Verify hosted Auth production controls
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Bun 1.3.14
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Verify read-only Management API token is configured
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_ACCESS_TOKEN}" || {
+            echo "Missing SUPABASE_ACCESS_TOKEN. Configure a Supabase token with Auth config read permission." >&2
+            exit 1
+          }
+
+      - name: Read hosted Auth configuration without logging raw response
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+            --header "Accept: application/json" \
+            "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/config/auth" \
+            --output /tmp/wilmet-supabase-auth-config.json
+
+      - name: Produce sanitized audit evidence and enforce blocking controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p test-results
+          bun scripts/audit-supabase-auth.ts \
+            /tmp/wilmet-supabase-auth-config.json \
+            test-results/supabase-auth-audit.json
+
+      - name: Remove raw provider configuration
+        if: always()
+        shell: bash
+        run: rm -f /tmp/wilmet-supabase-auth-config.json
+
+      - name: Retain sanitized Auth audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-auth-audit-${{ github.run_id }}
+          path: test-results/supabase-auth-audit.json
+          if-no-files-found: warn
+          retention-days: 30

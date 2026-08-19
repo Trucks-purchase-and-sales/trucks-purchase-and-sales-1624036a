@@ -6,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  NEW_PASSWORD_HELP,
+  NEW_PASSWORD_MIN_LENGTH,
+  validateNewPassword,
+} from "@/lib/password-policy";
 
 export const Route = createFileRoute("/reset-password")({ component: ResetPage });
 
@@ -17,6 +22,11 @@ function ResetPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    const validation = validateNewPassword(password);
+    if (!validation.valid) {
+      toast.error("Mot de passe trop court", { description: validation.message });
+      return;
+    }
     if (password !== confirm) { toast.error("Les mots de passe ne correspondent pas"); return; }
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
@@ -38,11 +48,26 @@ function ResetPage() {
             <form onSubmit={submit} className="space-y-4">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Mot de passe</Label>
-                <Input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+                <Input
+                  type="password"
+                  required
+                  minLength={NEW_PASSWORD_MIN_LENGTH}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+                <p className="text-xs text-muted-foreground">{NEW_PASSWORD_HELP}</p>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground">Confirmer</Label>
-                <Input type="password" required minLength={6} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+                <Input
+                  type="password"
+                  required
+                  minLength={NEW_PASSWORD_MIN_LENGTH}
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  autoComplete="new-password"
+                />
               </div>
               <Button disabled={loading} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg">
                 {loading ? "Mise à jour…" : "Enregistrer"}
