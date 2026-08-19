@@ -1,0 +1,119 @@
+name: Database Baseline Capture
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_read_only_capture:
+        description: "Run read-only schema/migration capture against linked Wilmet staging"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_PROJECT_REF: srjnljpjwzhtbdnhksux
+  SUPABASE_CLI_VERSION: "2.111.0"
+  SUPABASE_CLI_LINUX_AMD64_SHA256: "31ee8a152e9c8c8eddae072c6bc7c9119748a96c8cdaf21a6d31c9ce7e62cc18"
+
+jobs:
+  capture:
+    name: Capture authoritative staging schema evidence
+    if: ${{ inputs.confirm_read_only_capture }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Verify protected credentials are configured
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_ACCESS_TOKEN}" || { echo "Missing SUPABASE_ACCESS_TOKEN" >&2; exit 1; }
+          test -n "${SUPABASE_DB_PASSWORD}" || { echo "Missing SUPABASE_DB_PASSWORD" >&2; exit 1; }
+
+      - name: Install pinned Supabase CLI with checksum verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="/tmp/supabase_${SUPABASE_CLI_VERSION}_linux_amd64.tar.gz"
+          curl --fail-with-body --silent --show-error --location \
+            "https://github.com/supabase/cli/releases/download/v${SUPABASE_CLI_VERSION}/supabase_${SUPABASE_CLI_VERSION}_linux_amd64.tar.gz" \
+            --output "${archive}"
+          printf '%s  %s\n' "${SUPABASE_CLI_LINUX_AMD64_SHA256}" "${archive}" | sha256sum --check --strict
+          mkdir -p /tmp/supabase-cli
+          tar -xzf "${archive}" -C /tmp/supabase-cli
+          sudo install -m 0755 /tmp/supabase-cli/supabase /usr/local/bin/supabase
+          test "$(supabase --version)" = "${SUPABASE_CLI_VERSION}"
+
+      - name: Link local metadata to staging
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase link \
+            --project-ref "${SUPABASE_PROJECT_REF}" \
+            --password "${SUPABASE_DB_PASSWORD}"
+
+      - name: Capture migration history comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p test-results/database-baseline
+          supabase migration list --linked --password "${SUPABASE_DB_PASSWORD}" \
+            | tee test-results/database-baseline/migration-list.txt
+
+      - name: Verify linked migration push is a dry run only
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase db push --linked --dry-run --password "${SUPABASE_DB_PASSWORD}" \
+            | tee test-results/database-baseline/db-push-dry-run.txt
+
+      - name: Dump Wilmet-owned schema without data
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase db dump \
+            --linked \
+            --password "${SUPABASE_DB_PASSWORD}" \
+            --schema public,private \
+            --file test-results/database-baseline/wilmet-schema.sql
+          test -s test-results/database-baseline/wilmet-schema.sql
+
+      - name: Capture schema digest and run metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          schema_sha="$(sha256sum test-results/database-baseline/wilmet-schema.sql | awk '{print $1}')"
+          jq -n \
+            --arg captured_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg git_sha "${GITHUB_SHA}" \
+            --arg project_ref "${SUPABASE_PROJECT_REF}" \
+            --arg cli_version "${SUPABASE_CLI_VERSION}" \
+            --arg schema_sha256 "${schema_sha}" \
+            '{captured_at:$captured_at,git_sha:$git_sha,project_ref:$project_ref,supabase_cli_version:$cli_version,schema_sha256:$schema_sha256,schemas:["public","private"],data_included:false}' \
+            > test-results/database-baseline/manifest.json
+
+      - name: Remove linked CLI credential metadata
+        if: always()
+        shell: bash
+        run: |
+          rm -rf supabase/.temp .supabase 2>/dev/null || true
+
+      - name: Retain private baseline evidence for engineering review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-baseline-${{ github.run_id }}
+          path: test-results/database-baseline/
+          if-no-files-found: warn
+          retention-days: 30
