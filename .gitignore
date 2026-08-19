@@ -15,6 +15,7 @@ dist-ssr
 .tanstack/**
 .nitro
 test-results/
+playwright-report/
 *.local
 
 # Environment and secrets

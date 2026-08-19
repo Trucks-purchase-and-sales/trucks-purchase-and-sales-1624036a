@@ -1,0 +1,63 @@
+name: Playwright Staging E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Private/unpublished Wilmet staging base URL"
+        required: true
+        type: string
+      confirm_staging:
+        description: "Confirm this target is Wilmet staging, not production"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  public-smoke:
+    name: Public browser smoke
+    if: ${{ inputs.confirm_staging }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PLAYWRIGHT_BASE_URL: ${{ inputs.base_url }}
+      PLAYWRIGHT_TARGET_LABEL: wilmet-staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install pinned browser-test dependencies
+        working-directory: e2e
+        run: npm ci
+
+      - name: Install Chromium and runner dependencies
+        working-directory: e2e
+        run: npx playwright install chromium --with-deps
+
+      - name: Run public staging browser smoke
+        working-directory: e2e
+        run: npm test
+
+      - name: Retain browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-staging-${{ github.run_id }}
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          if-no-files-found: warn
+          retention-days: 30

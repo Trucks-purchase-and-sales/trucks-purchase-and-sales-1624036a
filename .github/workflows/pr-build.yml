@@ -54,5 +54,21 @@ jobs:
       - name: Compile staging security harnesses
         run: bun build tests/staging/*.staging.ts --target=bun --outdir=/tmp/wilmet-staging-e2e-check
 
+      - name: Set up Node 22 for browser-test tooling
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Validate pinned Playwright harness
+        working-directory: e2e
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
+          PLAYWRIGHT_TARGET_LABEL: local
+        run: |
+          npm ci
+          npm run test:list
+
       - name: Build
         run: bun run build

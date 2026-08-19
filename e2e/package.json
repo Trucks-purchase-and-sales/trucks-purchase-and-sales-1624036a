@@ -1,0 +1,16 @@
+{
+  "name": "wilmet-playwright-e2e",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:list": "playwright test --list"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1"
+  }
+}
