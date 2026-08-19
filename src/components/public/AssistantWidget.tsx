@@ -6,7 +6,7 @@ import { MessageCircle, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { getAppSettings } from "@/lib/app-settings.functions";
+import { getPublicAssistantSettings } from "@/lib/app-settings.functions";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -20,8 +20,11 @@ function isWithinHours(cfg: { always_on: boolean; start_hour: number; end_hour: 
 
 /** Public AI assistant that qualifies a buyer request outside office hours. */
 export function AssistantWidget() {
-  const fn = useServerFn(getAppSettings);
-  const { data: settings } = useQuery({ queryKey: ["app-settings"], queryFn: () => fn() });
+  const fn = useServerFn(getPublicAssistantSettings);
+  const { data: assistant } = useQuery({
+    queryKey: ["public-assistant-settings"],
+    queryFn: () => fn(),
+  });
 
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -35,9 +38,10 @@ export function AssistantWidget() {
   useEffect(() => setMounted(true), []);
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [messages, busy]);
 
-  const assistant = settings?.assistant;
   const active = !!assistant?.enabled && isWithinHours({
-    always_on: assistant.always_on, start_hour: assistant.start_hour, end_hour: assistant.end_hour,
+    always_on: assistant.always_on,
+    start_hour: assistant.start_hour,
+    end_hour: assistant.end_hour,
   });
   if (!mounted || !active) return null;
 

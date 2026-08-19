@@ -30,10 +30,10 @@ function Page() {
   const [alwaysOn, setAlwaysOn] = useState(false);
   const [startHour, setStartHour] = useState(18);
   const [endHour, setEndHour] = useState(8);
-  const [aiOn, setAiOn] = useState(true);
+  const [aiOn, setAiOn] = useState(false);
   const [aiOcr, setAiOcr] = useState(false);
-  const [aiVoice, setAiVoice] = useState(true);
-  const [aiAudit, setAiAudit] = useState(true);
+  const [aiVoice, setAiVoice] = useState(false);
+  const [aiAudit, setAiAudit] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
