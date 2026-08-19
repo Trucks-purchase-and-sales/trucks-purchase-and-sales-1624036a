@@ -180,11 +180,7 @@ async function signIn(label: string, identity: IdentityConfig): Promise<TestIden
 }
 
 async function rowVisible(client: SupabaseClient, id: string): Promise<boolean> {
-  const result = await client
-    .from("vehicle_opportunities")
-    .select("id")
-    .eq("id", id)
-    .maybeSingle();
+  const result = await client.from("vehicle_opportunities").select("id").eq("id", id).maybeSingle();
   failOnError(result.error, `read vehicle opportunity ${id}`);
   return result.data?.id === id;
 }
@@ -223,9 +219,9 @@ test("pre-provisioned identities receive real Supabase Auth sessions", async () 
     for (const identity of [sellerA, sellerB, purchaseAgent, salesOnlyAgent, externalAgent]) {
       expect(identity.id).toMatch(/^[0-9a-f-]{36}$/i);
     }
-    expect(new Set([sellerA.id, sellerB.id, purchaseAgent.id, salesOnlyAgent.id, externalAgent.id]).size).toBe(
-      5,
-    );
+    expect(
+      new Set([sellerA.id, sellerB.id, purchaseAgent.id, salesOnlyAgent.id, externalAgent.id]).size,
+    ).toBe(5);
   });
 });
 
@@ -234,26 +230,45 @@ test("real JWTs keep seller drafts private across identities and staff", async (
     expect(await rowVisible(sellerA.client, managedConfig.fixtures.sellerADraftId)).toBe(true);
     expect(await rowVisible(sellerA.client, managedConfig.fixtures.sellerBDraftId)).toBe(false);
     expect(await rowVisible(sellerB.client, managedConfig.fixtures.sellerBDraftId)).toBe(true);
-    expect(await rowVisible(purchaseAgent.client, managedConfig.fixtures.sellerADraftId)).toBe(false);
-    expect(await rowVisible(externalAgent.client, managedConfig.fixtures.sellerADraftId)).toBe(false);
+    expect(await rowVisible(purchaseAgent.client, managedConfig.fixtures.sellerADraftId)).toBe(
+      false,
+    );
+    expect(await rowVisible(externalAgent.client, managedConfig.fixtures.sellerADraftId)).toBe(
+      false,
+    );
   });
 });
 
 test("purchase and external-agent scopes are enforced with real JWTs", async () => {
   await check("managed staff scope matrix", async () => {
-    expect(await rowVisible(purchaseAgent.client, managedConfig.fixtures.submittedPurchaseId)).toBe(true);
-    expect(await rowVisible(salesOnlyAgent.client, managedConfig.fixtures.submittedPurchaseId)).toBe(false);
-    expect(await rowVisible(externalAgent.client, managedConfig.fixtures.submittedPurchaseId)).toBe(false);
-    expect(await rowVisible(sellerB.client, managedConfig.fixtures.submittedPurchaseId)).toBe(false);
+    expect(await rowVisible(purchaseAgent.client, managedConfig.fixtures.submittedPurchaseId)).toBe(
+      true,
+    );
+    expect(
+      await rowVisible(salesOnlyAgent.client, managedConfig.fixtures.submittedPurchaseId),
+    ).toBe(false);
+    expect(await rowVisible(externalAgent.client, managedConfig.fixtures.submittedPurchaseId)).toBe(
+      false,
+    );
+    expect(await rowVisible(sellerB.client, managedConfig.fixtures.submittedPurchaseId)).toBe(
+      false,
+    );
 
-    expect(await rowVisible(externalAgent.client, managedConfig.fixtures.externalAssignedId)).toBe(true);
-    expect(await rowVisible(salesOnlyAgent.client, managedConfig.fixtures.externalAssignedId)).toBe(false);
+    expect(await rowVisible(externalAgent.client, managedConfig.fixtures.externalAssignedId)).toBe(
+      true,
+    );
+    expect(await rowVisible(salesOnlyAgent.client, managedConfig.fixtures.externalAssignedId)).toBe(
+      false,
+    );
   });
 });
 
 test("submitted seller cannot tamper with staff-controlled workflow state", async () => {
   await check("managed seller tamper resistance", async () => {
-    const before = await readOpportunity(sellerA.client, managedConfig.fixtures.submittedPurchaseId);
+    const before = await readOpportunity(
+      sellerA.client,
+      managedConfig.fixtures.submittedPurchaseId,
+    );
     expect(before.partenaire_id).toBe(sellerA.id);
     expect(before.status).toBe("envoyee");
     expect(before.owner_side).toBe("wilmet");
