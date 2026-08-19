@@ -295,10 +295,15 @@ export const setMainPhoto = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ opportunityId: z.string().uuid(), photoId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    await supabase.from("vehicle_photos").update({ is_main_photo: false }).eq("vehicle_opportunity_id", data.opportunityId);
-    const { error } = await supabase.from("vehicle_photos").update({ is_main_photo: true }).eq("id", data.photoId);
-    if (error) { console.error("[opportunities.functions]", error); throw new Error("Une erreur est survenue, veuillez réessayer."); }
+    const sb = context.supabase as any;
+    const { error } = await sb.rpc("set_main_vehicle_photo", {
+      p_opportunity_id: data.opportunityId,
+      p_photo_id: data.photoId,
+    });
+    if (error) {
+      console.error("[opportunities.functions] setMainPhoto", error);
+      throw new Error("Une erreur est survenue, veuillez réessayer.");
+    }
     return { ok: true };
   });
 
@@ -307,40 +312,69 @@ export const deletePhoto = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ photoId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: photo } = await supabase.from("vehicle_photos").select("storage_path").eq("id", data.photoId).maybeSingle();
-    if (photo?.storage_path) await supabase.storage.from("vehicle-photos").remove([photo.storage_path]);
-    const { error } = await supabase.from("vehicle_photos").delete().eq("id", data.photoId);
-    if (error) { console.error("[opportunities.functions]", error); throw new Error("Une erreur est survenue, veuillez réessayer."); }
+    // Delete metadata first. This proves the caller still has mutation authority
+    // before any irreversible object-store action is attempted.
+    const { data: photo, error: deleteError } = await supabase
+      .from("vehicle_photos")
+      .delete()
+      .eq("id", data.photoId)
+      .select("storage_path")
+      .single();
+    if (deleteError || !photo?.storage_path) {
+      console.error("[opportunities.functions] deletePhoto.metadata", deleteError);
+      throw new Error("Une erreur est survenue, veuillez réessayer.");
+    }
+
+    const { error: storageError } = await supabase.storage
+      .from("vehicle-photos")
+      .remove([photo.storage_path]);
+    if (storageError) {
+      // Authorization was already proven by the successful metadata deletion.
+      // Retry cleanup with the trusted server client so a transient/user-client
+      // Storage failure does not leave an orphan object indefinitely.
+      console.error("[opportunities.functions] deletePhoto.storage", storageError);
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error: cleanupError } = await supabaseAdmin.storage
+        .from("vehicle-photos")
+        .remove([photo.storage_path]);
+      if (cleanupError) {
+        console.error("[opportunities.functions] deletePhoto.cleanup", cleanupError);
+        throw new Error("Une erreur est survenue, veuillez réessayer.");
+      }
+    }
     return { ok: true };
   });
 
 export const reorderPhotos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ orders: z.array(z.object({ id: z.string().uuid(), sort_order: z.number().int() })) }).parse(d))
+  .inputValidator((d: unknown) => z.object({
+    orders: z.array(z.object({
+      id: z.string().uuid(),
+      sort_order: z.number().int().nonnegative(),
+    })).max(50),
+  }).parse(d))
   .handler(async ({ data, context }) => {
-    for (const o of data.orders) {
-      await context.supabase.from("vehicle_photos").update({ sort_order: o.sort_order }).eq("id", o.id);
+    const sb = context.supabase as any;
+    const { error } = await sb.rpc("reorder_vehicle_photos", { p_orders: data.orders });
+    if (error) {
+      console.error("[opportunities.functions] reorderPhotos", error);
+      throw new Error("Une erreur est survenue, veuillez réessayer.");
     }
     return { ok: true };
   });
 
 export const answerInfoRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), comment: z.string().optional() }).parse(d))
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), comment: z.string().max(5000).optional() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const { data: req } = await supabase.from("information_requests").select("vehicle_opportunity_id").eq("id", data.id).maybeSingle();
-    if (!req) throw new Error("Requête introuvable");
-    const { data: opp } = await supabase.from("vehicle_opportunities").select("partenaire_id, id").eq("id", req.vehicle_opportunity_id).maybeSingle();
-    if (!opp || opp.partenaire_id !== userId) throw new Error("Non autorisé");
-
-    const nowIso = new Date().toISOString();
-    await supabase.from("information_requests").update({
-      status: "answered",
-      answered_at: nowIso,
-      response: data.comment ?? null,
-      response_at: data.comment ? nowIso : null,
-    } as never).eq("id", data.id);
-    await supabase.from("vehicle_opportunities").update({ status: "envoyee" }).eq("id", opp.id);
+    const sb = context.supabase as any;
+    const { error } = await sb.rpc("answer_information_request", {
+      p_request_id: data.id,
+      p_response: data.comment ?? null,
+    });
+    if (error) {
+      console.error("[opportunities.functions] answerInfoRequest", error);
+      throw new Error("Impossible d'envoyer la réponse. Veuillez réessayer.");
+    }
     return { ok: true };
   });

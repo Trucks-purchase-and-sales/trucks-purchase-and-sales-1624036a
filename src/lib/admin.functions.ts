@@ -217,10 +217,11 @@ export const adminRequestInfo = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase as any;
     await assertAdmin(sb, context.userId);
-    const { error } = await sb.from("information_requests")
-      .insert({ vehicle_opportunity_id: data.id, admin_id: context.userId, message: data.message });
+    const { error } = await sb.rpc("admin_request_information", {
+      p_opportunity_id: data.id,
+      p_message: data.message,
+    });
     if (error) fail("adminRequestInfo", error);
-    await sb.from("vehicle_opportunities").update({ status: "en_cours_analyse" }).eq("id", data.id);
     return { ok: true };
   });
 
@@ -235,13 +236,11 @@ export const adminHandoverToPartenaire = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase as any;
     await assertAdmin(sb, context.userId);
-    const { error } = await sb.from("vehicle_opportunities")
-      .update({ owner_side: "partenaire", status: "en_cours_analyse", handover_message: data.message })
-      .eq("id", data.id);
+    const { error } = await sb.rpc("admin_handover_to_partner", {
+      p_opportunity_id: data.id,
+      p_message: data.message,
+    });
     if (error) fail("adminHandoverToPartenaire", error);
-    // Log an information_request to keep the exchange trail visible
-    await sb.from("information_requests")
-      .insert({ vehicle_opportunity_id: data.id, admin_id: context.userId, message: data.message });
     return { ok: true };
   });
 
