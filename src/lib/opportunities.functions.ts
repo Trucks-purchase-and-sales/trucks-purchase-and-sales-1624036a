@@ -82,18 +82,16 @@ export const submitOpportunity = createServerFn({ method: "POST" })
       if (await referrerCanOwnLeads(referrerId)) fastTrackOwnerId = referrerId;
     }
 
-    // Automatic group routing: vehicle proposals land in the purchase group pool,
-    // unless the affiliate fast-track already gave them an owner.
+    // Configuration is trusted server data; the opportunity mutation itself
+    // remains on the seller's RLS-constrained Supabase session below.
+    const { readLeadAssignmentSettingsServer } = await import("@/lib/app-settings.server");
+    const routing = await readLeadAssignmentSettingsServer();
     let assignedGroup: "purchase" | null = null;
-    const { data: setting } = await supabase
-      .from("app_settings").select("value").eq("key", "lead_assignment").maybeSingle();
-    const cfg = (setting?.value ?? {}) as { enabled?: boolean };
-    if (!fastTrackOwnerId && cfg.enabled !== false && !(current as { assigned_group?: string | null }).assigned_group) {
+    if (!fastTrackOwnerId && routing.enabled && !(current as { assigned_group?: string | null }).assigned_group) {
       assignedGroup = "purchase";
     }
 
     const { data: row, error } = await supabase
-
       .from("vehicle_opportunities")
       .update({
         status: "envoyee",
@@ -108,8 +106,6 @@ export const submitOpportunity = createServerFn({ method: "POST" })
     if (error) { console.error("[opportunities.functions]", error); throw new Error("Une erreur est survenue, veuillez réessayer."); }
 
     if (fastTrackOwnerId) {
-      // Partners cannot set staff columns (guard trigger), so apply the
-      // assignment and the stage jump with elevated rights after validation.
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { error: assignErr } = await supabaseAdmin
         .from("vehicle_opportunities")
@@ -181,7 +177,6 @@ export const listMyOpportunities = createServerFn({ method: "GET" })
       .order("updated_at", { ascending: false });
     if (error) { console.error("[opportunities.functions]", error); throw new Error("Une erreur est survenue, veuillez réessayer."); }
 
-    // For each, fetch main photo path.
     const ids = (data ?? []).map((r) => r.id);
     let mainByOpp: Record<string, string> = {};
     if (ids.length) {
@@ -312,8 +307,6 @@ export const deletePhoto = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ photoId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    // Delete metadata first. This proves the caller still has mutation authority
-    // before any irreversible object-store action is attempted.
     const { data: photo, error: deleteError } = await supabase
       .from("vehicle_photos")
       .delete()
@@ -329,9 +322,6 @@ export const deletePhoto = createServerFn({ method: "POST" })
       .from("vehicle-photos")
       .remove([photo.storage_path]);
     if (storageError) {
-      // Authorization was already proven by the successful metadata deletion.
-      // Retry cleanup with the trusted server client so a transient/user-client
-      // Storage failure does not leave an orphan object indefinitely.
       console.error("[opportunities.functions] deletePhoto.storage", storageError);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { error: cleanupError } = await supabaseAdmin.storage

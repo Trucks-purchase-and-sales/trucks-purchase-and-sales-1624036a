@@ -129,20 +129,11 @@ export const Route = createFileRoute("/api/public/buyer-leads")({
         const { resolveReferrer } = await import("@/lib/affiliate.server");
         const ref = await resolveReferrer(d.referral_code);
 
-        // Automatic group routing: buyer demands belong to the sales group.
-        // Configurable in Settings (app_settings.lead_assignment.enabled).
-        let assignedGroup: "sales" | null = null;
-        try {
-          const { data: setting } = await sb
-            .from("app_settings")
-            .select("value")
-            .eq("key", "lead_assignment")
-            .maybeSingle();
-          const cfg = (setting?.value ?? {}) as { enabled?: boolean };
-          if (cfg.enabled !== false && !ref?.canOwnLeads) assignedGroup = "sales";
-        } catch (e) {
-          console.error("[api/public/buyer-leads] lead_assignment settings read failed", e);
-        }
+        // Automatic group routing still defaults on, but configuration is read
+        // through the trusted server boundary after TM-008 removed direct table access.
+        const { readLeadAssignmentSettingsServer } = await import("@/lib/app-settings.server");
+        const routing = await readLeadAssignmentSettingsServer();
+        const assignedGroup: "sales" | null = routing.enabled && !ref?.canOwnLeads ? "sales" : null;
 
         // The row id is generated here: anonymous visitors have no SELECT policy on
         // buyer_leads, so an INSERT ... RETURNING would be rejected by RLS.

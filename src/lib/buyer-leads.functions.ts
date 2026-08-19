@@ -21,7 +21,6 @@ export const submitBuyerLeadAuthenticated = createServerFn({ method: "POST" })
     }
     const d = parsed.data;
 
-    // Honeypot: silently accept and drop.
     if (d.website && d.website.length > 0) {
       return { id: "ok", reference: null as string | null, tracked: true };
     }
@@ -43,19 +42,9 @@ export const submitBuyerLeadAuthenticated = createServerFn({ method: "POST" })
 
     const { resolveReferrer } = await import("./affiliate.server");
     const ref = await resolveReferrer(d.referral_code);
-
-    let assignedGroup: "sales" | null = null;
-    try {
-      const { data: setting } = await supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "lead_assignment")
-        .maybeSingle();
-      const cfg = (setting?.value ?? {}) as { enabled?: boolean };
-      if (cfg.enabled !== false && !ref?.canOwnLeads) assignedGroup = "sales";
-    } catch (e) {
-      console.error("[submitBuyerLeadAuthenticated] lead_assignment settings read failed", e);
-    }
+    const { readLeadAssignmentSettingsServer } = await import("./app-settings.server");
+    const routing = await readLeadAssignmentSettingsServer();
+    const assignedGroup: "sales" | null = routing.enabled && !ref?.canOwnLeads ? "sales" : null;
 
     const id = crypto.randomUUID();
     const row = buildBuyerLeadRow({ id, data: d, ownerUserId: userId, referrer: ref, assignedGroup });
@@ -66,8 +55,6 @@ export const submitBuyerLeadAuthenticated = createServerFn({ method: "POST" })
       throw new Error("Une erreur est survenue, veuillez réessayer.");
     }
 
-    // The owner may read their own row, so the trigger-generated reference is
-    // available directly.
     const { data: created } = await supabase
       .from("buyer_leads")
       .select("reference_number")

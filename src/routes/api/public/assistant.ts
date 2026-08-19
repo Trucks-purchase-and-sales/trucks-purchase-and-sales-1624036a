@@ -94,8 +94,10 @@ export const Route = createFileRoute("/api/public/assistant")({
           { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
         );
 
-        const { data: setting } = await sb.from("app_settings").select("value").eq("key", "assistant").maybeSingle();
-        const cfg = (setting?.value ?? {}) as { enabled?: boolean; always_on?: boolean; start_hour?: number; end_hour?: number };
+        // Configuration is privileged server data. Lead persistence below remains
+        // on this anonymous/RLS-constrained client.
+        const { readAssistantSettingsServer } = await import("@/lib/app-settings.server");
+        const cfg = await readAssistantSettingsServer();
         if (!cfg.enabled || !withinHours(cfg)) {
           return Response.json({ available: false }, { status: 200, headers: corsHeaders });
         }

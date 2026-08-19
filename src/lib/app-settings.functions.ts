@@ -1,13 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import {
-  AI_FEATURE_DEFAULTS,
-  ASSISTANT_DEFAULTS,
-  resolveAiFeatureFlags,
-  resolveAssistantSettings,
-  resolveKnownAppSettings,
-} from "./app-settings.shared";
+import { resolveKnownAppSettings } from "./app-settings.shared";
 import type {
   AiFeatureSettings,
   AssistantSettings,
@@ -27,26 +21,11 @@ async function assertSettingsAdmin(sb: any, userId: string): Promise<void> {
   if (error || !roles || roles.length === 0) throw new Error("Non autorisé");
 }
 
-async function readPrivilegedSetting(key: "assistant" | "ai_features"): Promise<unknown> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("app_settings")
-    .select("value")
-    .eq("key", key)
-    .maybeSingle();
-  if (error) throw error;
-  return data?.value;
-}
-
 /** Public projection: only assistant availability fields may cross the anonymous boundary. */
 export const getPublicAssistantSettings = createServerFn({ method: "GET" }).handler(
   async (): Promise<AssistantSettings> => {
-    try {
-      return resolveAssistantSettings(await readPrivilegedSetting("assistant"));
-    } catch (error) {
-      console.error("[app-settings] public assistant read failed", error);
-      return { ...ASSISTANT_DEFAULTS };
-    }
+    const { readAssistantSettingsServer } = await import("./app-settings.server");
+    return readAssistantSettingsServer();
   },
 );
 
@@ -54,12 +33,8 @@ export const getPublicAssistantSettings = createServerFn({ method: "GET" }).hand
 export const getAiFeatureSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async (): Promise<AiFeatureSettings> => {
-    try {
-      return resolveAiFeatureFlags(await readPrivilegedSetting("ai_features"));
-    } catch (error) {
-      console.error("[app-settings] AI feature read failed", error);
-      return { ...AI_FEATURE_DEFAULTS };
-    }
+    const { readAiFeatureSettingsServer } = await import("./app-settings.server");
+    return readAiFeatureSettingsServer();
   });
 
 /** Admin-only read of the three currently supported settings groups. */

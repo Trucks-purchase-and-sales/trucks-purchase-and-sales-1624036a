@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test";
 import {
   AI_FEATURE_DEFAULTS,
   ASSISTANT_DEFAULTS,
+  LEAD_ASSIGNMENT_DEFAULTS,
   resolveAiFeatureFlags,
   resolveAssistantSettings,
+  resolveLeadAssignmentSettings,
   resolveKnownAppSettings,
 } from "./app-settings.shared";
 
@@ -18,23 +20,19 @@ describe("app settings projection boundaries", () => {
         internal_webhook: "https://sensitive.example/internal",
         service_role_key: "sentinel-secret",
       }),
-    ).toEqual({
-      enabled: true,
-      always_on: true,
-      start_hour: 21,
-      end_hour: 7,
-    });
+    ).toEqual({ enabled: true, always_on: true, start_hour: 21, end_hour: 7 });
   });
 
   test("assistant projection defaults invalid values safely", () => {
-    expect(
-      resolveAssistantSettings({
-        enabled: "true",
-        always_on: 1,
-        start_hour: 24,
-        end_hour: -1,
-      }),
-    ).toEqual(ASSISTANT_DEFAULTS);
+    expect(resolveAssistantSettings({ enabled: "true", always_on: 1, start_hour: 24, end_hour: -1 }))
+      .toEqual(ASSISTANT_DEFAULTS);
+  });
+
+  test("lead-assignment preserves default-on but respects explicit false", () => {
+    expect(resolveLeadAssignmentSettings(undefined)).toEqual(LEAD_ASSIGNMENT_DEFAULTS);
+    expect(resolveLeadAssignmentSettings({ enabled: false, internal_queue: "sentinel" }))
+      .toEqual({ enabled: false });
+    expect(resolveLeadAssignmentSettings({ enabled: "false" })).toEqual(LEAD_ASSIGNMENT_DEFAULTS);
   });
 
   test("AI projection fails closed and accepts only explicit booleans", () => {
@@ -47,12 +45,7 @@ describe("app settings projection boundaries", () => {
         dossier_audit: 1,
         provider_api_key: "sentinel-secret",
       }),
-    ).toEqual({
-      enabled: true,
-      ocr: false,
-      voice: true,
-      dossier_audit: false,
-    });
+    ).toEqual({ enabled: true, ocr: false, voice: true, dossier_audit: false });
   });
 
   test("known settings projection ignores future keys and unknown JSON fields", () => {
