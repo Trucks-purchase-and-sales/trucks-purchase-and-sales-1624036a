@@ -2406,6 +2406,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_handover_to_partner: {
+        Args: { p_message: string; p_opportunity_id: string }
+        Returns: string
+      }
+      admin_request_information: {
+        Args: { p_message: string; p_opportunity_id: string }
+        Returns: string
+      }
+      answer_information_request: {
+        Args: { p_request_id: string; p_response?: string }
+        Returns: undefined
+      }
       buyer_lead_reference: { Args: { p_id: string }; Returns: string }
       rate_limit_check: {
         Args: {
@@ -2419,6 +2431,11 @@ export type Database = {
           current_count: number
           retry_after_seconds: number
         }[]
+      }
+      reorder_vehicle_photos: { Args: { p_orders: Json }; Returns: undefined }
+      set_main_vehicle_photo: {
+        Args: { p_opportunity_id: string; p_photo_id: string }
+        Returns: undefined
       }
     }
     Enums: {
