@@ -52,7 +52,7 @@ jobs:
         run: bun test
 
       - name: Compile staging security harnesses
-        run: bun build tests/staging/security.staging.ts tests/staging/photo-handoff.staging.ts --target=bun --outdir=/tmp/wilmet-staging-e2e-check
+        run: bun build tests/staging/*.staging.ts --target=bun --outdir=/tmp/wilmet-staging-e2e-check
 
       - name: Build
         run: bun run build

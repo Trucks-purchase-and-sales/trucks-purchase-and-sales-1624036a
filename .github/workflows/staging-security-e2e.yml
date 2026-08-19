@@ -49,7 +49,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run real-JWT staging security suites
-        run: bun test tests/staging/security.staging.ts tests/staging/photo-handoff.staging.ts --timeout 60000
+        run: bun test tests/staging/*.staging.ts --timeout 60000
 
       - name: Retain verification evidence
         if: always()
