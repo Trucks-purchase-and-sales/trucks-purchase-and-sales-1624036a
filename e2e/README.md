@@ -25,11 +25,14 @@ The manual GitHub workflow also requires an explicit staging confirmation. Curre
 
 ## Current coverage
 
-The initial smoke slice verifies that a real browser can reach:
+The current public smoke slice verifies that a real browser can reach:
 
 1. the public landing shell;
-2. the partner authentication boundary;
-3. the buyer-request wizard entry.
+2. the deployed report-only security-header baseline on the HTTPS staging response;
+3. the partner authentication boundary;
+4. the buyer-request wizard entry.
+
+The header check verifies that staging delivers `Content-Security-Policy-Report-Only` rather than an enforcing CSP, retains key policy directives, and exposes the baseline `nosniff`, referrer, permissions and HSTS headers.
 
 It intentionally does not yet claim the seller/buyer/admin critical journeys are complete.
 
