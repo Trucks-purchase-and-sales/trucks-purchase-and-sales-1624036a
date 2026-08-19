@@ -70,5 +70,16 @@ jobs:
           npm ci
           npm run test:list
 
+      - name: Set up pinned k6 2.1.0
+        uses: grafana/setup-k6-action@v1.2.1
+        with:
+          k6-version: "2.1.0"
+
+      - name: Validate k6 execution requirements without traffic
+        env:
+          K6_BASE_URL: http://127.0.0.1:4173
+          K6_TARGET_LABEL: local
+        run: k6 inspect --include-system-env-vars --execution-requirements performance/public-read-smoke.js
+
       - name: Build
         run: bun run build

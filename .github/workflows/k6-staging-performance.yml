@@ -1,0 +1,59 @@
+name: k6 Staging Performance
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Private/unpublished Wilmet staging base URL"
+        required: true
+        type: string
+      confirm_staging:
+        description: "Confirm this target is Wilmet staging, not production"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  public-read-baseline:
+    name: Public read performance baseline
+    if: ${{ inputs.confirm_staging }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      K6_BASE_URL: ${{ inputs.base_url }}
+      K6_TARGET_LABEL: wilmet-staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up pinned k6 2.1.0
+        uses: grafana/setup-k6-action@v1.2.1
+        with:
+          k6-version: "2.1.0"
+
+      - name: Prepare evidence directory
+        run: mkdir -p test-results/k6
+
+      - name: Run guarded public-read baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          k6 run \
+            --out json=test-results/k6/raw.json \
+            performance/public-read-smoke.js \
+            2>&1 | tee test-results/k6/summary.txt
+
+      - name: Retain performance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-staging-${{ github.run_id }}
+          path: test-results/k6/
+          if-no-files-found: warn
+          retention-days: 30
