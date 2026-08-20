@@ -6,9 +6,9 @@ type AuthSubscription = {
 
 type AuthClientLike = {
   auth: {
-    onAuthStateChange: (
-      callback: (event: AuthEvent, session?: unknown) => void,
-    ) => { data: { subscription: AuthSubscription } };
+    onAuthStateChange: (callback: (event: AuthEvent, session?: unknown) => void) => {
+      data: { subscription: AuthSubscription };
+    };
   };
 };
 
@@ -23,9 +23,9 @@ type SessionLike = { user: { id: string } } | null;
 type SessionAwareAuthClientLike = {
   auth: {
     getSession: () => Promise<{ data: { session: SessionLike } }>;
-    onAuthStateChange: (
-      callback: (event: AuthEvent, session: SessionLike) => void,
-    ) => { data: { subscription: AuthSubscription } };
+    onAuthStateChange: (callback: (event: AuthEvent, session: SessionLike) => void) => {
+      data: { subscription: AuthSubscription };
+    };
   };
 };
 
@@ -35,11 +35,7 @@ type PublicSessionBootstrapOptions = {
   onError: (error: unknown) => void;
 };
 
-const RELEVANT_AUTH_EVENTS = new Set<AuthEvent>([
-  "SIGNED_IN",
-  "SIGNED_OUT",
-  "USER_UPDATED",
-]);
+const RELEVANT_AUTH_EVENTS = new Set<AuthEvent>(["SIGNED_IN", "SIGNED_OUT", "USER_UPDATED"]);
 
 /**
  * Subscribe the application shell to auth changes without making public-page
