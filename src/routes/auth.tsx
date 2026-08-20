@@ -43,7 +43,19 @@ function AuthPage() {
   const { mode, kind } = useSearch({ from: "/auth" });
   const navigate = useNavigate();
   const [tab, setTab] = useState<"login" | "signup" | "forgot">(mode === "signup" ? "signup" : "login");
-  useEffect(() => { setTab(mode === "signup" ? "signup" : "login"); }, [mode]);
+
+  useEffect(() => {
+    if (tab !== "forgot") setTab(mode === "signup" ? "signup" : "login");
+  }, [mode, tab]);
+
+  function selectAuthTab(next: "login" | "signup") {
+    setTab(next);
+    navigate({
+      to: "/auth",
+      search: next === "signup" ? { mode: "signup", kind } : { mode: "login" },
+      replace: true,
+    });
+  }
 
   return (
     <div className="min-h-screen bg-secondary/40">
@@ -68,7 +80,7 @@ function AuthPage() {
             </CardHeader>
             <CardContent>
               {tab !== "forgot" && (
-                <Tabs value={tab} onValueChange={(v) => setTab(v as "login" | "signup")}>
+                <Tabs value={tab} onValueChange={(v) => selectAuthTab(v as "login" | "signup")}>
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="login">Connexion</TabsTrigger>
                     <TabsTrigger value="signup">Inscription</TabsTrigger>
@@ -80,11 +92,18 @@ function AuthPage() {
                     }} />
                   </TabsContent>
                   <TabsContent value="signup" className="mt-6">
-                    <SignupForm initialKind={kind} onSuccess={() => setTab("login")} />
+                    <SignupForm
+                      initialKind={kind}
+                      onShowLogin={() => selectAuthTab("login")}
+                      onAuthenticated={async (uid) => {
+                        const home = await resolveRoleHome(uid);
+                        navigate({ to: home, replace: true });
+                      }}
+                    />
                   </TabsContent>
                 </Tabs>
               )}
-              {tab === "forgot" && <ForgotForm onBack={() => setTab("login")} />}
+              {tab === "forgot" && <ForgotForm onBack={() => selectAuthTab("login")} />}
             </CardContent>
           </Card>
 
@@ -127,7 +146,23 @@ function LoginForm({ onForgot, onSuccess }: { onForgot: () => void; onSuccess: (
   );
 }
 
-function SignupForm({ onSuccess, initialKind }: { onSuccess: () => void; initialKind?: "client" | "seller" }) {
+function readableSignupError(message: string): string {
+  const normalized = message.toLowerCase();
+  if (normalized.includes("database error saving new user") || normalized.includes("error occurred")) {
+    return "Le compte n'a pas pu être finalisé. Réessayez dans un instant ; si le problème persiste, contactez Wilmet.";
+  }
+  return message;
+}
+
+function SignupForm({
+  onShowLogin,
+  onAuthenticated,
+  initialKind,
+}: {
+  onShowLogin: () => void;
+  onAuthenticated: (userId: string) => void | Promise<void>;
+  initialKind?: "client" | "seller";
+}) {
   const [form, setForm] = useState({
     first_name: "", last_name: "", company_name: "", email: "", phone: "",
     provider_type: "", city: "", country: "France", password: "",
@@ -140,6 +175,10 @@ function SignupForm({ onSuccess, initialKind }: { onSuccess: () => void; initial
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
   const set = <K extends keyof typeof form>(k: K, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  useEffect(() => {
+    if (initialKind) setKind(initialKind);
+  }, [initialKind]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -168,7 +207,9 @@ function SignupForm({ onSuccess, initialKind }: { onSuccess: () => void; initial
       email: form.email,
       password: form.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+        // Returning through /auth lets its session guard resolve the canonical
+        // role home (seller, buyer, staff) instead of hard-coding /dashboard.
+        emailRedirectTo: `${window.location.origin}/auth`,
         data: {
           partner_kind: kind,
           // Lifetime attribution: whoever shared the link that brought this account.
@@ -191,12 +232,12 @@ function SignupForm({ onSuccess, initialKind }: { onSuccess: () => void; initial
         setPendingEmail(form.email);
         return;
       }
-      toast.error("Inscription impossible", { description: error.message });
+      toast.error("Inscription impossible", { description: readableSignupError(error.message) });
       return;
     }
     if (data.session) {
       toast.success("Compte créé", { description: "Bienvenue sur Wilmet Opportunités." });
-      onSuccess();
+      await onAuthenticated(data.session.user.id);
       return;
     }
     // Supabase returns a user with empty identities[] when the email is already registered but unconfirmed
@@ -212,7 +253,7 @@ function SignupForm({ onSuccess, initialKind }: { onSuccess: () => void; initial
     const { error } = await supabase.auth.resend({
       type: "signup",
       email,
-      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+      options: { emailRedirectTo: `${window.location.origin}/auth` },
     });
     setResending(false);
     if (error) { toast.error("Envoi impossible", { description: error.message }); return; }
@@ -257,7 +298,7 @@ function SignupForm({ onSuccess, initialKind }: { onSuccess: () => void; initial
             Cliquez sur le lien reçu pour activer votre compte, puis revenez ici pour vous connecter.
           </p>
         </div>
-        <Button onClick={onSuccess} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg">
+        <Button onClick={onShowLogin} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg">
           Aller à la connexion
         </Button>
         <div className="text-center">
