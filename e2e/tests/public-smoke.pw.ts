@@ -41,11 +41,16 @@ test.describe("Wilmet public staging smoke", () => {
   });
 
   test("seller signup deep link opens registration with seller selected", async ({ page }) => {
-    const response = await page.goto("/auth?mode=signup&kind=seller", { waitUntil: "domcontentloaded" });
+    const response = await page.goto("/auth?mode=signup&kind=seller", {
+      waitUntil: "domcontentloaded",
+    });
 
     expect(response?.ok()).toBeTruthy();
     await expect(page.getByText("Créer un compte partenaire", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Je vends/i })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: /Je vends/i })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     await expect(page.getByRole("button", { name: "Créer mon compte" })).toBeVisible();
   });
 
