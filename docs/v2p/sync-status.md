@@ -70,13 +70,30 @@ to R-A: duplicate the Lovable project and reconnect (Settings → Connectors
 whether/how to reconcile the ~75 external commits back through Lovable
 prompts per doctrine §2.5.
 
+## Resolution (2026-08-20)
+
+PR #13 merged to `main`. Lovable pulled it and the "Un problème est
+survenu" preview crash **cleared** — R-C confirmed correct. GitHub →
+Lovable is healthy.
+
+The other leg of the round-trip test (Lovable → GitHub: an edit made in
+Lovable producing a new `gpt-engineer-app[bot]` commit) is **deferred**:
+Salma has no remaining Lovable credits, so no prompt can currently be
+submitted there. See ADR-002 for how we're operating around that
+constraint. `git fetch` confirms no new Lovable-side commit has landed
+since the merge (expected — nothing was prompted).
+
+Reconciling the ~75 external commits back through Lovable prompts is not
+currently possible (no credits) — resolved as "leave as-is, documented
+exception," per ADR-002.
+
 ## Open items — need Salma
 
-1. After this PR merges, refresh Lovable's preview and report whether the
-   crash clears.
-2. Decide whether the ~75 external commits (RLS scoping, CSP, CI, incident
-   runbook, E2E/k6 foundations, auth fail-safe) should be reconciled back
-   through Lovable prompts now that sync should be flowing again, or
-   treated as a deliberate, documented exception to doctrine §2.5 for now.
+1. ~~After this PR merges, refresh Lovable's preview~~ — done, confirmed
+   fixed.
+2. ~~Decide whether to reconcile the external commits through Lovable~~ —
+   moot for now; see ADR-002. Revisit once credits are restored.
 3. Confirm Supabase staging/prod project refs (§7.1 gate) — still needed
    before Phase 0.5/Phase 1 can start.
+4. Next time Lovable is prompted for any reason, confirm the resulting
+   commit lands on GitHub `main` to close out the deferred round-trip leg.
