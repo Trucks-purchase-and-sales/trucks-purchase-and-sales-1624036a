@@ -6,6 +6,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+# V2P evidence capture is deliberately tracked (proof artifacts, not runtime logs)
+!apps/wilmet/evidence/**
 
 node_modules
 dist
