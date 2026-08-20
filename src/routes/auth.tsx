@@ -494,10 +494,7 @@ function SignupForm({
       </div>
 
       <Field label="Société">
-        <Input
-          value={form.company_name}
-          onChange={(e) => set("company_name", e.target.value)}
-        />
+        <Input value={form.company_name} onChange={(e) => set("company_name", e.target.value)} />
       </Field>
 
       <Field label="Type de partenaire">
@@ -592,12 +589,7 @@ function ForgotForm({ onBack }: { onBack: () => void }) {
   return (
     <form onSubmit={submit} className="space-y-4">
       <Field label="Email">
-        <Input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
       </Field>
       <Button
         disabled={loading}
