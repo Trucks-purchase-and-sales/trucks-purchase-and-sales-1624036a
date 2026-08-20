@@ -23,7 +23,11 @@ function PublicHeader() {
           <img src={wilmetLogo.url} alt="Wilmet Trucks" className="h-9 w-auto" />
         </Link>
         <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
-          <Link to="/vehicules" className="hover:text-foreground" activeProps={{ className: "text-foreground font-medium" }}>
+          <Link
+            to="/vehicules"
+            className="hover:text-foreground"
+            activeProps={{ className: "text-foreground font-medium" }}
+          >
             {t("catalog.nav.vehicles")}
           </Link>
           <Link to="/chercher-un-vehicule" className="hover:text-foreground">
@@ -47,17 +51,30 @@ function PublicFooter() {
             <img src={wilmetLogo.url} alt="Wilmet Trucks" className="h-7 w-auto" />
             <span>· {t("footer.tagline")}</span>
           </div>
-          <span>© {new Date().getFullYear()} Wilmet. {t("footer.rights")}</span>
+          <span>
+            © {new Date().getFullYear()} Wilmet. {t("footer.rights")}
+          </span>
         </div>
         <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-border/40 pt-4 text-xs">
-          <Link to="/vehicules" className="hover:text-foreground">{t("catalog.nav.vehiclesForSale")}</Link>
-          <Link to="/mentions-legales" className="hover:text-foreground">{t("catalog.nav.legal")}</Link>
-          <Link to="/cgu" className="hover:text-foreground">{t("catalog.nav.cgu")}</Link>
-          <Link to="/cgv" className="hover:text-foreground">{t("catalog.nav.cgv")}</Link>
-          <Link to="/confidentialite" className="hover:text-foreground">{t("catalog.nav.privacy")}</Link>
-          <Link to="/cookies" className="hover:text-foreground">{t("catalog.nav.cookies")}</Link>
+          <Link to="/vehicules" className="hover:text-foreground">
+            {t("catalog.nav.vehiclesForSale")}
+          </Link>
+          <Link to="/mentions-legales" className="hover:text-foreground">
+            {t("catalog.nav.legal")}
+          </Link>
+          <Link to="/cgu" className="hover:text-foreground">
+            {t("catalog.nav.cgu")}
+          </Link>
+          <Link to="/cgv" className="hover:text-foreground">
+            {t("catalog.nav.cgv")}
+          </Link>
+          <Link to="/confidentialite" className="hover:text-foreground">
+            {t("catalog.nav.privacy")}
+          </Link>
+          <Link to="/cookies" className="hover:text-foreground">
+            {t("catalog.nav.cookies")}
+          </Link>
         </nav>
-
       </div>
     </footer>
   );
