@@ -5,6 +5,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { resolveRoleHome } from "@/hooks/useRoleHome";
 import { supabase } from "@/integrations/supabase/client";
+import { startPublicSessionBootstrap } from "@/lib/auth-bootstrap";
 
 /**
  * Session-aware account actions shared by public pages.
@@ -37,17 +38,19 @@ export function PublicAccountActions() {
       }
     };
 
-    void supabase.auth.getSession().then(({ data }) => {
-      void resolveSessionHome(data.session?.user.id);
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      void resolveSessionHome(session?.user.id);
+    const cleanup = startPublicSessionBootstrap({
+      client: supabase,
+      onSession: (userId) => {
+        void resolveSessionHome(userId);
+      },
+      onError: (error) => {
+        console.error("[public/auth] session bootstrap failed; showing anonymous controls", error);
+      },
     });
 
     return () => {
       active = false;
-      listener.subscription.unsubscribe();
+      cleanup();
     };
   }, []);
 
