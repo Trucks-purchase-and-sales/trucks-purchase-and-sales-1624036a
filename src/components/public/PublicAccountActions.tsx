@@ -55,11 +55,7 @@ export function PublicAccountActions() {
     <div className="flex items-center gap-2">
       <LanguageSwitcher compact />
       {home === undefined ? null : home ? (
-        <Button
-          asChild
-          size="sm"
-          className="bg-accent text-accent-foreground hover:bg-accent/90"
-        >
+        <Button asChild size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
           <Link to={home as never}>Mon espace</Link>
         </Button>
       ) : (
@@ -70,11 +66,7 @@ export function PublicAccountActions() {
           >
             {t("nav.signIn")}
           </Link>
-          <Button
-            asChild
-            size="sm"
-            className="bg-accent text-accent-foreground hover:bg-accent/90"
-          >
+          <Button asChild size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
             <Link to="/auth" search={{ mode: "signup", kind: "seller" } as never}>
               {t("nav.propose")}
             </Link>
