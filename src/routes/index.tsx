@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useI18nInit } from "@/i18n/useI18nInit";
 import { AssistantWidget } from "@/components/public/AssistantWidget";
+import { PublicAccountActions } from "@/components/public/PublicAccountActions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -56,15 +57,7 @@ function Header() {
           <a href="#contact" className="hover:text-foreground">{t("nav.contact")}</a>
         </nav>
 
-        <div className="flex items-center gap-2">
-          <LanguageSwitcher compact />
-          <Link to="/auth" className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline-flex">
-            {t("nav.signIn")}
-          </Link>
-          <Button asChild size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
-            <Link to="/auth" search={{ mode: "signup", kind: "seller" } as never}>{t("nav.propose")}</Link>
-          </Button>
-        </div>
+        <PublicAccountActions />
       </div>
     </header>
   );
