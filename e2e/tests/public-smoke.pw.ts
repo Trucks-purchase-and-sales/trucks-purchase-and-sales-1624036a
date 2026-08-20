@@ -40,6 +40,27 @@ test.describe("Wilmet public staging smoke", () => {
     await expect(page.getByRole("button", { name: "Se connecter" })).toBeVisible();
   });
 
+  test("seller signup deep link opens registration with seller selected", async ({ page }) => {
+    const response = await page.goto("/auth?mode=signup&kind=seller", { waitUntil: "domcontentloaded" });
+
+    expect(response?.ok()).toBeTruthy();
+    await expect(page.getByText("Créer un compte partenaire", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Je vends/i })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "Créer mon compte" })).toBeVisible();
+  });
+
+  test("auth tab selection is reflected in the URL", async ({ page }) => {
+    await page.goto("/auth", { waitUntil: "domcontentloaded" });
+
+    await page.getByRole("tab", { name: "Inscription" }).click();
+    await expect(page).toHaveURL(/\/auth\?mode=signup/);
+    await expect(page.getByText("Créer un compte partenaire", { exact: true })).toBeVisible();
+
+    await page.getByRole("tab", { name: "Connexion" }).click();
+    await expect(page).toHaveURL(/\/auth\?mode=login/);
+    await expect(page.getByText("Connexion partenaire", { exact: true })).toBeVisible();
+  });
+
   test("buyer request route reaches the first wizard step", async ({ page }) => {
     const response = await page.goto("/chercher-un-vehicule/", {
       waitUntil: "domcontentloaded",
