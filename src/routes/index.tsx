@@ -364,9 +364,7 @@ function ContactBlock() {
           <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
             Une question ? Un besoin spécifique ?
           </h2>
-          <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-            {t("contact.text")}
-          </p>
+          <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{t("contact.text")}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button
               asChild
