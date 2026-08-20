@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { startAuthBootstrap } from "./auth-bootstrap";
+import { startAuthBootstrap, startPublicSessionBootstrap } from "./auth-bootstrap";
 
 describe("startAuthBootstrap", () => {
   test("does not propagate a synchronous auth-client bootstrap failure", () => {
@@ -101,5 +101,89 @@ describe("startAuthBootstrap", () => {
 
     expect(cleanup).not.toThrow();
     expect(errors).toEqual([cleanupError]);
+  });
+});
+
+describe("startPublicSessionBootstrap", () => {
+  test("falls back to anonymous when the auth getter throws synchronously", () => {
+    const errors: unknown[] = [];
+    const sessions: Array<string | undefined> = [];
+    const configError = new Error("Missing browser Supabase configuration");
+    const client = Object.defineProperty({}, "auth", {
+      get() {
+        throw configError;
+      },
+    });
+
+    expect(() => {
+      const cleanup = startPublicSessionBootstrap({
+        client: client as never,
+        onSession: (userId) => sessions.push(userId),
+        onError: (error) => errors.push(error),
+      });
+      cleanup();
+    }).not.toThrow();
+
+    expect(errors).toEqual([configError]);
+    expect(sessions).toEqual([undefined]);
+  });
+
+  test("falls back to anonymous when the initial session lookup rejects", async () => {
+    const errors: unknown[] = [];
+    const sessions: Array<string | undefined> = [];
+    const sessionError = new Error("session lookup failed");
+    const client = {
+      auth: {
+        getSession: async () => {
+          throw sessionError;
+        },
+        onAuthStateChange: () => ({
+          data: { subscription: { unsubscribe: () => undefined } },
+        }),
+      },
+    };
+
+    const cleanup = startPublicSessionBootstrap({
+      client,
+      onSession: (userId) => sessions.push(userId),
+      onError: (error) => errors.push(error),
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(errors).toEqual([sessionError]);
+    expect(sessions).toEqual([undefined]);
+    cleanup();
+  });
+
+  test("reports the current session and later auth-state changes", async () => {
+    const sessions: Array<string | undefined> = [];
+    let callback: ((event: string, session: { user: { id: string } } | null) => void) | undefined;
+    const client = {
+      auth: {
+        getSession: async () => ({
+          data: { session: { user: { id: "seller-a" } } },
+        }),
+        onAuthStateChange: (
+          cb: (event: string, session: { user: { id: string } } | null) => void,
+        ) => {
+          callback = cb;
+          return { data: { subscription: { unsubscribe: () => undefined } } };
+        },
+      },
+    };
+
+    const cleanup = startPublicSessionBootstrap({
+      client,
+      onSession: (userId) => sessions.push(userId),
+      onError: () => undefined,
+    });
+
+    await Promise.resolve();
+    callback?.("SIGNED_OUT", null);
+
+    expect(sessions).toEqual(["seller-a", undefined]);
+    cleanup();
   });
 });
