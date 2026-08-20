@@ -56,6 +56,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Audit dependencies for high/critical vulnerabilities
+        run: bun audit --audit-level=high
+
       - name: Lint changed TypeScript files
         if: github.event_name == 'pull_request'
         env:
