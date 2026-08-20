@@ -1,0 +1,33 @@
+V2P Phase 0 — local dev-server route checks
+Repo HEAD: fe0272d (npm run dev, port 8080, no .env.local / no Supabase env vars set)
+
+/            -> HTTP 200, SSR renders full homepage shell (title "Wilmet Trucks — Négoce européen de poids lourds et utilitaires")
+/auth        -> HTTP 307 -> /auth?mode=login -> HTTP 200
+/vehicules   -> HTTP 200, SSR renders full catalog shell + loading skeleton, no server-side exception in dev log
+
+No console/server errors observed on any of the three routes above.
+This contradicts the "broken preview" premise for current `main` — the
+break is on Lovable's (stale) side, not GitHub's. See sync-status.md.
+
+--- Evidence the crash is a stale-snapshot issue, not a live bug ---
+`src/components/public/PublicAccountActions.tsx` (rendered by every public
+route's header, including /vehicules) does not exist in b144905 (Lovable's
+last-synced commit). It was added later specifically to stop public pages
+crashing when the browser Supabase client can't initialize:
+
+  git diff b144905 fe0272d -- src/lib/auth-bootstrap.ts src/components/public/PublicAccountActions.tsx
+
+  ...
+  +/**
+  + * Resolve the current browser session and keep it synchronized for public UI.
+  + *
+  + * Public chrome must remain usable when the lazy Supabase client cannot
+  + * initialize (for example, a preview missing browser runtime variables) or
+  + * when the initial session lookup rejects. In those cases we deliberately
+  + * fall back to anonymous public controls. This does not weaken protected-route
+  + * authorization; it only prevents optional session-aware chrome from taking
+  + * down the public application shell.
+  + */
+  +export function startPublicSessionBootstrap({ ... }) { ... }
+
+Full diff available via: git diff b144905 fe0272d -- src/lib/auth-bootstrap.ts src/components/public/PublicAccountActions.tsx

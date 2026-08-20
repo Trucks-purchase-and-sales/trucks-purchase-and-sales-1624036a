@@ -1,0 +1,668 @@
+V2P Phase 0 — build reproduction, 2026-08-20T17:46:43Z
+Command: npm install && npm run build   (repo HEAD: fe0272d)
+Result: SUCCESS, no errors. Only cosmetic deprecation warnings (createServerFn().inputValidator()).
+========================================================================
+
+
+> wilmet-trucks@0.0.0 build
+> vite build
+
+[33mThe plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the [1mresolve.tsconfigPaths[22m option. You can remove the plugin and set [1mresolve.tsconfigPaths: true[22m in your Vite config instead.[39m
+[33mThe plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the [1mresolve.tsconfigPaths[22m option. You can remove the plugin and set [1mresolve.tsconfigPaths: true[22m in your Vite config instead.[39m
+[33mThe plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the [1mresolve.tsconfigPaths[22m option. You can remove the plugin and set [1mresolve.tsconfigPaths: true[22m in your Vite config instead.[39m
+[36mvite v8.2.2 [32mbuilding client environment for production...[36m[39m
+transforming...
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:7:32 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:40:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:135:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:196:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:217:30 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:231:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:262:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:289:29 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:305:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:338:30 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:356:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts:154:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts:163:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts:242:41 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts:260:41 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts:274:40 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts:285:45 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:39:32 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:98:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:127:35 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:164:33 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:202:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:249:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:314:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:368:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/public-catalog.functions.ts:40:35 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/public-catalog.functions.ts:116:33 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/buyer-leads.functions.ts:11:45 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:102:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:158:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:182:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:202:29 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:214:33 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:233:42 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:247:29 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:274:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:307:35 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:367:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:380:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:405:44 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:452:35 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:472:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:505:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:521:42 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:535:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:556:44 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/users-admin.functions.ts:30:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/users-admin.functions.ts:71:30 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/users-admin.functions.ts:112:27 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunity-dossier.functions.ts:40:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunity-dossier.functions.ts:64:42 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunity-dossier.functions.ts:95:40 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunity-dossier.functions.ts:131:41 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/app-settings.functions.ts:75:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts:34:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts:50:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts:62:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts:85:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts:122:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts:154:43 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:50:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:75:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:137:40 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:162:42 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:182:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:195:40 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:247:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:279:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:296:33 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:316:41 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:63:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:83:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:102:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:120:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:343:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:381:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:396:26 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:415:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:428:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:462:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:504:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts:37:49 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts:91:33 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts:114:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts:134:44 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts:148:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts:195:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts:130:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts:194:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts:256:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts:281:35 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts:299:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts:382:26 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts:424:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/dossier-ai.functions.ts:75:40 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/voice.functions.ts:28:32 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/ocr.functions.ts:159:27 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:client] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/ocr.functions.ts:256:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+✓ 3777 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/client/assets/styles-BGzh2Zk5.css                           104.49 kB │ gzip:  16.69 kB
+dist/client/assets/root-DLTE-HSj.js                                0.03 kB │ gzip:   0.05 kB
+dist/client/assets/not-found-DIgawKw1.js                           0.05 kB │ gzip:   0.07 kB
+dist/client/assets/invariant-DEEwAagU.js                           0.06 kB │ gzip:   0.08 kB
+dist/client/assets/admin.buyer-leads-c-tTJRQv.js                   0.07 kB │ gzip:   0.08 kB
+dist/client/assets/admin.sale-listings-c-tTJRQv.js                 0.07 kB │ gzip:   0.08 kB
+dist/client/assets/auth-middleware-jScsstZa.js                     0.08 kB │ gzip:   0.10 kB
+dist/client/assets/check-CAHnL7QE.js                               0.12 kB │ gzip:   0.14 kB
+dist/client/assets/chevron-right-Dkn2sAMq.js                       0.13 kB │ gzip:   0.14 kB
+dist/client/assets/circle-DqcYU_Ku.js                              0.13 kB │ gzip:   0.13 kB
+dist/client/assets/admin-C6dz5T-j.js                               0.13 kB │ gzip:   0.13 kB
+dist/client/assets/chercher-un-vehicule-C6dz5T-j.js                0.13 kB │ gzip:   0.13 kB
+dist/client/assets/direction-C6dz5T-j.js                           0.13 kB │ gzip:   0.13 kB
+dist/client/assets/manager-C6dz5T-j.js                             0.13 kB │ gzip:   0.13 kB
+dist/client/assets/sales-C6dz5T-j.js                               0.13 kB │ gzip:   0.13 kB
+dist/client/assets/loader-circle-BYP2lkLT.js                       0.14 kB │ gzip:   0.15 kB
+dist/client/assets/plus-rmMBXzwM.js                                0.15 kB │ gzip:   0.15 kB
+dist/client/assets/x-DkGQo4LL.js                                   0.15 kB │ gzip:   0.15 kB
+dist/client/assets/arrow-left-BUwgnA4X.js                          0.16 kB │ gzip:   0.16 kB
+dist/client/assets/arrow-right-CSeJ7gzX.js                         0.16 kB │ gzip:   0.16 kB
+dist/client/assets/arrow-up-right-UGTmPE9N.js                      0.16 kB │ gzip:   0.15 kB
+dist/client/assets/clock-KkcsyOzw.js                               0.16 kB │ gzip:   0.16 kB
+dist/client/assets/search-dif9dHJA.js                              0.17 kB │ gzip:   0.16 kB
+dist/client/assets/trending-up-_86boYm4.js                         0.17 kB │ gzip:   0.17 kB
+dist/client/assets/gauge-DaU5TjEI.js                               0.17 kB │ gzip:   0.16 kB
+dist/client/assets/circle-check-BuYkppcM.js                        0.17 kB │ gzip:   0.16 kB
+dist/client/assets/user-round-pZAthF37.js                          0.18 kB │ gzip:   0.17 kB
+dist/client/assets/matchContext-DuJLvIPi.js                        0.18 kB │ gzip:   0.15 kB
+dist/client/assets/circle-x-C6l5_2dS.js                            0.20 kB │ gzip:   0.17 kB
+dist/client/assets/password-policy-Dtg1SZ1g.js                     0.21 kB │ gzip:   0.18 kB
+dist/client/assets/briefcase-CQtyACax.js                           0.22 kB │ gzip:   0.19 kB
+dist/client/assets/skeleton-DP2sgHZP.js                            0.22 kB │ gzip:   0.18 kB
+dist/client/assets/useNavigate-DGc5BUW0.js                         0.23 kB │ gzip:   0.19 kB
+dist/client/assets/message-circle-DL1uNsQD.js                      0.24 kB │ gzip:   0.21 kB
+dist/client/assets/link-2-C6c3SiUG.js                              0.24 kB │ gzip:   0.20 kB
+dist/client/assets/calendar-BdvgQlXJ.js                            0.25 kB │ gzip:   0.20 kB
+dist/client/assets/map-pin-urYSQyrI.js                             0.25 kB │ gzip:   0.22 kB
+dist/client/assets/image-CC13YW9O.js                               0.26 kB │ gzip:   0.22 kB
+dist/client/assets/list-checks-Cn5zrpOQ.js                         0.27 kB │ gzip:   0.18 kB
+dist/client/assets/inbox-DwWsLstE.js                               0.28 kB │ gzip:   0.23 kB
+dist/client/assets/bell-DKeFl2KH.js                                0.29 kB │ gzip:   0.23 kB
+dist/client/assets/send-7QqOHzy5.js                                0.29 kB │ gzip:   0.22 kB
+dist/client/assets/users-DbIlkFwY.js                               0.30 kB │ gzip:   0.22 kB
+dist/client/assets/createMiddleware-DQnh37QV.js                    0.30 kB │ gzip:   0.17 kB
+dist/client/assets/user-plus-DYLq-X6b.js                           0.31 kB │ gzip:   0.23 kB
+dist/client/assets/shield-check-CVk1FA5Z.js                        0.32 kB │ gzip:   0.24 kB
+dist/client/assets/refresh-cw-DWPOzoxe.js                          0.32 kB │ gzip:   0.22 kB
+dist/client/assets/tag-qWj5yeXW.js                                 0.32 kB │ gzip:   0.24 kB
+dist/client/assets/save-Bntkj3kD.js                                0.32 kB │ gzip:   0.22 kB
+dist/client/assets/trash-2-CVo_OBuR.js                             0.32 kB │ gzip:   0.21 kB
+dist/client/assets/StatusBadge-CMFCUU7T.js                         0.32 kB │ gzip:   0.25 kB
+dist/client/assets/camera-CueZsogq.js                              0.33 kB │ gzip:   0.25 kB
+dist/client/assets/layout-grid-Dwhxa2gB.js                         0.34 kB │ gzip:   0.19 kB
+dist/client/assets/building-2-DEGC28Fm.js                          0.38 kB │ gzip:   0.24 kB
+dist/client/assets/file-text-DIR0alWX.js                           0.38 kB │ gzip:   0.25 kB
+dist/client/assets/truck-BE4tdNTz.js                               0.40 kB │ gzip:   0.26 kB
+dist/client/assets/wilmet-logo.png.asset-CTu8Iz4Q.js               0.41 kB │ gzip:   0.24 kB
+dist/client/assets/handshake-CLKn3DuY.js                           0.44 kB │ gzip:   0.28 kB
+dist/client/assets/trophy-CSPu9_Pq.js                              0.47 kB │ gzip:   0.27 kB
+dist/client/assets/sparkles-BsPpXgvR.js                            0.49 kB │ gzip:   0.28 kB
+dist/client/assets/textarea-Byzj7Plh.js                            0.56 kB │ gzip:   0.37 kB
+dist/client/assets/admin.partenaires-5KysNEOr.js                   0.58 kB │ gzip:   0.38 kB
+dist/client/assets/esm-CJyrM71m.js                                 0.59 kB │ gzip:   0.37 kB
+dist/client/assets/auth-bootstrap-CK7j8pwN.js                      0.60 kB │ gzip:   0.34 kB
+dist/client/assets/app-settings.functions-rjjMdFH4.js              0.62 kB │ gzip:   0.38 kB
+dist/client/assets/useRoleHome-gRNJxbHz.js                         0.62 kB │ gzip:   0.38 kB
+dist/client/assets/dist-rYY0ay2T.js                                0.64 kB │ gzip:   0.39 kB
+dist/client/assets/dashboards.functions-CRHgpWdp.js                0.64 kB │ gzip:   0.37 kB
+dist/client/assets/input-XPOlDhzI.js                               0.66 kB │ gzip:   0.40 kB
+dist/client/assets/dist-B_a62Dw0.js                                0.67 kB │ gzip:   0.43 kB
+dist/client/assets/dist-DA2RI6YG.js                                0.74 kB │ gzip:   0.50 kB
+dist/client/assets/label-DZGHIHXM.js                               0.75 kB │ gzip:   0.47 kB
+dist/client/assets/useSearch-ChzDSF_9.js                           0.82 kB │ gzip:   0.46 kB
+dist/client/assets/badge-BmT-_vEp.js                               0.84 kB │ gzip:   0.43 kB
+dist/client/assets/referral-CU0JwayN.js                            0.97 kB │ gzip:   0.54 kB
+dist/client/assets/profile-F4J86m5e.js                             1.06 kB │ gzip:   0.60 kB
+dist/client/assets/tslib.es6-Tae09705.js                           1.06 kB │ gzip:   0.52 kB
+dist/client/assets/card-CNMfW1x0.js                                1.10 kB │ gzip:   0.42 kB
+dist/client/assets/rolldown-runtime-Dd_uD5pT.js                    1.10 kB │ gzip:   0.62 kB
+dist/client/assets/opportunities.success._id-B8jL5WpG.js           1.17 kB │ gzip:   0.65 kB
+dist/client/assets/preload-helper-Czpn1I53.js                      1.19 kB │ gzip:   0.67 kB
+dist/client/assets/createLucideIcon-C4fzP4MM.js                    1.23 kB │ gzip:   0.71 kB
+dist/client/assets/StageTiles-CAZ962Bv.js                          1.28 kB │ gzip:   0.67 kB
+dist/client/assets/sales.index-CvufnzN8.js                         1.30 kB │ gzip:   0.73 kB
+dist/client/assets/chercher-un-vehicule.merci-CJGf13ir.js          1.32 kB │ gzip:   0.75 kB
+dist/client/assets/demand-opportunities.functions-BYPR3RJX.js      1.36 kB │ gzip:   0.64 kB
+dist/client/assets/PublicAccountActions-lVE-RdGo.js                1.40 kB │ gzip:   0.73 kB
+dist/client/assets/sale-listings.constants-CXwdMWMs.js             1.42 kB │ gzip:   0.72 kB
+dist/client/assets/commissions.functions-DmTuiRoL.js               1.47 kB │ gzip:   0.67 kB
+dist/client/assets/copy-BOYybeoE.js                                1.49 kB │ gzip:   0.76 kB
+dist/client/assets/admin.demand-opportunities._id-DuOIj3GI.js      1.62 kB │ gzip:   0.85 kB
+dist/client/assets/StageBar-CAZJc5DV.js                            1.63 kB │ gzip:   0.79 kB
+dist/client/assets/table-BC6h1Amj.js                               1.68 kB │ gzip:   0.59 kB
+dist/client/assets/admin.buyer-leads._id-CTZ4oz-p.js               1.71 kB │ gzip:   0.91 kB
+dist/client/assets/opportunities.functions-DPpLPi26.js             1.74 kB │ gzip:   0.77 kB
+dist/client/assets/cookies-CI_hlRhZ.js                             1.75 kB │ gzip:   0.81 kB
+dist/client/assets/admin-refdata.functions-hGhdBz8d.js             1.85 kB │ gzip:   0.82 kB
+dist/client/assets/LegalLayout-BgzAaAw7.js                         1.86 kB │ gzip:   0.82 kB
+dist/client/assets/dashboard-BDBUD5oj.js                           1.89 kB │ gzip:   0.98 kB
+dist/client/assets/opportunities._id-DOT3Je6o.js                   1.96 kB │ gzip:   1.02 kB
+dist/client/assets/admin.index-ycPx4gMb.js                         1.98 kB │ gzip:   1.06 kB
+dist/client/assets/admin.sale-listings._id-C9bbkLiT.js             1.99 kB │ gzip:   1.07 kB
+dist/client/assets/mes-demandes-C0RySZJ2.js                        2.02 kB │ gzip:   1.05 kB
+dist/client/assets/opportunities.success._id-i-0QW6N0.js           2.04 kB │ gzip:   0.93 kB
+dist/client/assets/StatTile-CfSKd09W.js                            2.05 kB │ gzip:   0.82 kB
+dist/client/assets/vehicules._id-DU-6vcHM.js                       2.07 kB │ gzip:   1.05 kB
+dist/client/assets/useStore-CQ6gbgft.js                            2.12 kB │ gzip:   0.92 kB
+dist/client/assets/dialog-BM48vBov.js                              2.17 kB │ gzip:   0.87 kB
+dist/client/assets/mentions-legales-D7xUTOkZ.js                    2.23 kB │ gzip:   1.03 kB
+dist/client/assets/reset-password-C-6ePdqJ.js                      2.26 kB │ gzip:   1.00 kB
+dist/client/assets/route-zqOUeTxt.js                               2.33 kB │ gzip:   1.20 kB
+dist/client/assets/admin.audit-BMGmazL2.js                         2.33 kB │ gzip:   0.90 kB
+dist/client/assets/useMutation-C1jiwy00.js                         2.34 kB │ gzip:   0.97 kB
+dist/client/assets/opportunities.new-D8H95AWQ.js                   2.35 kB │ gzip:   1.20 kB
+dist/client/assets/direction.index-byXpPQy_.js                     2.46 kB │ gzip:   0.99 kB
+dist/client/assets/cgv-D7sXZOyz.js                                 2.51 kB │ gzip:   1.07 kB
+dist/client/assets/manager.index-Dw6aB0Sm.js                       2.51 kB │ gzip:   1.08 kB
+dist/client/assets/admin.opportunities._id-DxkPqXV3.js             2.55 kB │ gzip:   1.27 kB
+dist/client/assets/mes-echanges-BLDcopg2.js                        2.59 kB │ gzip:   1.12 kB
+dist/client/assets/admin.functions-UNgNvafM.js                     2.60 kB │ gzip:   1.08 kB
+dist/client/assets/public-catalog.functions-Ck6J2Wzz.js            2.83 kB │ gzip:   1.00 kB
+dist/client/assets/admin.content-B4dxHgm2.js                       2.85 kB │ gzip:   1.20 kB
+dist/client/assets/useAiFeatures-C8yPBs8G.js                       2.95 kB │ gzip:   1.46 kB
+dist/client/assets/cgu-PUjcUC7L.js                                 3.03 kB │ gzip:   1.24 kB
+dist/client/assets/mes-demandes-clients-CLaBNchA.js                3.08 kB │ gzip:   1.20 kB
+dist/client/assets/confidentialite-B0pdHsN2.js                     3.19 kB │ gzip:   1.26 kB
+dist/client/assets/mes-commissions-BDZVcUp1.js                     3.25 kB │ gzip:   1.33 kB
+dist/client/assets/mutation-JjVwVUER.js                            3.38 kB │ gzip:   1.14 kB
+dist/client/assets/react-dom-BXTM-rqp.js                           3.59 kB │ gzip:   1.36 kB
+dist/client/assets/tabs-AIk3mhuj.js                                3.65 kB │ gzip:   1.53 kB
+dist/client/assets/sales.index-DvLjek9A.js                         3.66 kB │ gzip:   1.47 kB
+dist/client/assets/alert-dialog-D_g-1A1V.js                        3.72 kB │ gzip:   1.27 kB
+dist/client/assets/profile-D6jCNoAU.js                             3.74 kB │ gzip:   1.43 kB
+dist/client/assets/admin.commissions-DSvRj-Bz.js                   3.75 kB │ gzip:   1.58 kB
+dist/client/assets/chercher-un-vehicule.merci-CdpMRR0W.js          3.78 kB │ gzip:   1.54 kB
+dist/client/assets/espace-acheteur-CaPaphuh.js                     3.79 kB │ gzip:   1.56 kB
+dist/client/assets/admin.demand-opportunities.index-BmEuxEDP.js    3.87 kB │ gzip:   1.47 kB
+dist/client/assets/lazyRouteComponent-dHAcYfuJ.js                  3.88 kB │ gzip:   1.35 kB
+dist/client/assets/button-D47DBVpn.js                              4.19 kB │ gzip:   1.83 kB
+dist/client/assets/dist-CEixNyjJ.js                                4.29 kB │ gzip:   1.89 kB
+dist/client/assets/admin.buyer-leads.index-CygF1rPB.js             4.34 kB │ gzip:   1.73 kB
+dist/client/assets/switch-1S2iUGl5.js                              4.39 kB │ gzip:   1.86 kB
+dist/client/assets/dist-BzFB88rF.js                                4.39 kB │ gzip:   1.81 kB
+dist/client/assets/admin.sale-listings.index-WUMoL2sR.js           4.41 kB │ gzip:   1.61 kB
+dist/client/assets/mes-demandes-B5WqHcU5.js                        4.47 kB │ gzip:   1.76 kB
+dist/client/assets/Match-BDVpF4c8.js                               4.56 kB │ gzip:   1.79 kB
+dist/client/assets/admin.notifications-BfSWGjFP.js                 4.58 kB │ gzip:   1.86 kB
+dist/client/assets/checkbox-BfAmU1ti.js                            4.61 kB │ gzip:   1.96 kB
+dist/client/assets/createServerFn-aT-iU758.js                      4.79 kB │ gzip:   2.02 kB
+dist/client/assets/dist-DObTn0Hb.js                                4.88 kB │ gzip:   1.76 kB
+dist/client/assets/AssistantWidget-Bmw916y4.js                     5.03 kB │ gzip:   2.24 kB
+dist/client/assets/admin.reference-DKes965x.js                     5.03 kB │ gzip:   1.82 kB
+dist/client/assets/ExternalUserDirectory-C39y_YtB.js               5.40 kB │ gzip:   2.25 kB
+dist/client/assets/mon-lien-DpT6xvoV.js                            5.76 kB │ gzip:   2.37 kB
+dist/client/assets/vehicules.index-D6JSRtVu.js                     5.78 kB │ gzip:   2.11 kB
+dist/client/assets/vehicules._id-BDn0jAHw.js                       5.90 kB │ gzip:   2.00 kB
+dist/client/assets/admin.settings-A-8pyTIK.js                      5.93 kB │ gzip:   1.94 kB
+dist/client/assets/admin.leads-Bgy-fAgP.js                         6.13 kB │ gzip:   2.39 kB
+dist/client/assets/radio-group-iz1okuVH.js                         6.30 kB │ gzip:   2.49 kB
+dist/client/assets/admin.affiliation-BlRrGcS0.js                   7.48 kB │ gzip:   2.61 kB
+dist/client/assets/admin.buyer-leads._id-C0eJzZHA.js               7.76 kB │ gzip:   2.75 kB
+dist/client/assets/useRouter-TMV_hFnc.js                           7.99 kB │ gzip:   3.02 kB
+dist/client/assets/useQuery-DTeNTRr3.js                            8.84 kB │ gzip:   3.23 kB
+dist/client/assets/admin.demand-opportunities._id-D48RlZs-.js      9.67 kB │ gzip:   3.13 kB
+dist/client/assets/dashboard-u3NbFs3H.js                           9.96 kB │ gzip:   3.47 kB
+dist/client/assets/admin.sale-listings._id-CnGnZFbA.js            10.89 kB │ gzip:   3.46 kB
+dist/client/assets/wilmet-constants-Cfw59xcW.js                   11.43 kB │ gzip:   3.98 kB
+dist/client/assets/admin.index-BHcT82tj.js                        12.31 kB │ gzip:   3.94 kB
+dist/client/assets/auth-DiJPm8IA.js                               13.12 kB │ gzip:   4.14 kB
+dist/client/assets/opportunities._id-CUrYSEdZ.js                  13.65 kB │ gzip:   4.59 kB
+dist/client/assets/routes-CpQfvQ66.js                             14.54 kB │ gzip:   4.03 kB
+dist/client/assets/QueryClientProvider-CGwIn2DT.js                15.28 kB │ gzip:   5.28 kB
+dist/client/assets/link-BL8e0d12.js                               19.52 kB │ gzip:   7.54 kB
+dist/client/assets/SearchableCombobox-Crfl7nTn.js                 20.75 kB │ gzip:   7.60 kB
+dist/client/assets/admin.users-JIAkN5te.js                        21.76 kB │ gzip:   5.99 kB
+dist/client/assets/es2015-Do6IZNP6.js                             25.00 kB │ gzip:   8.87 kB
+dist/client/assets/utils-DojpP95n.js                              27.26 kB │ gzip:   8.69 kB
+dist/client/assets/dist-2lBTeZDb.js                               33.59 kB │ gzip:   9.37 kB
+dist/client/assets/createClientRpc-DQiBW3wb.js                    33.66 kB │ gzip:  10.37 kB
+dist/client/assets/admin.opportunities._id-FhDY9dkA.js            49.47 kB │ gzip:  12.90 kB
+dist/client/assets/browser-image-compression-JI2iNffp.js          51.94 kB │ gzip:  19.91 kB
+dist/client/assets/select-BQsY3pFF.js                             55.51 kB │ gzip:  19.20 kB
+dist/client/assets/route-ClieyDJg.js                              58.06 kB │ gzip:  16.20 kB
+dist/client/assets/useI18nInit-DII0jAXR.js                        79.75 kB │ gzip:  26.49 kB
+dist/client/assets/jszip.min-CX2fPs3O.js                          95.83 kB │ gzip:  28.43 kB
+dist/client/assets/chercher-un-vehicule.index-BA7jDh4_.js        119.83 kB │ gzip:  33.29 kB
+dist/client/assets/opportunities.new-Dn83oYYk.js                 137.39 kB │ gzip:  40.32 kB
+dist/client/assets/client-Dn9uDD2H.js                            209.09 kB │ gzip:  54.11 kB
+dist/client/assets/index-DXTEjYLh.js                             275.40 kB │ gzip:  86.97 kB
+dist/client/assets/admin.matching-B3RgYq7E.js                    423.40 kB │ gzip: 112.73 kB
+dist/client/assets/xlsx-BHKh7vjA.js                              424.11 kB │ gzip: 141.36 kB
+
+[32m✓ built in 6.09s[39m
+[33m[33m[PLUGIN_TIMINGS] [0mYour build spent 73% of 6.1s inside plugin hooks (4.4s).
+Measured inside the callback, so queue time is excluded and time the callback itself awaited is not:
+  - tanstack-router:code-splitter:compile-reference-file transform (26%, 1.6s, 56 calls)
+  - tanstack-router:code-splitter:compile-virtual-file transform (17%, 1.0s, 53 calls)
+Those rows are 43% of the build; the rest of the 73% is below.
+Not measurable — 2 hooks whose calls overlap, so elapsed time covers work other calls were doing. Profile with `node --cpu-prof`:
+  - tanstack-start-core:import-protection resolveId (10878 calls)
+  - tanstack-start-core::server-fn:client transform (36 calls)
+See https://rolldown.rs/reference/InputOptions.checks#plugintimings for more details.
+[39m
+[36mvite v8.2.2 [32mbuilding ssr environment for production...[36m[39m
+transforming...
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts?tss-serverfn-split:154:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts?tss-serverfn-split:163:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts?tss-serverfn-split:242:41 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts?tss-serverfn-split:260:41 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts?tss-serverfn-split:274:40 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts?tss-serverfn-split:285:45 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:102:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:158:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:182:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:202:29 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:214:33 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:233:42 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:247:29 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:274:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:307:35 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:367:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:380:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:405:44 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:452:35 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:472:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:505:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:521:42 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:535:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts?tss-serverfn-split:556:44 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts?tss-serverfn-split:7:32 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts?tss-serverfn-split:40:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts?tss-serverfn-split:135:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts?tss-serverfn-split:196:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts?tss-serverfn-split:217:30 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts?tss-serverfn-split:231:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts?tss-serverfn-split:262:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts?tss-serverfn-split:289:29 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts?tss-serverfn-split:305:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts?tss-serverfn-split:338:30 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts?tss-serverfn-split:356:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunity-dossier.functions.ts?tss-serverfn-split:40:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunity-dossier.functions.ts?tss-serverfn-split:64:42 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunity-dossier.functions.ts?tss-serverfn-split:95:40 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunity-dossier.functions.ts?tss-serverfn-split:131:41 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/public-catalog.functions.ts?tss-serverfn-split:40:35 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/public-catalog.functions.ts?tss-serverfn-split:116:33 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts?tss-serverfn-split:39:32 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts?tss-serverfn-split:98:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts?tss-serverfn-split:127:35 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts?tss-serverfn-split:164:33 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts?tss-serverfn-split:202:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts?tss-serverfn-split:249:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts?tss-serverfn-split:314:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts?tss-serverfn-split:368:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/users-admin.functions.ts?tss-serverfn-split:30:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/users-admin.functions.ts?tss-serverfn-split:71:30 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/users-admin.functions.ts?tss-serverfn-split:112:27 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/buyer-leads.functions.ts?tss-serverfn-split:11:45 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:39:32 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:98:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:127:35 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:164:33 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:202:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:249:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:314:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/commissions.functions.ts:368:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/public-catalog.functions.ts:40:35 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/public-catalog.functions.ts:116:33 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:102:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:158:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:182:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:202:29 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:214:33 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:233:42 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:247:29 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:274:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:307:35 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:367:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:380:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:405:44 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:452:35 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:472:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:505:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:521:42 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:535:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin.functions.ts:556:44 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:7:32 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:40:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:135:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:196:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:217:30 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:231:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:262:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:289:29 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:305:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:338:30 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunities.functions.ts:356:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts:154:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts:163:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts:242:41 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts:260:41 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts:274:40 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/affiliate.functions.ts:285:45 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/buyer-leads.functions.ts:11:45 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/dossier-ai.functions.ts?tss-serverfn-split:75:40 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/app-settings.functions.ts?tss-serverfn-split:75:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/ocr.functions.ts?tss-serverfn-split:159:27 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/ocr.functions.ts?tss-serverfn-split:256:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts?tss-serverfn-split:34:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts?tss-serverfn-split:50:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts?tss-serverfn-split:62:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts?tss-serverfn-split:85:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts?tss-serverfn-split:122:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts?tss-serverfn-split:154:43 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/voice.functions.ts?tss-serverfn-split:28:32 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts?tss-serverfn-split:63:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts?tss-serverfn-split:83:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts?tss-serverfn-split:102:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts?tss-serverfn-split:120:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts?tss-serverfn-split:343:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts?tss-serverfn-split:381:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts?tss-serverfn-split:396:26 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts?tss-serverfn-split:415:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts?tss-serverfn-split:428:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts?tss-serverfn-split:462:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts?tss-serverfn-split:504:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts?tss-serverfn-split:130:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts?tss-serverfn-split:194:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts?tss-serverfn-split:256:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts?tss-serverfn-split:281:35 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts?tss-serverfn-split:299:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts?tss-serverfn-split:382:26 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts?tss-serverfn-split:424:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts?tss-serverfn-split:37:49 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts?tss-serverfn-split:91:33 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts?tss-serverfn-split:114:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts?tss-serverfn-split:134:44 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts?tss-serverfn-split:148:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts?tss-serverfn-split:195:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts?tss-serverfn-split:50:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts?tss-serverfn-split:75:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts?tss-serverfn-split:137:40 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts?tss-serverfn-split:162:42 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts?tss-serverfn-split:182:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts?tss-serverfn-split:195:40 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts?tss-serverfn-split:247:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts?tss-serverfn-split:279:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts?tss-serverfn-split:296:33 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts?tss-serverfn-split:316:41 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts:34:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts:50:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts:62:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts:85:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts:122:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/admin-refdata.functions.ts:154:43 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:50:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:75:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:137:40 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:162:42 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:182:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:195:40 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:247:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:279:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:296:33 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/demand-opportunities.functions.ts:316:41 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:63:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:83:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:102:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:120:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:343:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:381:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:396:26 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:415:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:428:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:462:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/matching.functions.ts:504:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/app-settings.functions.ts:75:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts:37:49 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts:91:33 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts:114:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts:134:44 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts:148:34 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/sale-listings.functions.ts:195:36 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/users-admin.functions.ts:30:39 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/users-admin.functions.ts:71:30 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/users-admin.functions.ts:112:27 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunity-dossier.functions.ts:40:38 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunity-dossier.functions.ts:64:42 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunity-dossier.functions.ts:95:40 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/opportunity-dossier.functions.ts:131:41 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts:130:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts:194:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts:256:31 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts:281:35 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts:299:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts:382:26 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/staff.functions.ts:424:28 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/dossier-ai.functions.ts:75:40 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/voice.functions.ts:28:32 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/ocr.functions.ts:159:27 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+[33m[plugin tanstack-start-core::server-fn:ssr] C:/Users/pc/OneDrive/Documents/Wilmet Project/trucks-purchase-and-sales-1624036a/src/lib/ocr.functions.ts:256:37 createServerFn().inputValidator() is deprecated. Use createServerFn().validator() instead.[39m
+✓ 304 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/server/assets/useRoleHome-DJZc7xp8.js                        0.08 kB │ gzip:  0.08 kB
+dist/server/assets/utils-C_uf36nf.js                              0.18 kB │ gzip:  0.15 kB
+dist/server/assets/admin.buyer-leads-OQGN0ql0.js                  0.20 kB │ gzip:  0.16 kB
+dist/server/assets/admin.sale-listings-BKwbOVbW.js                0.21 kB │ gzip:  0.16 kB
+dist/server/assets/empty-plugin-adapters-D9UWiqvJ.js              0.22 kB │ gzip:  0.16 kB
+dist/server/assets/admin-C8bzTTbr.js                              0.26 kB │ gzip:  0.20 kB
+dist/server/assets/chercher-un-vehicule-BRVVJpN5.js               0.26 kB │ gzip:  0.20 kB
+dist/server/assets/sales-B93MMUwR.js                              0.26 kB │ gzip:  0.20 kB
+dist/server/assets/manager-C5s8yDPt.js                            0.27 kB │ gzip:  0.20 kB
+dist/server/assets/direction-D5dfQeMe.js                          0.27 kB │ gzip:  0.20 kB
+dist/server/assets/ai-gateway.server-DANRdmnj.js                  0.27 kB │ gzip:  0.22 kB
+dist/server/assets/skeleton-D9W9wFsj.js                           0.33 kB │ gzip:  0.25 kB
+dist/server/assets/rolldown-runtime-D7D4PA-g.js                   0.36 kB │ gzip:  0.25 kB
+dist/server/assets/createServerRpc-BESUJPkm.js                    0.39 kB │ gzip:  0.27 kB
+dist/server/assets/StatusBadge-B6lTtiT9.js                        0.51 kB │ gzip:  0.34 kB
+dist/server/assets/wilmet-logo.png.asset-DwjHDO1l.js              0.52 kB │ gzip:  0.29 kB
+dist/server/assets/ai-features.server-DnxWf4Hc.js                 0.59 kB │ gzip:  0.36 kB
+dist/server/assets/label-DBD1bRRP.js                              0.64 kB │ gzip:  0.38 kB
+dist/server/assets/textarea-kko37XEX.js                           0.66 kB │ gzip:  0.42 kB
+dist/server/assets/input-B8Q2ztVi.js                              0.75 kB │ gzip:  0.45 kB
+dist/server/assets/admin.partenaires-584Yz8Io.js                  0.83 kB │ gzip:  0.47 kB
+dist/server/assets/password-policy-DO1a2djo.js                    0.89 kB │ gzip:  0.54 kB
+dist/server/assets/badge-D1Dupn2y.js                              0.98 kB │ gzip:  0.50 kB
+dist/server/assets/checkbox-kt6FvQcE.js                           1.01 kB │ gzip:  0.51 kB
+dist/server/assets/switch-Cn1w-cIH.js                             1.10 kB │ gzip:  0.56 kB
+dist/server/assets/createSsrRpc-DkSBDQAH.js                       1.15 kB │ gzip:  0.56 kB
+dist/server/assets/radio-group-BJ3sdkEm.js                        1.25 kB │ gzip:  0.55 kB
+dist/server/assets/dashboards.functions-CBtI0YdN.js               1.40 kB │ gzip:  0.66 kB
+dist/server/assets/useAiFeatures-BHkP_kHq.js                      1.47 kB │ gzip:  0.76 kB
+dist/server/assets/card-CtX3ithx.js                               1.57 kB │ gzip:  0.48 kB
+dist/server/assets/rate-limit.server-DY7GjHF9.js                  1.60 kB │ gzip:  0.76 kB
+dist/server/assets/tabs-CCJRliUM.js                               1.63 kB │ gzip:  0.60 kB
+dist/server/assets/app-settings.server-DBpELUHu.js                1.77 kB │ gzip:  0.70 kB
+dist/server/assets/app-settings.functions-BTjhLsIG.js             1.83 kB │ gzip:  0.84 kB
+dist/server/assets/start-oC9KPsPA.js                              1.85 kB │ gzip:  0.82 kB
+dist/server/assets/client.server-BlnvGJA3.js                      1.92 kB │ gzip:  0.87 kB
+dist/server/assets/affiliate.server-DoHZ-SyH.js                   2.04 kB │ gzip:  0.83 kB
+dist/server/assets/app-settings.shared-I_MeMyJw.js                2.10 kB │ gzip:  0.67 kB
+dist/server/assets/StageTiles-2swwHM1l.js                         2.15 kB │ gzip:  0.87 kB
+dist/server/assets/cookies-ChZWXgrR.js                            2.30 kB │ gzip:  0.97 kB
+dist/server/assets/table-C0WYWEQX.js                              2.31 kB │ gzip:  0.68 kB
+dist/server/assets/PublicAccountActions-4tE2fHEu.js               2.52 kB │ gzip:  1.08 kB
+dist/server/assets/StageBar-DQSCGcG7.js                           2.58 kB │ gzip:  1.06 kB
+dist/server/assets/auth-middleware-CedrWz5G.js                    2.61 kB │ gzip:  1.07 kB
+dist/server/assets/client-jT8hdv3w.js                             2.66 kB │ gzip:  1.06 kB
+dist/server/assets/ai-input-budgets.server-CiSk0-ze.js            2.67 kB │ gzip:  1.06 kB
+dist/server/assets/LegalLayout-coFz7aXz.js                        2.72 kB │ gzip:  1.03 kB
+dist/server/assets/opportunities.success._id-AWOs9pZn.js          2.77 kB │ gzip:  1.10 kB
+dist/server/assets/mentions-legales-DWxJTKPQ.js                   2.82 kB │ gzip:  1.15 kB
+dist/server/assets/buyer-leads.functions-CuxWYfWz.js              2.94 kB │ gzip:  1.27 kB
+dist/server/assets/cgv-CEDaILoq.js                                3.00 kB │ gzip:  1.18 kB
+dist/server/assets/affiliate.functions-BXSdOm-Y.js                3.01 kB │ gzip:  1.10 kB
+dist/server/assets/ai-abuse.server-BwIw6cjw.js                    3.04 kB │ gzip:  1.20 kB
+dist/server/assets/StatTile-DjjS0Cqh.js                           3.10 kB │ gzip:  1.11 kB
+dist/server/assets/dialog-Bk9pEsHD.js                             3.11 kB │ gzip:  1.00 kB
+dist/server/assets/voice.functions-Djxo4vaF.js                    3.30 kB │ gzip:  1.47 kB
+dist/server/assets/alert-dialog-GT5WBlM1.js                       3.40 kB │ gzip:  0.91 kB
+dist/server/assets/admin.audit-dbEAkJdh.js                        3.55 kB │ gzip:  1.14 kB
+dist/server/assets/reset-password-B4l3jv32.js                     3.57 kB │ gzip:  1.27 kB
+dist/server/assets/cgu-BrZeCCyV.js                                3.62 kB │ gzip:  1.35 kB
+dist/server/assets/manager.index-ckKnmmFg.js                      3.64 kB │ gzip:  1.16 kB
+dist/server/assets/demand-opportunities.functions-D3e-S7RH.js     3.78 kB │ gzip:  1.26 kB
+dist/server/assets/mes-echanges-DRc0bAZB.js                       3.84 kB │ gzip:  1.40 kB
+dist/server/assets/direction.index-Dkuct3D_.js                    3.85 kB │ gzip:  1.19 kB
+dist/server/assets/commissions.functions-DZ7KNWXz.js              4.08 kB │ gzip:  1.30 kB
+dist/server/assets/confidentialite-BinL_hGA.js                    4.09 kB │ gzip:  1.41 kB
+dist/server/assets/reference-data.functions-DjFkppzi.js           4.13 kB │ gzip:  1.58 kB
+dist/server/assets/opportunities.functions-DkCo2Chs.js            4.20 kB │ gzip:  1.32 kB
+dist/server/assets/admin-refdata.functions-B1oZr2-B.js            4.23 kB │ gzip:  1.57 kB
+dist/server/assets/sale-listings.constants-B9l488Tj.js            4.38 kB │ gzip:  1.53 kB
+dist/server/assets/mes-commissions-CaVGlfD9.js                    4.42 kB │ gzip:  1.55 kB
+dist/server/assets/admin.content-B0nZoOwo.js                      4.43 kB │ gzip:  1.47 kB
+dist/server/assets/app-settings.functions-CrYxMuUh.js             4.45 kB │ gzip:  1.50 kB
+dist/server/assets/public-catalog.functions-BB6HZeqS.js           4.62 kB │ gzip:  1.42 kB
+dist/server/assets/select-Dg1urBTx.js                             4.67 kB │ gzip:  1.34 kB
+dist/server/assets/sale-listing-notify.server-DFZ60W4x.js         4.70 kB │ gzip:  1.62 kB
+dist/server/assets/mes-demandes-clients-B7CJbHKH.js               4.78 kB │ gzip:  1.51 kB
+dist/server/assets/sales.index-CQTXaNQQ.js                        4.98 kB │ gzip:  1.56 kB
+dist/server/assets/chercher-un-vehicule.merci-CKzUKP66.js         5.05 kB │ gzip:  1.68 kB
+dist/server/server.js                                             5.31 kB │ gzip:  2.27 kB
+dist/server/assets/espace-acheteur-CfdIe2dp.js                    5.40 kB │ gzip:  1.87 kB
+dist/server/assets/admin.demand-opportunities.index-vGouhJj6.js   5.80 kB │ gzip:  1.78 kB
+dist/server/assets/admin.commissions-DVu5Ons8.js                  5.94 kB │ gzip:  1.95 kB
+dist/server/assets/profile-Oce6rPVa.js                            6.14 kB │ gzip:  1.75 kB
+dist/server/assets/admin.buyer-leads.index-DWTNC9LD.js            6.20 kB │ gzip:  1.94 kB
+dist/server/assets/public-catalog.functions-D_hpSlUt.js           6.28 kB │ gzip:  2.24 kB
+dist/server/assets/mes-demandes-DfRsbUxn.js                       6.48 kB │ gzip:  2.14 kB
+dist/server/assets/dashboards.functions-CHFXz-SN.js               6.61 kB │ gzip:  1.76 kB
+dist/server/assets/buyer-leads.shared-BSe4OvK6.js                 6.69 kB │ gzip:  2.43 kB
+dist/server/assets/admin.sale-listings.index-BCDDZ77w.js          6.92 kB │ gzip:  2.01 kB
+dist/server/assets/opportunity-dossier.functions-BI3ApO4u.js      7.16 kB │ gzip:  2.18 kB
+dist/server/assets/admin.notifications-D5fmwMNw.js                7.17 kB │ gzip:  2.30 kB
+dist/server/assets/users-admin.functions-dDO3nKI6.js              7.32 kB │ gzip:  2.28 kB
+dist/server/assets/vehicules.index-Up8MqCWv.js                    7.41 kB │ gzip:  2.30 kB
+dist/server/assets/AssistantWidget-DNDE9_NJ.js                    7.55 kB │ gzip:  2.72 kB
+dist/server/assets/mon-lien-DyGiP4-o.js                           7.72 kB │ gzip:  2.51 kB
+dist/server/assets/admin.functions-FmqFeBhc.js                    7.74 kB │ gzip:  2.35 kB
+dist/server/assets/matching.server-OHFe3Be2.js                    8.06 kB │ gzip:  3.12 kB
+dist/server/assets/admin.reference-CYHwqXOy.js                    8.34 kB │ gzip:  2.31 kB
+dist/server/assets/SearchableCombobox-ClIUenXr.js                 8.40 kB │ gzip:  2.95 kB
+dist/server/assets/opportunity-input-Ccz3uUTW.js                  8.50 kB │ gzip:  3.10 kB
+dist/server/assets/vehicules._id-CtoiMj8u.js                      8.90 kB │ gzip:  2.47 kB
+dist/server/assets/ExternalUserDirectory-D91sfQ-w.js              8.92 kB │ gzip:  3.04 kB
+dist/server/assets/ocr-normalize.server-W7o4Wbnh.js               9.21 kB │ gzip:  2.76 kB
+dist/server/assets/admin.settings-BaZzqdhc.js                     9.31 kB │ gzip:  2.37 kB
+dist/server/assets/admin.leads-Dw2AMjPw.js                        9.97 kB │ gzip:  2.97 kB
+dist/server/assets/ocr.functions-i1wy1Uoj.js                     10.73 kB │ gzip:  4.42 kB
+dist/server/assets/dossier-ai.functions-CCRZbm1-.js              10.75 kB │ gzip:  4.30 kB
+dist/server/assets/admin-refdata.functions-DWyaev4t.js           11.20 kB │ gzip:  2.98 kB
+dist/server/assets/sale-listings.functions-wBCSnQcC.js           11.56 kB │ gzip:  3.09 kB
+dist/server/assets/admin.affiliation-DqX6aMUP.js                 11.97 kB │ gzip:  3.21 kB
+dist/server/assets/admin.buyer-leads._id-BWptgASt.js             12.28 kB │ gzip:  3.20 kB
+dist/server/assets/commissions.functions-BT9dATB1.js             14.77 kB │ gzip:  3.29 kB
+dist/server/assets/affiliate.functions-ZAU7aQFo.js               14.99 kB │ gzip:  3.66 kB
+dist/server/assets/dashboard-Bk0v8Ju9.js                         15.05 kB │ gzip:  4.18 kB
+dist/server/assets/admin.demand-opportunities._id-CoooBpHW.js    15.81 kB │ gzip:  3.88 kB
+dist/server/assets/demand-opportunities.functions-D-CLppB3.js    16.55 kB │ gzip:  3.93 kB
+dist/server/assets/wilmet-constants-CN1NIL8L.js                  17.25 kB │ gzip:  5.33 kB
+dist/server/assets/routes-BTAHmYee.js                            17.53 kB │ gzip:  3.76 kB
+dist/server/assets/admin.sale-listings._id-cOQo668A.js           18.51 kB │ gzip:  4.37 kB
+dist/server/assets/admin.index-BCtv_rpa.js                       18.60 kB │ gzip:  4.63 kB
+dist/server/assets/staff.functions-C2AMS9nM.js                   18.69 kB │ gzip:  4.58 kB
+dist/server/assets/opportunities.functions-C1uNB1ij.js           19.36 kB │ gzip:  4.58 kB
+dist/server/assets/auth-DhugBdqE.js                              20.12 kB │ gzip:  4.96 kB
+dist/server/assets/opportunities._id-C89lMrM1.js                 21.19 kB │ gzip:  5.59 kB
+dist/server/assets/matching.functions-ONgF9nso.js                26.65 kB │ gzip:  6.10 kB
+dist/server/assets/admin.functions-TGrInDdf.js                   30.19 kB │ gzip:  6.47 kB
+dist/server/assets/_tanstack-start-manifest_v-CtVQvghj.js        32.03 kB │ gzip:  4.24 kB
+dist/server/assets/admin.users-ogitd8pc.js                       37.09 kB │ gzip:  7.48 kB
+dist/server/assets/useI18nInit-CCwaZ736.js                       38.50 kB │ gzip: 11.45 kB
+dist/server/assets/chercher-un-vehicule.index-Cc6CmqQl.js        43.68 kB │ gzip:  9.45 kB
+dist/server/assets/route-DATs2K8b.js                             44.67 kB │ gzip:  9.95 kB
+dist/server/assets/admin.matching-B0pJlhTr.js                    58.43 kB │ gzip: 11.90 kB
+dist/server/assets/router-B78nfREQ.js                            78.16 kB │ gzip: 17.55 kB
+dist/server/assets/admin.opportunities._id-Bz9JXqUp.js           84.45 kB │ gzip: 17.35 kB
+dist/server/assets/server-CLIg-2dA.js                            94.23 kB │ gzip: 25.31 kB
+dist/server/assets/opportunities.new-DX63ltP9.js                 96.19 kB │ gzip: 23.92 kB
+
+[32m✓ built in 4.83s[39m
+[33m[33m[PLUGIN_TIMINGS] [0mYour build spent 89% of 4.8s inside plugin hooks (4.3s).
+Measured inside the callback, so queue time is excluded and time the callback itself awaited is not:
+  - tanstack-router:code-splitter:compile-reference-file transform (34%, 1.7s, 58 calls)
+  - tanstack-router:code-splitter:compile-virtual-file transform (23%, 1.1s, 53 calls)
+Those rows are 57% of the build; the rest of the 89% is below.
+Not measurable — 2 hooks whose calls overlap, so elapsed time covers work other calls were doing. Profile with `node --cpu-prof`:
+  - tanstack-start-core:import-protection resolveId (1532 calls)
+  - tanstack-start-core::server-fn:ssr transform (50 calls)
+See https://rolldown.rs/reference/InputOptions.checks#plugintimings for more details.
+[39m

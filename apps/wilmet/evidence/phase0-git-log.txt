@@ -1,0 +1,195 @@
+fe0272d|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 16:42:44 +0100|Fix: keep public auth chrome fail-safe
+ced6a13|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 15:52:11 +0100|Fix: satisfy auth bootstrap formatting gate
+05368a7|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 15:49:48 +0100|Fix: keep public auth chrome fail-safe
+872e2a0|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 15:14:41 +0100|Fix: stabilize signup entry and public auth navigation
+86d2a5e|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 15:01:45 +0100|ci: verify formatted functional stabilization branch
+85a7fa2|github-actions[bot]|41898282+github-actions[bot]@users.noreply.github.com|2026-08-20 14:00:54 +0000|chore: format functional stabilization changes
+5ff9142|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 15:00:31 +0100|ci: format stabilization branch with pinned tooling
+c539da5|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 14:57:53 +0100|Apply final formatter correction to landing route
+73d0d45|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 14:56:52 +0100|Apply final formatter corrections to auth route
+87b35c4|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 14:55:49 +0100|Apply final formatter corrections to public account actions
+6ad615a|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 14:54:00 +0100|Format auth route and stabilize tab state
+cab0ef7|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 14:52:50 +0100|Format landing route and clear touched lint debt
+2a5c5b1|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 14:51:43 +0100|Format auth regression tests
+c65442b|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 14:51:17 +0100|Format public shell
+a654b17|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 14:50:55 +0100|Format public account actions
+3a12609|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 14:45:42 +0100|Add auth entry regression coverage
+206b5c8|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 14:45:15 +0100|Fix signup navigation and role-aware completion
+8a46fd9|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 14:44:12 +0100|Wire landing header to session-aware account actions
+26f99bd|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 14:43:22 +0100|Wire public shell to session-aware account actions
+8c995d4|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 14:43:07 +0100|Fix public auth entry state
+876a86a|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 00:22:03 +0100|Merge pull request #6 from Trucks-purchase-and-sales/test/lovable-managed-real-jwt
+bff7eb1|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 00:21:02 +0100|Fix: format managed real-JWT suite
+9a49249|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 00:19:47 +0100|Docs: define Lovable-managed real-JWT gate
+e8c2658|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 00:19:09 +0100|CI: remove service-role dependency from Wilmet staging E2E
+3d62bfd|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 00:18:55 +0100|Test: add Lovable-managed real-JWT security suite
+2e89182|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 00:13:49 +0100|Merge pull request #5 from Trucks-purchase-and-sales/test/csp-staging-header-evidence
+f22c7d3|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 00:12:39 +0100|Fix: satisfy changed-file lint gate
+655230f|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 00:11:43 +0100|Docs: record staging security-header browser evidence
+4790d3c|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 00:11:30 +0100|Test: verify staging security headers in browser smoke
+d35549f|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 00:05:10 +0100|Merge pull request #2 from Trucks-purchase-and-sales/ci/restore-incremental-lint-gate
+e1bb203|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 00:03:37 +0100|Security: document historical publishable-key exceptions
+37f37ef|SalmaAnhm|S.Anhichem@aui.ma|2026-08-20 00:01:39 +0100|CI: use pinned Gitleaks CLI in organization repo
+2f7db37|SalmaAnhm|S.Anhichem@aui.ma|2026-08-19 23:58:53 +0100|CI: restore incremental lint debt gate
+b144905|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-19 22:38:10 +0000|Update plan
+2e1ec50|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-19 22:38:07 +0000|Changes
+31e6115|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-19 22:37:25 +0000|Work in progress
+3d7830c|SalmaAnhm|S.Anhichem@aui.ma|2026-08-19 21:41:27 +0100|Security: add CSP report-only baseline (#47)
+143cece|SalmaAnhm|S.Anhichem@aui.ma|2026-08-19 21:39:18 +0100|Docs: record CSP report-only inventory
+1695cca|SalmaAnhm|S.Anhichem@aui.ma|2026-08-19 21:38:53 +0100|Test: cover CSP report-only boundary
+b370bcb|SalmaAnhm|S.Anhichem@aui.ma|2026-08-19 21:38:38 +0100|Security: add CSP report-only baseline
+6b67c3b|SalmaAnhm|S.Anhichem@aui.ma|2026-08-19 18:04:28 +0100|Security: narrow public API browser origins (#46)
+b302486|SalmaAnhm|S.Anhichem@aui.ma|2026-08-19 17:57:24 +0100|Fix: repair TM-008 settings runtime consumers (#45)
+66d8f08|SalmaAnhm|S.Anhichem@aui.ma|2026-08-19 17:40:37 +0100|Security: narrow app settings exposure (#44)
+9b346c5|SalmaAnhm|S.Anhichem@aui.ma|2026-08-19 17:22:55 +0100|Security: enforce sale-listing photo ownership (#43)
+c3dd04d|SalmaAnhm|S.Anhichem@aui.ma|2026-08-19 17:06:08 +0100|Test: add guarded k6 performance foundation (#42)
+d42423a|SalmaAnhm|S.Anhichem@aui.ma|2026-08-19 16:56:40 +0100|Test: add Playwright staging smoke foundation (#41)
+df3ff07|SalmaAnhm|S.Anhichem@aui.ma|2026-08-19 16:45:51 +0100|Ops: add Wilmet incident response runbook (#40)
+0971b45|SalmaAnhm|S.Anhichem@aui.ma|2026-08-19 13:56:02 +0100|Security: remove anonymous execute from workflow RPCs (#39)
+7d5a8eb|SalmaAnhm|S.Anhichem@aui.ma|2026-08-19 13:42:49 +0100|Security: harden voice and OCR abuse boundaries (#38)
+1c80930|SalmaAnhm|S.Anhichem@aui.ma|2026-08-19 02:20:38 +0100|Reliability: make multi-step workflow mutations atomic (#37)
+
+--- Bot-authored commits (Lovable side), full history ---
+b144905|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-19 22:38:10 +0000|Update plan
+2e1ec50|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-19 22:38:07 +0000|Changes
+31e6115|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-19 22:37:25 +0000|Work in progress
+4405264|lovable|noreply@lovable.dev|2026-08-18 13:44:24 +0000|Add project README
+7bfe4f8|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 13:27:36 +0000|Hardened auth RLS policies
+a5904f1|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 13:26:53 +0000|Changes
+de0cc40|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 13:26:07 +0000|Changes
+fbc2993|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 13:25:02 +0000|Changes
+41c8344|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 13:24:45 +0000|Changes
+a782cfe|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 13:23:55 +0000|Changes
+4ffb6e6|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 13:22:54 +0000|Changes
+5927f43|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 13:22:32 +0000|Changes
+730f291|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 13:22:18 +0000|Changes
+18a925b|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 13:22:11 +0000|Changes
+e6acb01|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 13:22:00 +0000|Changes
+b8fa00b|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 13:21:55 +0000|Changes
+8e807b5|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 13:21:23 +0000|Changes
+b800e14|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 12:13:23 +0000|Fixed buyer dashboard routing
+627b9f1|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 12:12:46 +0000|Changes
+872447d|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 12:12:36 +0000|Changes
+50dd17e|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 12:12:26 +0000|Changes
+324bb7b|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 12:12:12 +0000|Changes
+a909d18|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 01:33:41 +0000|Fixed buyer lead auth split
+1ca0d87|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 01:30:23 +0000|Changes
+085ce86|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 01:29:16 +0000|Changes
+cb179a1|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 01:25:13 +0000|Changes
+2248abd|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 01:24:51 +0000|Changes
+5381b68|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 01:24:40 +0000|Changes
+4c09d9e|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 01:24:14 +0000|Changes
+57247ef|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 01:24:06 +0000|Changes
+fb091c6|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 01:23:53 +0000|Changes
+bde567d|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 01:23:25 +0000|Changes
+0a16f00|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 01:08:33 +0000|Fixed FIND-003 anonymous insert
+084a532|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 01:07:01 +0000|Changes
+53ee082|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 01:04:00 +0000|Fixed buyer form auth failures
+fb11b2c|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:59:36 +0000|Changes
+25de391|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:58:41 +0000|Changes
+87c9f53|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:58:15 +0000|Changes
+d3890fc|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:57:45 +0000|Changes
+0d02d9d|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:57:32 +0000|Changes
+5e3c76a|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:57:03 +0000|Changes
+397bda2|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:56:21 +0000|Changes
+8e590d9|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:55:47 +0000|Changes
+149d492|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:38:57 +0000|Fixed opportunity save crash
+1dbef2d|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:38:14 +0000|Changes
+1fd70d7|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:37:55 +0000|Changes
+8a61d3e|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:37:47 +0000|Changes
+5dd0ca6|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:37:29 +0000|Changes
+7823700|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:31:05 +0000|Fixed availability enum values
+7256612|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:30:42 +0000|Changes
+f85b6af|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:30:29 +0000|Changes
+a0eae81|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-18 00:30:06 +0000|Changes
+7d332a4|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:42:19 +0000|Fixed RefCombobox strict rules
+3e99ad9|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:41:43 +0000|Changes
+3bc47fd|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:41:21 +0000|Changes
+17a906d|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:40:44 +0000|Fixed Find-002 validation rules
+1cd4b79|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:40:15 +0000|Changes
+cf247eb|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:39:36 +0000|Changes
+bce1c9f|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:39:08 +0000|Changes
+94f09e9|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:38:51 +0000|Changes
+b270bab|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:38:30 +0000|Changes
+5b08433|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:38:17 +0000|Changes
+64e175f|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:38:09 +0000|Changes
+4c2df82|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:37:38 +0000|Changes
+cdf74cd|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:37:27 +0000|Changes
+1cc46a1|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:37:09 +0000|Changes
+4ce5be4|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:36:23 +0000|Finalized seller prop form
+ed198d3|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:35:41 +0000|Changes
+ae3506e|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:35:16 +0000|Changes
+f3398b6|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:35:00 +0000|Changes
+553134e|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:34:47 +0000|Changes
+9535c53|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:34:32 +0000|Changes
+19ee883|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:34:05 +0000|Changes
+c9c8028|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:33:50 +0000|Changes
+89fd4b2|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:33:38 +0000|Changes
+b71b5b9|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:33:23 +0000|Changes
+56f0c53|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:33:08 +0000|Changes
+ba9af6b|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:33:02 +0000|Changes
+87df232|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:32:54 +0000|Changes
+62f419b|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:32:41 +0000|Changes
+47ec40a|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:32:06 +0000|Changes
+986a00d|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:28:46 +0000|Applied remaining FIND-002 fixes
+e8026a8|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:28:10 +0000|Changes
+76a0721|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:28:00 +0000|Changes
+1455bd8|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:27:52 +0000|Changes
+75fed12|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:27:46 +0000|Changes
+5c90b06|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:27:25 +0000|Changes
+64a5728|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:27:17 +0000|Changes
+dc54f76|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:27:02 +0000|Changes
+71e0103|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:26:32 +0000|Added creatable mode to combobox
+2bf6147|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:25:49 +0000|Changes
+71e8810|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:25:39 +0000|Changes
+a2d4f61|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:25:26 +0000|Changes
+6aac74f|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:25:11 +0000|Changes
+88d9887|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:24:59 +0000|Changes
+c8c963a|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:24:51 +0000|Changes
+11e9ba9|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:24:29 +0000|Changes
+1172485|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:24:10 +0000|Changes
+8922e4f|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:23:56 +0000|Changes
+9c2c9e4|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:23:51 +0000|Changes
+c8361d0|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:23:27 +0000|Changes
+538e74d|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:22:56 +0000|Added catalog error surfacing
+9e1c654|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:22:31 +0000|Changes
+af732c4|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:22:19 +0000|Changes
+b66e09e|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:22:06 +0000|Changes
+f24eed5|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:21:52 +0000|Changes
+3195e08|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:21:44 +0000|Changes
+38a484c|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:21:31 +0000|Changes
+e895635|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:21:06 +0000|Changes
+03d7d29|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:20:50 +0000|Changes
+1fcde1f|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:20:34 +0000|Changes
+b2b99cd|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:20:23 +0000|Changes
+84c842b|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:20:14 +0000|Changes
+b80a1e1|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:20:05 +0000|Changes
+2c8f524|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:19:52 +0000|Changes
+207443f|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:19:35 +0000|Changes
+ab12b3c|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:19:09 +0000|Changes
+130fb53|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:18:35 +0000|Changes
+2af80c3|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:18:25 +0000|Update plan
+a1e16a6|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:18:11 +0000|Changes
+7ed7195|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:01:25 +0000|Implemented FIND-002 changes
+1d648bd|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:01:01 +0000|Changes
+0b559ad|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:00:49 +0000|Changes
+f5f2690|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:00:36 +0000|Changes
+1a10755|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:00:27 +0000|Changes
+f9b74c9|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 23:00:10 +0000|Changes
+de15592|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:59:56 +0000|Changes
+a13286e|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:59:46 +0000|Changes
+3a1c1ef|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:59:37 +0000|Changes
+ebf8d66|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:59:17 +0000|Changes
+ecc0ab8|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:59:06 +0000|Changes
+32fc06d|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:59:00 +0000|Changes
+aa42680|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:58:42 +0000|Changes
+a22dcfb|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:58:07 +0000|Changes
+7ac01c4|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:55:09 +0000|Update plan
+f9b5054|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:54:55 +0000|Changes
+e0a1617|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:38:24 +0000|Added auth trigger & backfill
+136130a|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:38:05 +0000|Changes
+74865b4|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:37:34 +0000|Changes
+81d131a|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:37:21 +0000|Changes
+0e7c0d1|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:37:05 +0000|Changes
+383cdc6|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-17 22:36:44 +0000|Changes
+eb1f648|gpt-engineer-app[bot]|159125892+gpt-engineer-app[bot]@users.noreply.github.com|2026-08-14 15:50:56 +0000|Initial commit from remix
