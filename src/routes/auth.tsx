@@ -1,23 +1,28 @@
-import { createFileRoute, Link, useNavigate, useSearch, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import wilmetLogo from "@/assets/wilmet-logo.png.asset.json";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PROVIDER_TYPE_OPTIONS } from "@/lib/wilmet-constants";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { resolveRoleHome } from "@/hooks/useRoleHome";
-import { getStoredRef } from "@/lib/referral";
+import { supabase } from "@/integrations/supabase/client";
 import {
   NEW_PASSWORD_HELP,
   NEW_PASSWORD_MIN_LENGTH,
   validateNewPassword,
 } from "@/lib/password-policy";
-
-import wilmetLogo from "@/assets/wilmet-logo.png.asset.json";
+import { getStoredRef } from "@/lib/referral";
+import { PROVIDER_TYPE_OPTIONS } from "@/lib/wilmet-constants";
 
 type Search = { mode?: "login" | "signup"; kind?: "client" | "seller" };
 
@@ -42,11 +47,13 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const { mode, kind } = useSearch({ from: "/auth" });
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"login" | "signup" | "forgot">(mode === "signup" ? "signup" : "login");
+  const [tab, setTab] = useState<"login" | "signup" | "forgot">(
+    mode === "signup" ? "signup" : "login",
+  );
 
   useEffect(() => {
-    if (tab !== "forgot") setTab(mode === "signup" ? "signup" : "login");
-  }, [mode, tab]);
+    setTab((current) => (current === "forgot" ? current : mode === "signup" ? "signup" : "login"));
+  }, [mode]);
 
   function selectAuthTab(next: "login" | "signup") {
     setTab(next);
@@ -68,28 +75,38 @@ function AuthPage() {
           <Card className="border-border/70 shadow-sm">
             <CardHeader className="pb-4">
               <CardTitle className="text-xl">
-                {tab === "signup" ? "Créer un compte partenaire" : tab === "forgot" ? "Mot de passe oublié" : "Connexion partenaire"}
+                {tab === "signup"
+                  ? "Créer un compte partenaire"
+                  : tab === "forgot"
+                    ? "Mot de passe oublié"
+                    : "Connexion partenaire"}
               </CardTitle>
               <CardDescription>
                 {tab === "signup"
                   ? "Rejoignez le portail partenaires Wilmet en quelques secondes."
                   : tab === "forgot"
-                  ? "Nous vous enverrons un e-mail pour réinitialiser votre mot de passe."
-                  : "Accédez à votre espace pour suivre vos opportunités."}
+                    ? "Nous vous enverrons un e-mail pour réinitialiser votre mot de passe."
+                    : "Accédez à votre espace pour suivre vos opportunités."}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {tab !== "forgot" && (
-                <Tabs value={tab} onValueChange={(v) => selectAuthTab(v as "login" | "signup")}>
+                <Tabs
+                  value={tab}
+                  onValueChange={(value) => selectAuthTab(value as "login" | "signup")}
+                >
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="login">Connexion</TabsTrigger>
                     <TabsTrigger value="signup">Inscription</TabsTrigger>
                   </TabsList>
                   <TabsContent value="login" className="mt-6">
-                    <LoginForm onForgot={() => setTab("forgot")} onSuccess={async (uid) => {
-                      const home = await resolveRoleHome(uid);
-                      navigate({ to: home });
-                    }} />
+                    <LoginForm
+                      onForgot={() => setTab("forgot")}
+                      onSuccess={async (uid) => {
+                        const home = await resolveRoleHome(uid);
+                        navigate({ to: home });
+                      }}
+                    />
                   </TabsContent>
                   <TabsContent value="signup" className="mt-6">
                     <SignupForm
@@ -116,7 +133,13 @@ function AuthPage() {
   );
 }
 
-function LoginForm({ onForgot, onSuccess }: { onForgot: () => void; onSuccess: (userId: string) => void | Promise<void> }) {
+function LoginForm({
+  onForgot,
+  onSuccess,
+}: {
+  onForgot: () => void;
+  onSuccess: (userId: string) => void | Promise<void>;
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -126,20 +149,50 @@ function LoginForm({ onForgot, onSuccess }: { onForgot: () => void; onSuccess: (
     setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error || !data.user) { toast.error("Connexion impossible", { description: error?.message ?? "Erreur inconnue" }); return; }
+    if (error || !data.user) {
+      toast.error("Connexion impossible", {
+        description: error?.message ?? "Erreur inconnue",
+      });
+      return;
+    }
     toast.success("Bienvenue");
-    onSuccess(data.user.id);
+    await onSuccess(data.user.id);
   }
+
   return (
     <form onSubmit={submit} className="space-y-4">
-      <Field label="Email"><Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" /></Field>
+      <Field label="Email">
+        <Input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
+        />
+      </Field>
       <Field label="Mot de passe">
-        <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+        <Input
+          type="password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+        />
       </Field>
       <div className="flex items-center justify-between">
-        <button type="button" onClick={onForgot} className="text-xs font-medium text-accent hover:underline">Mot de passe oublié ?</button>
+        <button
+          type="button"
+          onClick={onForgot}
+          className="text-xs font-medium text-accent hover:underline"
+        >
+          Mot de passe oublié ?
+        </button>
       </div>
-      <Button disabled={loading} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg">
+      <Button
+        disabled={loading}
+        className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+        size="lg"
+      >
         {loading ? "Connexion…" : "Se connecter"}
       </Button>
     </form>
@@ -148,7 +201,10 @@ function LoginForm({ onForgot, onSuccess }: { onForgot: () => void; onSuccess: (
 
 function readableSignupError(message: string): string {
   const normalized = message.toLowerCase();
-  if (normalized.includes("database error saving new user") || normalized.includes("error occurred")) {
+  if (
+    normalized.includes("database error saving new user") ||
+    normalized.includes("error occurred")
+  ) {
     return "Le compte n'a pas pu être finalisé. Réessayez dans un instant ; si le problème persiste, contactez Wilmet.";
   }
   return message;
@@ -164,8 +220,15 @@ function SignupForm({
   initialKind?: "client" | "seller";
 }) {
   const [form, setForm] = useState({
-    first_name: "", last_name: "", company_name: "", email: "", phone: "",
-    provider_type: "", city: "", country: "France", password: "",
+    first_name: "",
+    last_name: "",
+    company_name: "",
+    email: "",
+    phone: "",
+    provider_type: "",
+    city: "",
+    country: "France",
+    password: "",
   });
   // The type is fixed at creation and cannot be changed afterwards, so it must be
   // explicit here rather than inherited from a default.
@@ -174,7 +237,8 @@ function SignupForm({
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
-  const set = <K extends keyof typeof form>(k: K, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const set = <K extends keyof typeof form>(k: K, value: string) =>
+    setForm((current) => ({ ...current, [k]: value }));
 
   useEffect(() => {
     if (initialKind) setKind(initialKind);
@@ -183,26 +247,33 @@ function SignupForm({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (kind !== "client" && kind !== "seller") {
-      toast.error("Type de compte requis", { description: "Indiquez si vous souhaitez vendre ou acheter un véhicule." });
+      toast.error("Type de compte requis", {
+        description: "Indiquez si vous souhaitez vendre ou acheter un véhicule.",
+      });
       return;
     }
+
     const passwordValidation = validateNewPassword(form.password);
     if (!passwordValidation.valid) {
       toast.error("Mot de passe trop court", { description: passwordValidation.message });
       return;
     }
+
     setLoading(true);
     try {
       const check = await fetch("/api/public/signup-check", { method: "POST" });
       if (check.status === 429) {
         const body = await check.json().catch(() => ({}));
-        toast.error("Trop de tentatives", { description: body?.error ?? "Merci de réessayer plus tard." });
+        toast.error("Trop de tentatives", {
+          description: body?.error ?? "Merci de réessayer plus tard.",
+        });
         setLoading(false);
         return;
       }
     } catch {
-      // network hiccup on advisory check — proceed
+      // Network hiccup on the advisory check — proceed with Auth itself.
     }
+
     const { data, error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
@@ -214,7 +285,6 @@ function SignupForm({
           partner_kind: kind,
           // Lifetime attribution: whoever shared the link that brought this account.
           referral_code: getStoredRef() ?? "",
-
           first_name: form.first_name,
           last_name: form.last_name,
           company_name: form.company_name,
@@ -226,25 +296,32 @@ function SignupForm({
       },
     });
     setLoading(false);
+
     if (error) {
       const msg = error.message.toLowerCase();
       if (msg.includes("already") || msg.includes("registered") || msg.includes("exists")) {
         setPendingEmail(form.email);
         return;
       }
-      toast.error("Inscription impossible", { description: readableSignupError(error.message) });
+      toast.error("Inscription impossible", {
+        description: readableSignupError(error.message),
+      });
       return;
     }
+
     if (data.session) {
       toast.success("Compte créé", { description: "Bienvenue sur Wilmet Opportunités." });
       await onAuthenticated(data.session.user.id);
       return;
     }
-    // Supabase returns a user with empty identities[] when the email is already registered but unconfirmed
+
+    // Supabase returns a user with empty identities[] when the email is already
+    // registered but unconfirmed.
     if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
       setPendingEmail(form.email);
       return;
     }
+
     setSubmittedEmail(form.email);
   }
 
@@ -256,8 +333,15 @@ function SignupForm({
       options: { emailRedirectTo: `${window.location.origin}/auth` },
     });
     setResending(false);
-    if (error) { toast.error("Envoi impossible", { description: error.message }); return; }
-    toast.success("E-mail renvoyé", { description: `Un nouveau lien a été envoyé à ${email}.` });
+
+    if (error) {
+      toast.error("Envoi impossible", { description: error.message });
+      return;
+    }
+
+    toast.success("E-mail renvoyé", {
+      description: `Un nouveau lien a été envoyé à ${email}.`,
+    });
     setSubmittedEmail(email);
     setPendingEmail(null);
   }
@@ -267,17 +351,40 @@ function SignupForm({
       <div className="space-y-5">
         <div className="rounded-lg border border-status-pending/40 bg-status-pending/10 p-5 text-center">
           <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-status-pending">
-            <svg className="h-6 w-6 text-status-pending-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+            <svg
+              className="h-6 w-6 text-status-pending-foreground"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4" />
+              <path d="M12 16h.01" />
+            </svg>
           </div>
           <h3 className="text-base font-bold">Un compte existe déjà</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            L'adresse <span className="font-medium text-foreground break-all">{pendingEmail}</span> a déjà été utilisée pour créer un compte, mais celui-ci n'a pas encore été confirmé par e-mail.
+            L'adresse <span className="break-all font-medium text-foreground">{pendingEmail}</span>{" "}
+            a déjà été utilisée pour créer un compte, mais celui-ci n'a pas encore été confirmé par
+            e-mail.
           </p>
         </div>
-        <Button onClick={() => resendConfirmation(pendingEmail)} disabled={resending} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg">
+        <Button
+          onClick={() => resendConfirmation(pendingEmail)}
+          disabled={resending}
+          className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+          size="lg"
+        >
           {resending ? "Envoi…" : "Renvoyer l'e-mail de confirmation"}
         </Button>
-        <button type="button" onClick={() => setPendingEmail(null)} className="mx-auto block text-xs font-medium text-muted-foreground hover:text-foreground">
+        <button
+          type="button"
+          onClick={() => setPendingEmail(null)}
+          className="mx-auto block text-xs font-medium text-muted-foreground hover:text-foreground"
+        >
           Utiliser une autre adresse
         </button>
       </div>
@@ -289,20 +396,42 @@ function SignupForm({
       <div className="space-y-5">
         <div className="rounded-lg border border-status-accepted/40 bg-status-accepted/10 p-6 text-center">
           <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-status-accepted">
-            <svg className="h-7 w-7 text-status-accepted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <svg
+              className="h-7 w-7 text-status-accepted-foreground"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
           </div>
           <h3 className="text-xl font-bold">Vérifiez votre boîte e-mail</h3>
-          <p className="mt-3 text-sm text-muted-foreground">Nous venons d'envoyer un lien de confirmation à</p>
-          <p className="mt-1 text-base font-semibold text-foreground break-all">{submittedEmail}</p>
           <p className="mt-3 text-sm text-muted-foreground">
-            Cliquez sur le lien reçu pour activer votre compte, puis revenez ici pour vous connecter.
+            Nous venons d'envoyer un lien de confirmation à
+          </p>
+          <p className="mt-1 break-all text-base font-semibold text-foreground">{submittedEmail}</p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Cliquez sur le lien reçu pour activer votre compte, puis revenez ici pour vous
+            connecter.
           </p>
         </div>
-        <Button onClick={onShowLogin} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg">
+        <Button
+          onClick={onShowLogin}
+          className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+          size="lg"
+        >
           Aller à la connexion
         </Button>
         <div className="text-center">
-          <button type="button" onClick={() => resendConfirmation(submittedEmail)} disabled={resending} className="text-xs font-medium text-accent hover:underline disabled:opacity-50">
+          <button
+            type="button"
+            onClick={() => resendConfirmation(submittedEmail)}
+            disabled={resending}
+            className="text-xs font-medium text-accent hover:underline disabled:opacity-50"
+          >
             {resending ? "Envoi…" : "Vous n'avez rien reçu ? Renvoyer l'e-mail"}
           </button>
         </div>
@@ -320,23 +449,25 @@ function SignupForm({
           Votre compte
         </Label>
         <div className="grid grid-cols-2 gap-2">
-          {([
-            { value: "seller", title: "Je vends", hint: "Je propose des véhicules" },
-            { value: "client", title: "J'achète", hint: "Je cherche des véhicules" },
-          ] as const).map((o) => (
+          {(
+            [
+              { value: "seller", title: "Je vends", hint: "Je propose des véhicules" },
+              { value: "client", title: "J'achète", hint: "Je cherche des véhicules" },
+            ] as const
+          ).map((option) => (
             <button
-              key={o.value}
+              key={option.value}
               type="button"
-              onClick={() => setKind(o.value)}
-              aria-pressed={kind === o.value}
+              onClick={() => setKind(option.value)}
+              aria-pressed={kind === option.value}
               className={`rounded-md border p-3 text-left transition-colors ${
-                kind === o.value
+                kind === option.value
                   ? "border-accent bg-accent/10 ring-1 ring-accent"
                   : "border-border bg-background hover:border-accent/50"
               }`}
             >
-              <span className="block text-sm font-semibold">{o.title}</span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">{o.hint}</span>
+              <span className="block text-sm font-semibold">{option.title}</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">{option.hint}</span>
             </button>
           ))}
         </div>
@@ -344,27 +475,76 @@ function SignupForm({
           Ce choix est définitif : un compte est soit vendeur, soit acheteur.
         </p>
       </div>
+
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Prénom"><Input required value={form.first_name} onChange={(e) => set("first_name", e.target.value)} /></Field>
-        <Field label="Nom"><Input required value={form.last_name} onChange={(e) => set("last_name", e.target.value)} /></Field>
+        <Field label="Prénom">
+          <Input
+            required
+            value={form.first_name}
+            onChange={(e) => set("first_name", e.target.value)}
+          />
+        </Field>
+        <Field label="Nom">
+          <Input
+            required
+            value={form.last_name}
+            onChange={(e) => set("last_name", e.target.value)}
+          />
+        </Field>
       </div>
-      <Field label="Société"><Input value={form.company_name} onChange={(e) => set("company_name", e.target.value)} /></Field>
+
+      <Field label="Société">
+        <Input
+          value={form.company_name}
+          onChange={(e) => set("company_name", e.target.value)}
+        />
+      </Field>
+
       <Field label="Type de partenaire">
-        <Select value={form.provider_type} onValueChange={(v) => set("provider_type", v)}>
-          <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+        <Select value={form.provider_type} onValueChange={(value) => set("provider_type", value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Sélectionner" />
+          </SelectTrigger>
           <SelectContent>
-            {PROVIDER_TYPE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            {PROVIDER_TYPE_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Field>
+
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Email"><Input type="email" required value={form.email} onChange={(e) => set("email", e.target.value)} autoComplete="email" /></Field>
-        <Field label="Téléphone"><Input type="tel" required value={form.phone} onChange={(e) => set("phone", e.target.value)} autoComplete="tel" /></Field>
+        <Field label="Email">
+          <Input
+            type="email"
+            required
+            value={form.email}
+            onChange={(e) => set("email", e.target.value)}
+            autoComplete="email"
+          />
+        </Field>
+        <Field label="Téléphone">
+          <Input
+            type="tel"
+            required
+            value={form.phone}
+            onChange={(e) => set("phone", e.target.value)}
+            autoComplete="tel"
+          />
+        </Field>
       </div>
+
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Ville"><Input required value={form.city} onChange={(e) => set("city", e.target.value)} /></Field>
-        <Field label="Pays"><Input required value={form.country} onChange={(e) => set("country", e.target.value)} /></Field>
+        <Field label="Ville">
+          <Input required value={form.city} onChange={(e) => set("city", e.target.value)} />
+        </Field>
+        <Field label="Pays">
+          <Input required value={form.country} onChange={(e) => set("country", e.target.value)} />
+        </Field>
       </div>
+
       <Field label="Mot de passe">
         <Input
           type="password"
@@ -376,7 +556,12 @@ function SignupForm({
         />
         <p className="text-xs text-muted-foreground">{NEW_PASSWORD_HELP}</p>
       </Field>
-      <Button disabled={loading} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg">
+
+      <Button
+        disabled={loading}
+        className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+        size="lg"
+      >
         {loading ? "Création…" : "Créer mon compte"}
       </Button>
     </form>
@@ -394,17 +579,38 @@ function ForgotForm({ onBack }: { onBack: () => void }) {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setLoading(false);
-    if (error) { toast.error("Échec de l'envoi", { description: error.message }); return; }
+
+    if (error) {
+      toast.error("Échec de l'envoi", { description: error.message });
+      return;
+    }
+
     toast.success("E-mail envoyé", { description: "Consultez votre boîte de réception." });
     onBack();
   }
+
   return (
     <form onSubmit={submit} className="space-y-4">
-      <Field label="Email"><Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
-      <Button disabled={loading} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" size="lg">
+      <Field label="Email">
+        <Input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </Field>
+      <Button
+        disabled={loading}
+        className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+        size="lg"
+      >
         {loading ? "Envoi…" : "Envoyer le lien"}
       </Button>
-      <button type="button" onClick={onBack} className="mx-auto block text-xs font-medium text-muted-foreground hover:text-foreground">
+      <button
+        type="button"
+        onClick={onBack}
+        className="mx-auto block text-xs font-medium text-muted-foreground hover:text-foreground"
+      >
         Retour à la connexion
       </button>
     </form>
