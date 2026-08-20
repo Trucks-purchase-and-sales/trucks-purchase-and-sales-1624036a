@@ -1,23 +1,50 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import {
-  Truck, Camera, Send, Clock, ShieldCheck, CheckCircle2, Route as RouteIcon,
-  Wrench, Package, Snowflake, ArrowRight, MapPin, PhoneCall, Search, Handshake,
-  Layers, Globe2,
+  ArrowRight,
+  Camera,
+  CheckCircle2,
+  Clock,
+  Globe2,
+  Handshake,
+  Layers,
+  MapPin,
+  Package,
+  PhoneCall,
+  Route as RouteIcon,
+  Search,
+  Send,
+  ShieldCheck,
+  Snowflake,
+  Truck,
+  Wrench,
+  type LucideIcon,
 } from "lucide-react";
 import wilmetLogo from "@/assets/wilmet-logo.png.asset.json";
-import { Button } from "@/components/ui/button";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { useI18nInit } from "@/i18n/useI18nInit";
 import { AssistantWidget } from "@/components/public/AssistantWidget";
+import { PublicAccountActions } from "@/components/public/PublicAccountActions";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { Button } from "@/components/ui/button";
+import { useI18nInit } from "@/i18n/useI18nInit";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Wilmet Trucks — Négoce européen de poids lourds et utilitaires" },
-      { name: "description", content: "Wilmet achète, revend et source des véhicules professionnels en Europe. Proposez votre véhicule ou trouvez celui dont vous avez besoin." },
-      { property: "og:title", content: "Wilmet Trucks — Négoce européen de poids lourds et utilitaires" },
-      { property: "og:description", content: "Wilmet achète, revend et source des véhicules professionnels en Europe. Proposez votre véhicule ou trouvez celui dont vous avez besoin." },
+      {
+        name: "description",
+        content:
+          "Wilmet achète, revend et source des véhicules professionnels en Europe. Proposez votre véhicule ou trouvez celui dont vous avez besoin.",
+      },
+      {
+        property: "og:title",
+        content: "Wilmet Trucks — Négoce européen de poids lourds et utilitaires",
+      },
+      {
+        property: "og:description",
+        content:
+          "Wilmet achète, revend et source des véhicules professionnels en Europe. Proposez votre véhicule ou trouvez celui dont vous avez besoin.",
+      },
       { property: "og:type", content: "website" },
     ],
   }),
@@ -46,25 +73,25 @@ function Header() {
   return (
     <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
       <div className="container-page flex h-16 items-center justify-between gap-3">
-        <Link to="/" className="flex items-center shrink-0">
+        <Link to="/" className="flex shrink-0 items-center">
           <img src={wilmetLogo.url} alt="Wilmet Trucks" className="h-9 w-auto" />
         </Link>
         <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
-          <Link to="/vehicules" className="font-medium text-foreground hover:text-accent">Véhicules à vendre</Link>
-          <a href="#how" className="hover:text-foreground">{t("nav.how")}</a>
-          <a href="#types" className="hover:text-foreground">{t("nav.types")}</a>
-          <a href="#contact" className="hover:text-foreground">{t("nav.contact")}</a>
+          <Link to="/vehicules" className="font-medium text-foreground hover:text-accent">
+            Véhicules à vendre
+          </Link>
+          <a href="#how" className="hover:text-foreground">
+            {t("nav.how")}
+          </a>
+          <a href="#types" className="hover:text-foreground">
+            {t("nav.types")}
+          </a>
+          <a href="#contact" className="hover:text-foreground">
+            {t("nav.contact")}
+          </a>
         </nav>
 
-        <div className="flex items-center gap-2">
-          <LanguageSwitcher compact />
-          <Link to="/auth" className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline-flex">
-            {t("nav.signIn")}
-          </Link>
-          <Button asChild size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
-            <Link to="/auth" search={{ mode: "signup", kind: "seller" } as never}>{t("nav.propose")}</Link>
-          </Button>
-        </div>
+        <PublicAccountActions />
       </div>
     </header>
   );
@@ -129,7 +156,10 @@ function TwoCards() {
     <section className="container-page -mt-8 pb-14 sm:-mt-16 sm:pb-20">
       <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
         {cards.map((c) => (
-          <article key={c.title} className={`group relative overflow-hidden rounded-3xl p-6 shadow-xl transition-shadow hover:shadow-2xl sm:p-10 ${c.tone}`}>
+          <article
+            key={c.title}
+            className={`group relative overflow-hidden rounded-3xl p-6 shadow-xl transition-shadow hover:shadow-2xl sm:p-10 ${c.tone}`}
+          >
             <span className="absolute right-5 top-5 rounded-full bg-black/5 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest opacity-70">
               {c.badge}
             </span>
@@ -137,13 +167,21 @@ function TwoCards() {
               <c.icon className="h-6 w-6 sm:h-7 sm:w-7" />
             </div>
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">{c.title}</h2>
-            <p className="mt-3 max-w-md text-sm leading-relaxed opacity-85 sm:text-base">{c.text}</p>
+            <p className="mt-3 max-w-md text-sm leading-relaxed opacity-85 sm:text-base">
+              {c.text}
+            </p>
             <div className="mt-8">
               <Button asChild size="lg" className={c.buttonClass}>
                 {"search" in c ? (
-                  <Link to={c.to} search={c.search as never}>{c.button}<ArrowRight className="ml-2 h-4 w-4" /></Link>
+                  <Link to={c.to} search={c.search as never}>
+                    {c.button}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
                 ) : (
-                  <Link to={c.to}>{c.button}<ArrowRight className="ml-2 h-4 w-4" /></Link>
+                  <Link to={c.to}>
+                    {c.button}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
                 )}
               </Button>
             </div>
@@ -172,19 +210,45 @@ function HowItWorks() {
     <section id="how" className="bg-secondary/50 py-14 sm:py-20">
       <div className="container-page">
         <div className="max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-widest text-accent">{t("how.title")}</p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Un parcours simple pour vendeurs et acheteurs.</h2>
+          <p className="text-xs font-semibold uppercase tracking-widest text-accent">
+            {t("how.title")}
+          </p>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            Un parcours simple pour vendeurs et acheteurs.
+          </h2>
         </div>
         <div className="mt-10 grid gap-6 lg:grid-cols-2">
-          <Column title={t("how.sellers.title")} items={sellers.map((s, i) => ({ icon: s.icon, title: t(`how.sellers.${s.k}`), text: t(`how.sellers.${s.k}d`), n: i + 1 }))} />
-          <Column title={t("how.buyers.title")} items={buyers.map((s, i) => ({ icon: s.icon, title: t(`how.buyers.${s.k}`), text: t(`how.buyers.${s.k}d`), n: i + 1 }))} />
+          <Column
+            title={t("how.sellers.title")}
+            items={sellers.map((s, i) => ({
+              icon: s.icon,
+              title: t(`how.sellers.${s.k}`),
+              text: t(`how.sellers.${s.k}d`),
+              n: i + 1,
+            }))}
+          />
+          <Column
+            title={t("how.buyers.title")}
+            items={buyers.map((s, i) => ({
+              icon: s.icon,
+              title: t(`how.buyers.${s.k}`),
+              text: t(`how.buyers.${s.k}d`),
+              n: i + 1,
+            }))}
+          />
         </div>
       </div>
     </section>
   );
 }
 
-function Column({ title, items }: { title: string; items: { icon: any; title: string; text: string; n: number }[] }) {
+function Column({
+  title,
+  items,
+}: {
+  title: string;
+  items: { icon: LucideIcon; title: string; text: string; n: number }[];
+}) {
   return (
     <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
       <h3 className="text-xl font-semibold">{title}</h3>
@@ -226,12 +290,19 @@ function VehicleTypes() {
   return (
     <section id="types" className="container-page py-14 sm:py-20">
       <div className="max-w-2xl">
-        <p className="text-xs font-semibold uppercase tracking-widest text-accent">{t("types.title")}</p>
-        <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Catégories traitées par Wilmet.</h2>
+        <p className="text-xs font-semibold uppercase tracking-widest text-accent">
+          {t("types.title")}
+        </p>
+        <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          Catégories traitées par Wilmet.
+        </h2>
       </div>
       <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {items.map((i) => (
-          <div key={i.k} className="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+          <div
+            key={i.k}
+            className="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+          >
             <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/5 text-primary">
               <i.icon className="h-5 w-5" />
             </div>
@@ -254,13 +325,22 @@ function WhyWilmet() {
     <section className="bg-primary py-14 text-primary-foreground sm:py-20">
       <div className="container-page">
         <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-widest text-accent">{t("why.title")}</p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Un partenaire européen de confiance.</h2>
-          <p className="mt-4 text-base leading-relaxed text-primary-foreground/80 sm:text-lg">{t("why.intro")}</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-accent">
+            {t("why.title")}
+          </p>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            Un partenaire européen de confiance.
+          </h2>
+          <p className="mt-4 text-base leading-relaxed text-primary-foreground/80 sm:text-lg">
+            {t("why.intro")}
+          </p>
         </div>
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((i) => (
-            <div key={i.k} className="rounded-2xl border border-primary-foreground/10 bg-primary-foreground/5 p-6 backdrop-blur">
+            <div
+              key={i.k}
+              className="rounded-2xl border border-primary-foreground/10 bg-primary-foreground/5 p-6 backdrop-blur"
+            >
               <i.icon className="h-6 w-6 text-accent" />
               <div className="mt-4 text-base font-semibold">{t(`why.${i.k}t`)}</div>
               <p className="mt-1 text-sm text-primary-foreground/70">{t(`why.${i.k}d`)}</p>
@@ -278,12 +358,23 @@ function ContactBlock() {
     <section id="contact" className="container-page py-14 sm:py-20">
       <div className="grid gap-8 rounded-3xl border border-border bg-card p-8 sm:p-12 lg:grid-cols-2">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-accent">{t("contact.title")}</p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Une question ? Un besoin spécifique ?</h2>
+          <p className="text-xs font-semibold uppercase tracking-widest text-accent">
+            {t("contact.title")}
+          </p>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            Une question ? Un besoin spécifique ?
+          </h2>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{t("contact.text")}</p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
-              <Link to="/auth" search={{ mode: "signup", kind: "seller" } as never}>{t("cta.propose.button")}<ArrowRight className="ml-2 h-4 w-4" /></Link>
+            <Button
+              asChild
+              size="lg"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <Link to="/auth" search={{ mode: "signup", kind: "seller" } as never}>
+                {t("cta.propose.button")}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
               <Link to="/chercher-un-vehicule">{t("cta.search.button")}</Link>
@@ -291,9 +382,27 @@ function ContactBlock() {
           </div>
         </div>
         <ul className="space-y-4 text-sm">
-          <li className="flex items-start gap-3"><PhoneCall className="mt-0.5 h-5 w-5 text-accent" /><div><div className="font-semibold">{t("contact.phone")}</div><div className="text-muted-foreground">Sur demande via le formulaire</div></div></li>
-          <li className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 h-5 w-5 text-accent" /><div><div className="font-semibold">{t("contact.email")}</div><div className="text-muted-foreground">contact@wilmet.eu</div></div></li>
-          <li className="flex items-start gap-3"><MapPin className="mt-0.5 h-5 w-5 text-accent" /><div><div className="font-semibold">{t("contact.address")}</div><div className="text-muted-foreground">Wilmet Trucks — Belgique</div></div></li>
+          <li className="flex items-start gap-3">
+            <PhoneCall className="mt-0.5 h-5 w-5 text-accent" />
+            <div>
+              <div className="font-semibold">{t("contact.phone")}</div>
+              <div className="text-muted-foreground">Sur demande via le formulaire</div>
+            </div>
+          </li>
+          <li className="flex items-start gap-3">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 text-accent" />
+            <div>
+              <div className="font-semibold">{t("contact.email")}</div>
+              <div className="text-muted-foreground">contact@wilmet.eu</div>
+            </div>
+          </li>
+          <li className="flex items-start gap-3">
+            <MapPin className="mt-0.5 h-5 w-5 text-accent" />
+            <div>
+              <div className="font-semibold">{t("contact.address")}</div>
+              <div className="text-muted-foreground">Wilmet Trucks — Belgique</div>
+            </div>
+          </li>
         </ul>
       </div>
     </section>
@@ -312,15 +421,27 @@ function Footer() {
           </div>
           <div className="flex items-center gap-4">
             <LanguageSwitcher compact />
-            <span>© {new Date().getFullYear()} Wilmet. {t("footer.rights")}</span>
+            <span>
+              © {new Date().getFullYear()} Wilmet. {t("footer.rights")}
+            </span>
           </div>
         </div>
         <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-border/40 pt-4 text-xs">
-          <Link to="/mentions-legales" className="hover:text-foreground">Mentions légales</Link>
-          <Link to="/cgu" className="hover:text-foreground">CGU</Link>
-          <Link to="/cgv" className="hover:text-foreground">CGV</Link>
-          <Link to="/confidentialite" className="hover:text-foreground">Confidentialité</Link>
-          <Link to="/cookies" className="hover:text-foreground">Cookies</Link>
+          <Link to="/mentions-legales" className="hover:text-foreground">
+            Mentions légales
+          </Link>
+          <Link to="/cgu" className="hover:text-foreground">
+            CGU
+          </Link>
+          <Link to="/cgv" className="hover:text-foreground">
+            CGV
+          </Link>
+          <Link to="/confidentialite" className="hover:text-foreground">
+            Confidentialité
+          </Link>
+          <Link to="/cookies" className="hover:text-foreground">
+            Cookies
+          </Link>
         </nav>
       </div>
     </footer>

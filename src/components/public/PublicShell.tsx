@@ -1,8 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import wilmetLogo from "@/assets/wilmet-logo.png.asset.json";
-import { Button } from "@/components/ui/button";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { PublicAccountActions } from "@/components/public/PublicAccountActions";
 
 /** Header + footer chrome shared by the public catalogue pages. */
 export function PublicShell({ children }: { children: React.ReactNode }) {
@@ -24,7 +23,11 @@ function PublicHeader() {
           <img src={wilmetLogo.url} alt="Wilmet Trucks" className="h-9 w-auto" />
         </Link>
         <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
-          <Link to="/vehicules" className="hover:text-foreground" activeProps={{ className: "text-foreground font-medium" }}>
+          <Link
+            to="/vehicules"
+            className="hover:text-foreground"
+            activeProps={{ className: "text-foreground font-medium" }}
+          >
             {t("catalog.nav.vehicles")}
           </Link>
           <Link to="/chercher-un-vehicule" className="hover:text-foreground">
@@ -32,15 +35,7 @@ function PublicHeader() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-2">
-          <LanguageSwitcher compact />
-          <Link to="/auth" className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline-flex">
-            {t("nav.signIn")}
-          </Link>
-          <Button asChild size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
-            <Link to="/auth" search={{ mode: "signup", kind: "seller" } as never}>{t("nav.propose")}</Link>
-          </Button>
-        </div>
+        <PublicAccountActions />
       </div>
     </header>
   );
@@ -56,17 +51,30 @@ function PublicFooter() {
             <img src={wilmetLogo.url} alt="Wilmet Trucks" className="h-7 w-auto" />
             <span>· {t("footer.tagline")}</span>
           </div>
-          <span>© {new Date().getFullYear()} Wilmet. {t("footer.rights")}</span>
+          <span>
+            © {new Date().getFullYear()} Wilmet. {t("footer.rights")}
+          </span>
         </div>
         <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-border/40 pt-4 text-xs">
-          <Link to="/vehicules" className="hover:text-foreground">{t("catalog.nav.vehiclesForSale")}</Link>
-          <Link to="/mentions-legales" className="hover:text-foreground">{t("catalog.nav.legal")}</Link>
-          <Link to="/cgu" className="hover:text-foreground">{t("catalog.nav.cgu")}</Link>
-          <Link to="/cgv" className="hover:text-foreground">{t("catalog.nav.cgv")}</Link>
-          <Link to="/confidentialite" className="hover:text-foreground">{t("catalog.nav.privacy")}</Link>
-          <Link to="/cookies" className="hover:text-foreground">{t("catalog.nav.cookies")}</Link>
+          <Link to="/vehicules" className="hover:text-foreground">
+            {t("catalog.nav.vehiclesForSale")}
+          </Link>
+          <Link to="/mentions-legales" className="hover:text-foreground">
+            {t("catalog.nav.legal")}
+          </Link>
+          <Link to="/cgu" className="hover:text-foreground">
+            {t("catalog.nav.cgu")}
+          </Link>
+          <Link to="/cgv" className="hover:text-foreground">
+            {t("catalog.nav.cgv")}
+          </Link>
+          <Link to="/confidentialite" className="hover:text-foreground">
+            {t("catalog.nav.privacy")}
+          </Link>
+          <Link to="/cookies" className="hover:text-foreground">
+            {t("catalog.nav.cookies")}
+          </Link>
         </nav>
-
       </div>
     </footer>
   );
