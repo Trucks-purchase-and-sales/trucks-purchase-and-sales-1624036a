@@ -1,8 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import wilmetLogo from "@/assets/wilmet-logo.png.asset.json";
-import { Button } from "@/components/ui/button";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { PublicAccountActions } from "@/components/public/PublicAccountActions";
 
 /** Header + footer chrome shared by the public catalogue pages. */
 export function PublicShell({ children }: { children: React.ReactNode }) {
@@ -32,15 +31,7 @@ function PublicHeader() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-2">
-          <LanguageSwitcher compact />
-          <Link to="/auth" className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline-flex">
-            {t("nav.signIn")}
-          </Link>
-          <Button asChild size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
-            <Link to="/auth" search={{ mode: "signup", kind: "seller" } as never}>{t("nav.propose")}</Link>
-          </Button>
-        </div>
+        <PublicAccountActions />
       </div>
     </header>
   );
