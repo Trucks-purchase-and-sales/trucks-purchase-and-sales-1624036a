@@ -1,4 +1,11 @@
-import { createFileRoute, Outlet, redirect, useNavigate, useRouter, Link } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useNavigate,
+  useRouter,
+  Link,
+} from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
@@ -6,8 +13,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuLabel, DropdownMenuSeparator,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useI18nInit } from "@/i18n/useI18nInit";
@@ -18,9 +29,19 @@ import { AppSidebar } from "@/components/AppSidebar";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
-    return { userId: data.user.id, email: data.user.email ?? "" };
+    // The Supabase client lazily constructs on first access and throws if it
+    // can't (e.g. missing env vars in this deployment). Fail closed the same
+    // way an actual auth failure does -- redirect to /auth -- instead of
+    // letting the whole authenticated app crash to a dead error screen.
+    let user: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"] = null;
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (!error) user = data.user;
+    } catch (error) {
+      console.error("[auth] session check failed; redirecting to sign-in", error);
+    }
+    if (!user) throw redirect({ to: "/auth" });
+    return { userId: user.id, email: user.email ?? "" };
   },
   component: AuthedLayout,
 });
@@ -33,7 +54,17 @@ function AuthedLayout() {
     queryKey: ["user_roles", userId],
     queryFn: async () => {
       const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-      return (data ?? []).map((r) => r.role as "admin" | "platform_admin" | "sales_manager" | "sales_agent" | "external_agent" | "company_management" | "partenaire");
+      return (data ?? []).map(
+        (r) =>
+          r.role as
+            | "admin"
+            | "platform_admin"
+            | "sales_manager"
+            | "sales_agent"
+            | "external_agent"
+            | "company_management"
+            | "partenaire",
+      );
     },
     staleTime: 60_000,
   });
@@ -80,8 +111,8 @@ function AuthedLayout() {
         <div className="max-w-md space-y-3 text-center text-sm">
           <h1 className="text-lg font-semibold">Compte en cours d&apos;initialisation</h1>
           <p className="text-muted-foreground">
-            Votre profil applicatif est introuvable. Votre compte n&apos;a pas été initialisé correctement.
-            Contactez l&apos;administrateur pour le finaliser.
+            Votre profil applicatif est introuvable. Votre compte n&apos;a pas été initialisé
+            correctement. Contactez l&apos;administrateur pour le finaliser.
           </p>
         </div>
       </div>
@@ -97,7 +128,9 @@ function AuthedLayout() {
           <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border/60 bg-background/85 px-4 backdrop-blur">
             <SidebarTrigger />
             <div className="flex-1" />
-            <div className="hidden sm:block"><LanguageSwitcher compact /></div>
+            <div className="hidden sm:block">
+              <LanguageSwitcher compact />
+            </div>
             <NotificationBell />
             <ProfileMenu />
           </header>
@@ -133,14 +166,24 @@ function NotificationBell() {
   useEffect(() => {
     const ch = supabase
       .channel(`notif-${userId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userId}`,
+        },
         (payload) => {
           const n = payload.new as { title?: string; body?: string | null };
           if (n?.title) toast(n.title, { description: n.body ?? undefined });
           qc.invalidateQueries({ queryKey: ["notifications", userId] });
-        })
+        },
+      )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [userId, qc]);
 
   async function markAllRead() {
@@ -150,7 +193,9 @@ function NotificationBell() {
       .eq("user_id", userId)
       .is("read_at", null);
     if (error) {
-      toast.error("Impossible de marquer les notifications comme lues", { description: error.message });
+      toast.error("Impossible de marquer les notifications comme lues", {
+        description: error.message,
+      });
       return;
     }
     await qc.invalidateQueries({ queryKey: ["notifications", userId] });
@@ -172,7 +217,10 @@ function NotificationBell() {
         <div className="flex items-center justify-between px-2 py-1.5">
           <DropdownMenuLabel className="p-0 text-sm">Notifications</DropdownMenuLabel>
           {unread > 0 && (
-            <button onClick={markAllRead} className="text-xs font-medium text-accent hover:underline">
+            <button
+              onClick={markAllRead}
+              className="text-xs font-medium text-accent hover:underline"
+            >
               Tout marquer lu
             </button>
           )}
@@ -180,7 +228,9 @@ function NotificationBell() {
         <DropdownMenuSeparator />
         <div className="max-h-96 overflow-y-auto">
           {(notifs ?? []).length === 0 && (
-            <div className="px-3 py-6 text-center text-sm text-muted-foreground">Aucune notification</div>
+            <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+              Aucune notification
+            </div>
           )}
           {(notifs ?? []).map((n) => (
             <Link
@@ -194,7 +244,9 @@ function NotificationBell() {
               )}
             >
               <div className="font-medium">{n.title}</div>
-              {n.body && <div className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{n.body}</div>}
+              {n.body && (
+                <div className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{n.body}</div>
+              )}
               <div className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                 {new Date(n.created_at as string).toLocaleString("fr-FR")}
               </div>
@@ -229,11 +281,19 @@ function ProfileMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground">{email}</DropdownMenuLabel>
+        <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground">
+          {email}
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild><Link to="/profile"><User className="mr-2 h-4 w-4" /> Mon profil</Link></DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/profile">
+            <User className="mr-2 h-4 w-4" /> Mon profil
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={signOut}><LogOut className="mr-2 h-4 w-4" /> Se déconnecter</DropdownMenuItem>
+        <DropdownMenuItem onClick={signOut}>
+          <LogOut className="mr-2 h-4 w-4" /> Se déconnecter
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

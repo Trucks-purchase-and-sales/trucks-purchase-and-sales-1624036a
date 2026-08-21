@@ -35,9 +35,20 @@ export const Route = createFileRoute("/auth")({
     kind: s.kind === "seller" ? "seller" : s.kind === "client" ? "client" : undefined,
   }),
   beforeLoad: async () => {
-    const { data } = await supabase.auth.getSession();
-    if (data.session) {
-      const home = await resolveRoleHome(data.session.user.id);
+    // The Supabase client lazily constructs on first access and throws if it
+    // can't (e.g. missing env vars in this deployment). That must not take
+    // down the sign-in page itself -- worst case, show the form and let the
+    // user try again, rather than a dead error screen.
+    let session: Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] = null;
+    try {
+      const { data } = await supabase.auth.getSession();
+      session = data.session;
+    } catch (error) {
+      console.error("[auth] session check failed; showing the sign-in form", error);
+      return;
+    }
+    if (session) {
+      const home = await resolveRoleHome(session.user.id);
       throw redirect({ to: home });
     }
   },
