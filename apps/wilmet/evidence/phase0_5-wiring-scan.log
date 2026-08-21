@@ -1,0 +1,13 @@
+=== V2P WIRING SCAN ===  files scanned: 214
+
+--- 1) UI no-op handlers & dead links ---
+  none
+
+--- 2) Supabase table/column references vs schema ---
+  schema (best-effort parse): 52 tables, 273 distinct columns, 7 functions
+  all .from() table references resolve
+
+--- 3) Local imports that do not resolve ---
+  all local imports resolve
+
+=== RESULT: no hard failures (heuristic — confirm by hand) ===

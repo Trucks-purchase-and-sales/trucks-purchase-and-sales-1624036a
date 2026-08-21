@@ -1,0 +1,4 @@
+id,route,element,defect_type,description,impact,fix_channel,evidence_before,retest_evidence,status,date
+FD-001,/dashboard,"Delete button",no-op,"onClick empty; row not removed",blocks-core,Lovable prompt,evidence/phase0_5/dashboard-delete-before.png,evidence/phase0_5/dashboard-delete-after.png,open,<date>
+FD-002,/reports,"Reports nav link",dead-route,"navigates to /reports but no route defined",blocks-core,Lovable prompt,,,open,<date>
+FD-003,/orders,"list query",schema-drift,".select('total') but column renamed to amount",blocks-core,Lovable prompt,,,open,<date>
