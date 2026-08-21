@@ -18,9 +18,19 @@ import { AppSidebar } from "@/components/AppSidebar";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
-    return { userId: data.user.id, email: data.user.email ?? "" };
+    // The Supabase client lazily constructs on first access and throws if it
+    // can't (e.g. missing env vars in this deployment). Fail closed the same
+    // way an actual auth failure does -- redirect to /auth -- instead of
+    // letting the whole authenticated app crash to a dead error screen.
+    let user: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"] = null;
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (!error) user = data.user;
+    } catch (error) {
+      console.error("[auth] session check failed; redirecting to sign-in", error);
+    }
+    if (!user) throw redirect({ to: "/auth" });
+    return { userId: user.id, email: user.email ?? "" };
   },
   component: AuthedLayout,
 });
