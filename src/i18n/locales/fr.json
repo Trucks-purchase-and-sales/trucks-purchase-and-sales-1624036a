@@ -16,16 +16,20 @@
     "propose": {
       "title": "Vous avez un camion à vendre ? Wilmet peut l'acheter rapidement.",
       "text": "Proposez votre camion, utilitaire, tracteur, porteur, semi-remorque ou véhicule professionnel d'occasion. Notre équipe analyse votre opportunité, vérifie les informations clés et vous répond rapidement avec une approche simple, sérieuse et professionnelle.",
-      "button": "Proposer mon véhicule"
+      "button": "Proposer mon véhicule",
+      "badge": "Vendeur"
     },
     "search": {
       "title": "Vous cherchez un camion fiable ? Wilmet trouve l'opportunité adaptée.",
       "text": "Décrivez le véhicule que vous recherchez : camion, utilitaire, tracteur, porteur, semi-remorque ou véhicule spécialisé. Si une opportunité correspondante est disponible, nous vous la proposons. Sinon, nous activons notre réseau pour trouver un véhicule adapté à vos besoins, à votre budget et à votre marché.",
-      "button": "Lancer ma recherche"
+      "button": "Lancer ma recherche",
+      "badge": "Acheteur"
     }
   },
   "how": {
     "title": "Comment ça marche ?",
+    "subtitle": "Un parcours simple pour vendeurs et acheteurs.",
+    "step": "Étape {{n}}",
     "sellers": {
       "title": "Vous vendez un véhicule",
       "s1": "Vous proposez votre véhicule",
@@ -51,6 +55,7 @@
   },
   "types": {
     "title": "Types de véhicules traités",
+    "subtitle": "Catégories traitées par Wilmet.",
     "utilitaire_leger": "Utilitaires légers",
     "camion_porteur": "Camions porteurs",
     "tracteur_routier": "Tracteurs routiers",
@@ -65,6 +70,7 @@
   },
   "why": {
     "title": "Pourquoi Wilmet ?",
+    "subtitle": "Un partenaire européen de confiance.",
     "1t": "Réactivité",
     "1d": "Une réponse rapide sur les opportunités proposées ou recherchées.",
     "2t": "Expertise métier",
@@ -75,15 +81,21 @@
   },
   "contact": {
     "title": "Contact & localisation",
+    "subtitle": "Une question ? Un besoin spécifique ?",
     "text": "Wilmet Trucks — négoce de véhicules industriels. Contactez-nous pour toute demande spécifique.",
     "phone": "Téléphone",
+    "phoneNote": "Sur demande via le formulaire",
     "email": "Email",
-    "address": "Adresse"
+    "address": "Adresse",
+    "addressValue": "Wilmet Trucks — Belgique"
   },
   "footer": {
     "tagline": "Portail partenaires & acheteurs professionnels",
     "legal": "Mentions légales",
     "privacy": "Confidentialité",
+    "cgu": "CGU",
+    "cgv": "CGV",
+    "cookies": "Cookies",
     "rights": "Tous droits réservés."
   },
   "buyer": {

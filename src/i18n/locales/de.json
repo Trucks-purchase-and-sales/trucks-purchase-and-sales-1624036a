@@ -16,16 +16,20 @@
     "propose": {
       "title": "Sie haben einen Lkw zu verkaufen? Wilmet kauft ihn schnell an.",
       "text": "Bieten Sie Ihren gebrauchten Lkw, Transporter, Ihre Sattelzugmaschine, Ihren Motorwagen, Auflieger oder Ihr Nutzfahrzeug an. Unser Team prüft Ihr Angebot, kontrolliert die wichtigsten Angaben und antwortet Ihnen schnell – einfach, seriös und professionell.",
-      "button": "Mein Fahrzeug anbieten"
+      "button": "Mein Fahrzeug anbieten",
+      "badge": "Verkäufer"
     },
     "search": {
       "title": "Sie suchen einen verlässlichen Lkw? Wilmet findet das passende Angebot.",
       "text": "Beschreiben Sie das gesuchte Fahrzeug: Lkw, Transporter, Sattelzugmaschine, Motorwagen, Auflieger oder Spezialfahrzeug. Ist ein passendes Angebot verfügbar, schlagen wir es Ihnen vor. Andernfalls aktivieren wir unser Netzwerk, um ein Fahrzeug zu finden, das zu Ihrem Bedarf, Ihrem Budget und Ihrem Markt passt.",
-      "button": "Suche starten"
+      "button": "Suche starten",
+      "badge": "Käufer"
     }
   },
   "how": {
     "title": "Wie funktioniert es?",
+    "subtitle": "Ein einfacher Ablauf für Verkäufer und Käufer.",
+    "step": "Schritt {{n}}",
     "sellers": {
       "title": "Sie verkaufen ein Fahrzeug",
       "s1": "Sie bieten Ihr Fahrzeug an",
@@ -51,6 +55,7 @@
   },
   "types": {
     "title": "Bearbeitete Fahrzeugtypen",
+    "subtitle": "Von Wilmet gehandelte Kategorien.",
     "utilitaire_leger": "Leichte Nutzfahrzeuge",
     "camion_porteur": "Motorwagen",
     "tracteur_routier": "Sattelzugmaschinen",
@@ -65,6 +70,7 @@
   },
   "why": {
     "title": "Warum Wilmet?",
+    "subtitle": "Ein vertrauenswürdiger europäischer Partner.",
     "1t": "Reaktionsschnelligkeit",
     "1d": "Eine schnelle Antwort auf angebotene oder gesuchte Fahrzeuge.",
     "2t": "Fachkompetenz",
@@ -75,15 +81,21 @@
   },
   "contact": {
     "title": "Kontakt & Standort",
+    "subtitle": "Eine Frage? Ein besonderes Anliegen?",
     "text": "Wilmet Trucks — Handel mit Nutzfahrzeugen. Kontaktieren Sie uns bei jeder besonderen Anfrage.",
     "phone": "Telefon",
+    "phoneNote": "Auf Anfrage über das Formular",
     "email": "E-Mail",
-    "address": "Adresse"
+    "address": "Adresse",
+    "addressValue": "Wilmet Trucks — Belgien"
   },
   "footer": {
     "tagline": "Portal für Partner & gewerbliche Käufer",
     "legal": "Impressum",
     "privacy": "Datenschutz",
+    "cgu": "Nutzungsbedingungen",
+    "cgv": "Verkaufsbedingungen",
+    "cookies": "Cookies",
     "rights": "Alle Rechte vorbehalten."
   },
   "buyer": {

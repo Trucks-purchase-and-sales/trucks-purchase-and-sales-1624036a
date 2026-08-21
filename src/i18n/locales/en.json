@@ -16,16 +16,20 @@
     "propose": {
       "title": "Got a truck to sell? Wilmet can buy it quickly.",
       "text": "Offer your used truck, van, tractor unit, rigid, semi-trailer or professional vehicle. Our team reviews your opportunity, checks the key information and gets back to you quickly with a simple, serious and professional approach.",
-      "button": "Offer my vehicle"
+      "button": "Offer my vehicle",
+      "badge": "Seller"
     },
     "search": {
       "title": "Looking for a reliable truck? Wilmet finds the right opportunity.",
       "text": "Describe the vehicle you're looking for: truck, van, tractor unit, rigid, semi-trailer or specialised vehicle. If a matching opportunity is available, we'll offer it to you. Otherwise, we activate our network to find a vehicle suited to your needs, budget and market.",
-      "button": "Start my search"
+      "button": "Start my search",
+      "badge": "Buyer"
     }
   },
   "how": {
     "title": "How it works",
+    "subtitle": "A simple journey for sellers and buyers.",
+    "step": "Step {{n}}",
     "sellers": {
       "title": "Selling a vehicle",
       "s1": "You propose your vehicle",
@@ -51,6 +55,7 @@
   },
   "types": {
     "title": "Vehicle categories we trade",
+    "subtitle": "Categories Wilmet trades.",
     "utilitaire_leger": "Light utility vehicles",
     "camion_porteur": "Rigid trucks",
     "tracteur_routier": "Road tractors",
@@ -65,6 +70,7 @@
   },
   "why": {
     "title": "Why Wilmet?",
+    "subtitle": "A trusted European partner.",
     "1t": "Responsiveness",
     "1d": "A fast reply on opportunities offered or requested.",
     "2t": "Industry expertise",
@@ -75,15 +81,21 @@
   },
   "contact": {
     "title": "Contact & location",
+    "subtitle": "A question? A specific need?",
     "text": "Wilmet Trucks — commercial vehicle trading. Contact us for any specific request.",
     "phone": "Phone",
+    "phoneNote": "On request via the form",
     "email": "Email",
-    "address": "Address"
+    "address": "Address",
+    "addressValue": "Wilmet Trucks — Belgium"
   },
   "footer": {
     "tagline": "Portal for sellers & professional buyers",
     "legal": "Legal notice",
     "privacy": "Privacy",
+    "cgu": "Terms of Use",
+    "cgv": "Terms of Sale",
+    "cookies": "Cookies",
     "rights": "All rights reserved."
   },
   "buyer": {
