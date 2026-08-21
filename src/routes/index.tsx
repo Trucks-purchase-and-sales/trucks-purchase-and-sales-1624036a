@@ -78,7 +78,7 @@ function Header() {
         </Link>
         <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
           <Link to="/vehicules" className="font-medium text-foreground hover:text-accent">
-            Véhicules à vendre
+            {t("catalog.title")}
           </Link>
           <a href="#how" className="hover:text-foreground">
             {t("nav.how")}
@@ -138,7 +138,7 @@ function TwoCards() {
       icon: Truck,
       tone: "bg-primary text-primary-foreground",
       buttonClass: "bg-accent text-accent-foreground hover:bg-accent/90",
-      badge: "Vendeur",
+      badge: t("cta.propose.badge"),
     },
     {
       title: t("cta.search.title"),
@@ -148,7 +148,7 @@ function TwoCards() {
       icon: Search,
       tone: "bg-card border border-border",
       buttonClass: "bg-primary text-primary-foreground hover:bg-primary/90",
-      badge: "Acheteur",
+      badge: t("cta.search.badge"),
     },
   ] as const;
 
@@ -214,7 +214,7 @@ function HowItWorks() {
             {t("how.title")}
           </p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            Un parcours simple pour vendeurs et acheteurs.
+            {t("how.subtitle")}
           </h2>
         </div>
         <div className="mt-10 grid gap-6 lg:grid-cols-2">
@@ -249,6 +249,7 @@ function Column({
   title: string;
   items: { icon: LucideIcon; title: string; text: string; n: number }[];
 }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
       <h3 className="text-xl font-semibold">{title}</h3>
@@ -260,7 +261,7 @@ function Column({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Étape {s.n}
+                {t("how.step", { n: s.n })}
               </div>
               <div className="mt-0.5 font-semibold">{s.title}</div>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{s.text}</p>
@@ -294,7 +295,7 @@ function VehicleTypes() {
           {t("types.title")}
         </p>
         <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-          Catégories traitées par Wilmet.
+          {t("types.subtitle")}
         </h2>
       </div>
       <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -329,7 +330,7 @@ function WhyWilmet() {
             {t("why.title")}
           </p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            Un partenaire européen de confiance.
+            {t("why.subtitle")}
           </h2>
           <p className="mt-4 text-base leading-relaxed text-primary-foreground/80 sm:text-lg">
             {t("why.intro")}
@@ -362,7 +363,7 @@ function ContactBlock() {
             {t("contact.title")}
           </p>
           <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            Une question ? Un besoin spécifique ?
+            {t("contact.subtitle")}
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{t("contact.text")}</p>
           <div className="mt-6 flex flex-wrap gap-3">
@@ -386,7 +387,7 @@ function ContactBlock() {
             <PhoneCall className="mt-0.5 h-5 w-5 text-accent" />
             <div>
               <div className="font-semibold">{t("contact.phone")}</div>
-              <div className="text-muted-foreground">Sur demande via le formulaire</div>
+              <div className="text-muted-foreground">{t("contact.phoneNote")}</div>
             </div>
           </li>
           <li className="flex items-start gap-3">
@@ -400,7 +401,7 @@ function ContactBlock() {
             <MapPin className="mt-0.5 h-5 w-5 text-accent" />
             <div>
               <div className="font-semibold">{t("contact.address")}</div>
-              <div className="text-muted-foreground">Wilmet Trucks — Belgique</div>
+              <div className="text-muted-foreground">{t("contact.addressValue")}</div>
             </div>
           </li>
         </ul>
@@ -428,19 +429,19 @@ function Footer() {
         </div>
         <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-border/40 pt-4 text-xs">
           <Link to="/mentions-legales" className="hover:text-foreground">
-            Mentions légales
+            {t("footer.legal")}
           </Link>
           <Link to="/cgu" className="hover:text-foreground">
-            CGU
+            {t("footer.cgu")}
           </Link>
           <Link to="/cgv" className="hover:text-foreground">
-            CGV
+            {t("footer.cgv")}
           </Link>
           <Link to="/confidentialite" className="hover:text-foreground">
-            Confidentialité
+            {t("footer.privacy")}
           </Link>
           <Link to="/cookies" className="hover:text-foreground">
-            Cookies
+            {t("footer.cookies")}
           </Link>
         </nav>
       </div>

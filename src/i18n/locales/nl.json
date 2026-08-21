@@ -16,16 +16,20 @@
     "propose": {
       "title": "Heeft u een vrachtwagen te koop? Wilmet kan hem snel aankopen.",
       "text": "Bied uw gebruikte vrachtwagen, bedrijfswagen, trekker, bakwagen, oplegger of bedrijfsvoertuig aan. Ons team analyseert uw opportuniteit, controleert de belangrijkste gegevens en antwoordt u snel, eenvoudig en professioneel.",
-      "button": "Mijn voertuig aanbieden"
+      "button": "Mijn voertuig aanbieden",
+      "badge": "Verkoper"
     },
     "search": {
       "title": "Zoekt u een betrouwbare vrachtwagen? Wilmet vindt de juiste opportuniteit.",
       "text": "Beschrijf het voertuig dat u zoekt: vrachtwagen, bedrijfswagen, trekker, bakwagen, oplegger of speciaal voertuig. Is er een passende opportuniteit beschikbaar, dan stellen wij die voor. Zo niet, activeren wij ons netwerk om een voertuig te vinden dat past bij uw behoeften, uw budget en uw markt.",
-      "button": "Mijn zoekopdracht starten"
+      "button": "Mijn zoekopdracht starten",
+      "badge": "Koper"
     }
   },
   "how": {
     "title": "Hoe werkt het?",
+    "subtitle": "Een eenvoudig traject voor verkopers en kopers.",
+    "step": "Stap {{n}}",
     "sellers": {
       "title": "U verkoopt een voertuig",
       "s1": "U biedt uw voertuig aan",
@@ -51,6 +55,7 @@
   },
   "types": {
     "title": "Behandelde voertuigtypes",
+    "subtitle": "Categorieën die Wilmet verhandelt.",
     "utilitaire_leger": "Lichte bedrijfswagens",
     "camion_porteur": "Bakwagens",
     "tracteur_routier": "Trekkers",
@@ -65,6 +70,7 @@
   },
   "why": {
     "title": "Waarom Wilmet?",
+    "subtitle": "Een betrouwbare Europese partner.",
     "1t": "Snelheid",
     "1d": "Een snel antwoord op aangeboden of gezochte opportuniteiten.",
     "2t": "Vakkennis",
@@ -75,15 +81,21 @@
   },
   "contact": {
     "title": "Contact & locatie",
+    "subtitle": "Een vraag? Een specifieke behoefte?",
     "text": "Wilmet Trucks — handel in bedrijfsvoertuigen. Neem contact met ons op voor elke specifieke vraag.",
     "phone": "Telefoon",
+    "phoneNote": "Op aanvraag via het formulier",
     "email": "E-mail",
-    "address": "Adres"
+    "address": "Adres",
+    "addressValue": "Wilmet Trucks — België"
   },
   "footer": {
     "tagline": "Portaal voor partners & professionele kopers",
     "legal": "Juridische informatie",
     "privacy": "Privacy",
+    "cgu": "Gebruiksvoorwaarden",
+    "cgv": "Verkoopvoorwaarden",
+    "cookies": "Cookies",
     "rights": "Alle rechten voorbehouden."
   },
   "buyer": {
