@@ -38,7 +38,7 @@ open by default. "Policies (live)" below lists every policy actually found via
 | `notifications` | user_id, title, body | SELECT/UPDATE own only; no client INSERT/DELETE (system-generated) |
 | `match_candidates` / `match_feedback` / `match_runs` / `matching_profiles` | AI matching internals, prompt/token telemetry | ALL for admin only on each |
 | `ocr_scans` / `ocr_scan_sources` / `ocr_field_detections` | uploaded document OCR results | Owner/uploader-scoped SELECT/INSERT/UPDATE/ALL |
-| `client_quotes` / `cost_estimates` / `purchase_evaluations` / `resale_listings` / `options_prioritaires` / `marketplace_inquiries` | opaque `data` Json — contents still untyped | SELECT only, named `future_admin_read` — no INSERT policy on any of the six; these look like schema staged ahead of unbuilt features (matches the unused `commercial_future`/`client_future` roles), worth confirming with Salma whether any are actually in use |
+| `client_quotes` / `cost_estimates` / `purchase_evaluations` / `resale_listings` / `options_prioritaires` / `marketplace_inquiries` | opaque `data` Json — contents still untyped | SELECT only, named `future_admin_read` — no INSERT policy on any of the six. **Confirmed with Salma (2026-08-24): intentional scaffolding for a planned future feature, not dead code** — no action needed now, but the `data: Json` shape should be typed once that feature is built |
 | `affiliate_links` | referral codes | ALL admin, SELECT own-or-staff |
 | `affiliate_clicks` | click fingerprint hash | SELECT own-or-staff only; no client INSERT policy (writes happen server-side in the public affiliate-click endpoint) |
 | `staff_groups` / `staff_group_members` | internal team structure | ALL admin-write, SELECT staff-read |
@@ -135,9 +135,14 @@ Trigger guards worth noting as compensating controls: `tg_opp_partner_column_gua
 |---|---|---|
 | `vehicle-photos` | No (private, 10 MiB cap, image MIME types only) | RLS-scoped to the parent `vehicle_opportunities` row via folder-name matching |
 
-`opportunity_documents.storage_path` and `ocr_scan_sources.storage_path` reference file
-paths but no dedicated bucket usage was found in `src/` for either — needs verification
-in Phase 2 (may reuse `vehicle-photos` or point at an as-yet-unidentified bucket).
+**Confirmed (2026-08-24):** `opportunity_documents.storage_path` and
+`ocr_scan_sources.storage_path` reference file paths, but a full repo-wide search for
+every `.storage.from(...)` call found exactly one bucket in use anywhere: `vehicle-photos`.
+Nothing in the code ever uploads a file for either of these two features — Salma
+confirmed she's never tested document upload and isn't sure it works. **This is a likely
+unfinished/broken feature, not a security gap** — flagged for the Phase 0.5 functional
+walkthrough (§7A.4) once the app is testable again, so it gets exercised and either
+fixed or explicitly deferred with her sign-off rather than assumed to work.
 
 ## Integrations & secrets
 
