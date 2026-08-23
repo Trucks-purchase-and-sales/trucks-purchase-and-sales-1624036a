@@ -1,16 +1,35 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listMyOpportunities, signPhotoUrls } from "@/lib/opportunities.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, ImageIcon, MapPin, Gauge, Calendar as CalendarIcon, Truck } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Plus,
+  Search,
+  ImageIcon,
+  MapPin,
+  Gauge,
+  Calendar as CalendarIcon,
+  Truck,
+} from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import {
-  VEHICLE_TYPE_OPTIONS, STATUS_LABEL, formatPrice, formatDate, labelFor,
+  VEHICLE_TYPE_OPTIONS,
+  STATUS_LABEL,
+  formatPrice,
+  formatDate,
+  labelFor,
   type OpportunityStatus,
 } from "@/lib/wilmet-constants";
 import { StatTileButton } from "@/components/dashboard/StatTile";
@@ -28,6 +47,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function Dashboard() {
+  const { t } = useTranslation();
   const listFn = useServerFn(listMyOpportunities);
   const signFn = useServerFn(signPhotoUrls);
   const search = Route.useSearch();
@@ -57,7 +77,9 @@ function Dashboard() {
         navigate({ to: home, replace: true });
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [userId, navigate]);
 
   const { data, isLoading } = useQuery({
@@ -82,7 +104,8 @@ function Dashboard() {
       if (vtype !== "all" && r.vehicle_type !== vtype) return false;
       if (q) {
         const s = q.toLowerCase();
-        const hay = `${r.brand ?? ""} ${r.model ?? ""} ${r.city ?? ""} ${r.reference_number ?? ""}`.toLowerCase();
+        const hay =
+          `${r.brand ?? ""} ${r.model ?? ""} ${r.city ?? ""} ${r.reference_number ?? ""}`.toLowerCase();
         if (!hay.includes(s)) return false;
       }
       return true;
@@ -110,32 +133,43 @@ function Dashboard() {
     <div className="space-y-6 pb-10">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Mes opportunités</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Suivez vos propositions transmises à Wilmet.</p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("dashboard.title")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("dashboard.subtitle")}</p>
         </div>
         <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
-          <Link to="/opportunities/new"><Plus className="mr-1.5 h-4 w-4" /> Proposer un véhicule</Link>
+          <Link to="/opportunities/new">
+            <Plus className="mr-1.5 h-4 w-4" /> {t("dashboard.proposeVehicle")}
+          </Link>
         </Button>
       </div>
 
-
       {(() => {
-        const todo = (data?.rows ?? []).filter((r) => (r as any).owner_side === "partenaire" && r.status !== "brouillon");
+        const todo = (data?.rows ?? []).filter(
+          (r) => (r as any).owner_side === "partenaire" && r.status !== "brouillon", // eslint-disable-line @typescript-eslint/no-explicit-any
+        );
         if (todo.length === 0) return null;
         return (
           <Card className="border-accent/50 bg-accent/5">
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-sm font-semibold text-accent">À faire · Wilmet vous a rendu la main</div>
-                  <div className="text-xs text-muted-foreground">Complétez et renvoyez ces opportunités pour reprendre l'analyse.</div>
+                  <div className="text-sm font-semibold text-accent">
+                    {t("dashboard.handedBack.title")}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {t("dashboard.handedBack.text")}
+                  </div>
                 </div>
                 <div className="text-2xl font-bold text-accent">{todo.length}</div>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {todo.slice(0, 6).map((r) => (
-                  <Link key={r.id} to="/opportunities/$id" params={{ id: r.id }}
-                    className="rounded-md border border-accent/40 bg-background px-2.5 py-1 text-xs hover:bg-accent/10">
+                  <Link
+                    key={r.id}
+                    to="/opportunities/$id"
+                    params={{ id: r.id }}
+                    className="rounded-md border border-accent/40 bg-background px-2.5 py-1 text-xs hover:bg-accent/10"
+                  >
                     {r.reference_number ?? `${r.brand ?? ""} ${r.model ?? ""}`}
                   </Link>
                 ))}
@@ -147,22 +181,54 @@ function Dashboard() {
 
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatTileButton icon={Truck} label="Opportunités envoyées" value={summary.sent}
-            active={status === "sent"} onClick={() => toggle("sent")} />
-          <StatTileButton icon={Truck} label={STATUS_LABEL.en_cours_analyse} value={summary.analysis} tint="analysis"
-            active={status === "en_cours_analyse"} onClick={() => toggle("en_cours_analyse")} />
-          <StatTileButton icon={Truck} label="Achetées" value={summary.accepted} tint="accepted"
-            active={status === "achetee"} onClick={() => toggle("achetee")} />
-          <StatTileButton icon={Truck} label="Non abouties" value={summary.refused} tint="refused"
-            active={status === "refusee"} onClick={() => toggle("refusee")} />
+          <StatTileButton
+            icon={Truck}
+            label={t("dashboard.kpi.sent")}
+            value={summary.sent}
+            active={status === "sent"}
+            onClick={() => toggle("sent")}
+          />
+          <StatTileButton
+            icon={Truck}
+            label={STATUS_LABEL.en_cours_analyse}
+            value={summary.analysis}
+            tint="analysis"
+            active={status === "en_cours_analyse"}
+            onClick={() => toggle("en_cours_analyse")}
+          />
+          <StatTileButton
+            icon={Truck}
+            label={t("dashboard.kpi.accepted")}
+            value={summary.accepted}
+            tint="accepted"
+            active={status === "achetee"}
+            onClick={() => toggle("achetee")}
+          />
+          <StatTileButton
+            icon={Truck}
+            label={t("dashboard.kpi.refused")}
+            value={summary.refused}
+            tint="refused"
+            active={status === "refusee"}
+            onClick={() => toggle("refusee")}
+          />
         </div>
 
         <StageTiles counts={byStatus} activeStatus={status} onSelect={(s) => toggle(s)} />
 
         {status !== "all" && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>Filtre actif : <span className="font-medium text-foreground">{status === "sent" ? "Envoyées" : STATUS_LABEL[status as OpportunityStatus] ?? status}</span></span>
-            <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setStatus("all")}>Réinitialiser</Button>
+            <span>
+              {t("dashboard.filter.active")}{" "}
+              <span className="font-medium text-foreground">
+                {status === "sent"
+                  ? t("dashboard.filter.sentShort")
+                  : (STATUS_LABEL[status as OpportunityStatus] ?? status)}
+              </span>
+            </span>
+            <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setStatus("all")}>
+              {t("dashboard.filter.reset")}
+            </Button>
           </div>
         )}
       </div>
@@ -171,21 +237,38 @@ function Dashboard() {
         <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Rechercher : marque, modèle, ville, référence…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <Input
+              className="pl-9"
+              placeholder={t("dashboard.search.placeholder")}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
           </div>
           <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-full sm:w-56"><SelectValue placeholder="Statut" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-56">
+              <SelectValue placeholder={t("dashboard.filter.statusPlaceholder")} />
+            </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous les statuts</SelectItem>
-              <SelectItem value="sent">Envoyées (tout sauf brouillon)</SelectItem>
-              {Object.entries(STATUS_LABEL).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+              <SelectItem value="all">{t("dashboard.filter.allStatuses")}</SelectItem>
+              <SelectItem value="sent">{t("dashboard.filter.sentOption")}</SelectItem>
+              {Object.entries(STATUS_LABEL).map(([v, l]) => (
+                <SelectItem key={v} value={v}>
+                  {l}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={vtype} onValueChange={setVtype}>
-            <SelectTrigger className="w-full sm:w-56"><SelectValue placeholder="Type véhicule" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-56">
+              <SelectValue placeholder={t("dashboard.filter.vehicleTypePlaceholder")} />
+            </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous types</SelectItem>
-              {VEHICLE_TYPE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              <SelectItem value="all">{t("dashboard.filter.allTypes")}</SelectItem>
+              {VEHICLE_TYPE_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </CardContent>
@@ -193,10 +276,15 @@ function Dashboard() {
 
       {isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {[0, 1, 2].map((i) => <div key={i} className="h-56 rounded-xl bg-card animate-pulse border border-border" />)}
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-56 rounded-xl bg-card animate-pulse border border-border" />
+          ))}
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState hasAny={(data?.rows ?? []).length > 0} onCreate={() => navigate({ to: "/opportunities/new" })} />
+        <EmptyState
+          hasAny={(data?.rows ?? []).length > 0}
+          onCreate={() => navigate({ to: "/opportunities/new" })}
+        />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((r) => {
@@ -207,7 +295,11 @@ function Dashboard() {
                 <Card className="overflow-hidden border-border/70 transition-shadow hover:shadow-md">
                   <div className="relative aspect-[16/10] w-full overflow-hidden bg-secondary">
                     {src ? (
-                      <img src={src} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" />
+                      <img
+                        src={src}
+                        alt=""
+                        className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
+                      />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                         <ImageIcon className="h-10 w-10 opacity-50" />
@@ -234,11 +326,13 @@ function Dashboard() {
                     </div>
                     <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
                       <MetaLine icon={CalendarIcon}>{r.year || "—"}</MetaLine>
-                      <MetaLine icon={Gauge}>{r.mileage ? r.mileage.toLocaleString("fr-FR") + " km" : "—"}</MetaLine>
+                      <MetaLine icon={Gauge}>
+                        {r.mileage ? r.mileage.toLocaleString("fr-FR") + " km" : "—"}
+                      </MetaLine>
                       <MetaLine icon={MapPin}>{r.city || "—"}</MetaLine>
                     </div>
                     <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
-                      <span>Mis à jour {formatDate(r.updated_at)}</span>
+                      <span>{t("dashboard.updatedAt", { date: formatDate(r.updated_at) })}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -251,7 +345,13 @@ function Dashboard() {
   );
 }
 
-function MetaLine({ icon: Icon, children }: { icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
+function MetaLine({
+  icon: Icon,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex min-w-0 items-center gap-1.5">
       <Icon className="h-3.5 w-3.5 shrink-0" />
@@ -261,6 +361,7 @@ function MetaLine({ icon: Icon, children }: { icon: React.ComponentType<{ classN
 }
 
 function EmptyState({ hasAny, onCreate }: { hasAny: boolean; onCreate: () => void }) {
+  const { t } = useTranslation();
   return (
     <Card className="border-dashed border-border/70">
       <CardContent className="flex flex-col items-center gap-4 p-10 text-center">
@@ -269,16 +370,14 @@ function EmptyState({ hasAny, onCreate }: { hasAny: boolean; onCreate: () => voi
         </div>
         <div>
           <div className="text-lg font-semibold">
-            {hasAny ? "Aucune opportunité ne correspond aux filtres" : "Aucune opportunité pour le moment"}
+            {hasAny ? t("dashboard.empty.filteredTitle") : t("dashboard.empty.title")}
           </div>
           <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-            {hasAny
-              ? "Ajustez vos filtres ou proposez un nouveau véhicule."
-              : "Vous pouvez transmettre votre premier véhicule à Wilmet en quelques minutes."}
+            {hasAny ? t("dashboard.empty.filteredText") : t("dashboard.empty.text")}
           </p>
         </div>
         <Button onClick={onCreate} className="bg-accent text-accent-foreground hover:bg-accent/90">
-          <Plus className="mr-1.5 h-4 w-4" /> Proposer un véhicule
+          <Plus className="mr-1.5 h-4 w-4" /> {t("dashboard.proposeVehicle")}
         </Button>
       </CardContent>
     </Card>

@@ -1,16 +1,29 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import wilmetLogo from "@/assets/wilmet-logo.png.asset.json";
+import { useI18nInit } from "@/i18n/useI18nInit";
 
-const LINKS = [
-  { to: "/mentions-legales", label: "Mentions légales" },
-  { to: "/cgu", label: "CGU" },
-  { to: "/cgv", label: "CGV" },
-  { to: "/confidentialite", label: "Confidentialité" },
-  { to: "/cookies", label: "Cookies" },
-] as const;
+export function LegalLayout({
+  title,
+  updated,
+  children,
+}: {
+  title: string;
+  updated?: string;
+  children: ReactNode;
+}) {
+  useI18nInit();
+  const { t } = useTranslation();
 
-export function LegalLayout({ title, updated, children }: { title: string; updated?: string; children: ReactNode }) {
+  const LINKS = [
+    { to: "/mentions-legales", label: t("footer.legal") },
+    { to: "/cgu", label: t("footer.cgu") },
+    { to: "/cgv", label: t("footer.cgv") },
+    { to: "/confidentialite", label: t("footer.privacy") },
+    { to: "/cookies", label: t("footer.cookies") },
+  ] as const;
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/60 bg-background">
@@ -18,7 +31,9 @@ export function LegalLayout({ title, updated, children }: { title: string; updat
           <Link to="/" className="flex items-center gap-2">
             <img src={wilmetLogo.url} alt="Wilmet Trucks" className="h-8 w-auto" />
           </Link>
-          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← Accueil</Link>
+          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
+            {t("legal.backHome")}
+          </Link>
         </div>
       </header>
 
@@ -40,13 +55,17 @@ export function LegalLayout({ title, updated, children }: { title: string; updat
 
         <article className="prose prose-slate max-w-none dark:prose-invert">
           <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-          {updated && <p className="text-sm text-muted-foreground">Dernière mise à jour : {updated}</p>}
+          {updated && (
+            <p className="text-sm text-muted-foreground">
+              {t("legal.updatedLabel", { date: updated })}
+            </p>
+          )}
           <div className="mt-6 space-y-4 leading-relaxed">{children}</div>
         </article>
       </main>
 
       <footer className="border-t border-border/60 py-8 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Wilmet · Tous droits réservés
+        © {new Date().getFullYear()} Wilmet · {t("footer.rights")}
       </footer>
     </div>
   );

@@ -1,10 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { useStepScroll } from "@/hooks/useStepScroll";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  saveOpportunity, submitOpportunity, getOpportunity, addPhotoRecord,
-  deletePhoto, setMainPhoto, signPhotoUrls, reorderPhotos, createPhotoUploadUrl,
+  saveOpportunity,
+  submitOpportunity,
+  getOpportunity,
+  addPhotoRecord,
+  deletePhoto,
+  setMainPhoto,
+  signPhotoUrls,
+  reorderPhotos,
+  createPhotoUploadUrl,
 } from "@/lib/opportunities.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -15,29 +24,60 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft, ArrowRight, CalendarIcon, Camera, Check, ImageIcon, Info, Save, Send, Star,
-  Trash2, X, AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  CalendarIcon,
+  Camera,
+  Check,
+  ImageIcon,
+  Info,
+  Save,
+  Send,
+  Star,
+  Trash2,
+  X,
+  AlertTriangle,
 } from "lucide-react";
 import { OcrPrefillDialog } from "@/components/ocr/OcrPrefillDialog";
 import { VoiceDictation } from "@/components/wizard/VoiceDictation";
 import { useAiFeatures } from "@/hooks/useAiFeatures";
 
 import {
-  AVAILABILITY_OPTIONS, AXLE_CONFIG_OPTIONS, CABIN_OPTIONS, CONDITION_OPTIONS,
-  EQUIPMENT_OPTIONS, EU27_CODES, EURO_OPTIONS, FUEL_OPTIONS, GEARBOX_OPTIONS,
-  ACCIDENT_OPTIONS, NEGOTIABLE_OPTIONS, PHOTO_CATEGORIES, requiredPhotoCategories,
-  KEYS_COUNT_OPTIONS, VISIBILITY_OPTIONS,
-  SUSPENSION_OPTIONS, YES_NO_OPTIONS, TAIL_LIFT_CONDITION_OPTIONS, missingSubmissionFields,
+  AVAILABILITY_OPTIONS,
+  AXLE_CONFIG_OPTIONS,
+  CABIN_OPTIONS,
+  CONDITION_OPTIONS,
+  EQUIPMENT_OPTIONS,
+  EU27_CODES,
+  EURO_OPTIONS,
+  FUEL_OPTIONS,
+  GEARBOX_OPTIONS,
+  ACCIDENT_OPTIONS,
+  NEGOTIABLE_OPTIONS,
+  PHOTO_CATEGORIES,
+  requiredPhotoCategories,
+  KEYS_COUNT_OPTIONS,
+  VISIBILITY_OPTIONS,
+  SUSPENSION_OPTIONS,
+  YES_NO_OPTIONS,
+  TAIL_LIFT_CONDITION_OPTIONS,
+  missingSubmissionFields,
   categoryProfile,
-  labelFor, formatPrice,
-
+  labelFor,
+  formatPrice,
 } from "@/lib/wilmet-constants";
 import { getReferenceData } from "@/lib/reference-data.functions";
 import { SearchableCombobox } from "@/components/pickers/SearchableCombobox";
@@ -54,23 +94,26 @@ import { fr } from "date-fns/locale";
 function readableError(e: unknown): string {
   const raw = e instanceof Error ? e.message : String(e ?? "");
   const trimmed = raw.trim();
-  if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) return trimmed || "Erreur inconnue.";
+  if (!(trimmed.startsWith("{") || trimmed.startsWith("[")))
+    return trimmed || i18n.t("wizard.errors.unknown");
   try {
     const parsed = JSON.parse(trimmed);
     const issues = Array.isArray(parsed) ? parsed : (parsed.issues ?? parsed.errors);
     if (Array.isArray(issues) && issues.length) {
       const fields = Array.from(
-        new Set(issues.map((i: { path?: unknown[] }) => String(i?.path?.[0] ?? "")).filter(Boolean))
+        new Set(
+          issues.map((i: { path?: unknown[] }) => String(i?.path?.[0] ?? "")).filter(Boolean),
+        ),
       );
-      if (fields.length) return `Données du formulaire invalides : ${fields.join(", ")}.`;
+      if (fields.length)
+        return i18n.t("wizard.errors.invalidFields", { fields: fields.join(", ") });
     }
     if (typeof parsed?.message === "string") return parsed.message;
   } catch {
     /* fall through */
   }
-  return "Données du formulaire invalides. Vérifiez les champs de l'étape en cours.";
+  return i18n.t("wizard.errors.invalidGeneric");
 }
-
 
 type OppState = {
   id?: string;
@@ -113,7 +156,7 @@ type OppState = {
   onsite_contact_phone?: string | null;
   onsite_contact_email?: string | null;
   vat_recoverable?: string | null;
-  
+
   has_breakdown?: string | null;
   maintenance_history?: string | null;
   body_type?: string | null;
@@ -163,10 +206,14 @@ type PendingPhoto = {
   name: string;
 };
 
-const STEPS = [
-  "Informations générales", "Caractéristiques", "État du véhicule",
-  "Photos", "Prix & disponibilité", "Récapitulatif",
-];
+const STEP_KEYS = [
+  "wizard.steps.general",
+  "wizard.steps.specs",
+  "wizard.steps.condition",
+  "wizard.steps.photos",
+  "wizard.steps.pricing",
+  "wizard.steps.summary",
+] as const;
 
 export const Route = createFileRoute("/_authenticated/opportunities/new")({
   validateSearch: (s: Record<string, unknown>): { id?: string } =>
@@ -175,6 +222,8 @@ export const Route = createFileRoute("/_authenticated/opportunities/new")({
 });
 
 function WizardPage() {
+  const { t } = useTranslation();
+  const STEPS = useMemo(() => STEP_KEYS.map((k) => t(k)), [t]);
   const { userId } = Route.useRouteContext();
   const { data: gate, isLoading: gateLoading } = useQuery({
     queryKey: ["seller-gate", userId],
@@ -203,7 +252,6 @@ function WizardPage() {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
-
   const saveFn = useServerFn(saveOpportunity);
   const submitFn = useServerFn(submitOpportunity);
   const getFn = useServerFn(getOpportunity);
@@ -216,7 +264,10 @@ function WizardPage() {
 
   const refFn = useServerFn(getReferenceData);
   const {
-    data: refData, isLoading: refLoading, isError: refError, refetch: refRefetch,
+    data: refData,
+    isLoading: refLoading,
+    isError: refError,
+    refetch: refRefetch,
   } = useQuery({
     queryKey: ["reference-data"],
     queryFn: () => refFn(),
@@ -224,8 +275,13 @@ function WizardPage() {
     retry: 1,
   });
   const refPartialFailure = (refData?.failed?.length ?? 0) > 0;
-  const refState: RefState = { loading: refLoading, error: refError, retry: () => { void refRefetch(); } };
-
+  const refState: RefState = {
+    loading: refLoading,
+    error: refError,
+    retry: () => {
+      void refRefetch();
+    },
+  };
 
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
 
@@ -239,19 +295,26 @@ function WizardPage() {
         setOpp(cleaned);
         setPhotos((res.photos as Photo[]) ?? []);
       } catch (e) {
-        toast.error("Impossible de charger le brouillon");
+        toast.error(t("wizard.toast.loadDraftError"));
       }
     })();
-  }, [initialId, getFn]);
+  }, [initialId, getFn, t]);
 
   // Sign photo URLs.
   useEffect(() => {
     const paths = photos.map((p) => p.storage_path);
-    if (paths.length === 0) { setSignedUrls({}); return; }
+    if (paths.length === 0) {
+      setSignedUrls({});
+      return;
+    }
     signFn({ data: { paths } })
       .then((r) => setSignedUrls(r.urls))
-      .catch(() => toast.error("Prévisualisation photo indisponible", { description: "La photo est enregistrée, mais son aperçu n'a pas pu être chargé." }));
-  }, [photos, signFn]);
+      .catch(() =>
+        toast.error(t("wizard.toast.photoPreviewUnavailable.title"), {
+          description: t("wizard.toast.photoPreviewUnavailable.text"),
+        }),
+      );
+  }, [photos, signFn, t]);
 
   const set = <K extends keyof OppState>(k: K, v: OppState[K]) => setOpp((o) => ({ ...o, [k]: v }));
 
@@ -265,7 +328,7 @@ function WizardPage() {
       setOpp((o) => ({ ...o, id: res.id, reference_number: res.reference_number }));
       return res.id;
     } catch (e) {
-      toast.error("Sauvegarde impossible", { description: readableError(e) });
+      toast.error(t("wizard.toast.saveError"), { description: readableError(e) });
       return null;
     } finally {
       setSaving(false);
@@ -274,7 +337,7 @@ function WizardPage() {
 
   async function saveDraft() {
     const id = await persist();
-    if (id) toast.success("Brouillon enregistré");
+    if (id) toast.success(t("wizard.toast.draftSaved"));
   }
 
   async function next() {
@@ -285,25 +348,40 @@ function WizardPage() {
   async function submitAll() {
     const missingFields = missingSubmissionFields(opp as unknown as Record<string, unknown>);
     if (missingFields.length > 0) {
-      toast.error("Informations obligatoires manquantes", {
+      toast.error(t("wizard.toast.missingRequired"), {
         description: missingFields.map((f) => f.label).join(", "),
       });
-      setStep(missingFields[0].step); return;
+      setStep(missingFields[0].step);
+      return;
     }
-    if (categoryProfile(opp.vehicle_category).powered && opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) {
-      toast.error("Motif d'immobilisation obligatoire", { description: "Précisez pourquoi le véhicule ne roule pas (étape 3)." });
-      setStep(2); return;
+    if (
+      categoryProfile(opp.vehicle_category).powered &&
+      opp.vehicle_runs === "non" &&
+      !opp.not_running_reason?.trim()
+    ) {
+      toast.error(t("wizard.toast.notRunningReasonRequired.title"), {
+        description: t("wizard.toast.notRunningReasonRequired.text"),
+      });
+      setStep(2);
+      return;
     }
     if (opp.technical_inspection_status === "oui" && !opp.inspection_valid_until) {
-      toast.error("Date de contrôle technique obligatoire", { description: "Indiquez jusqu'à quand le contrôle technique est valable (étape 3)." });
-      setStep(2); return;
+      toast.error(t("wizard.toast.inspectionDateRequired.title"), {
+        description: t("wizard.toast.inspectionDateRequired.text"),
+      });
+      setStep(2);
+      return;
     }
     const covered = new Set(photos.map((p) => p.category));
-    const missingPhotos = requiredPhotoCategories(opp as unknown as Record<string, unknown>)
-      .filter((c) => !covered.has(c.value));
+    const missingPhotos = requiredPhotoCategories(opp as unknown as Record<string, unknown>).filter(
+      (c) => !covered.has(c.value),
+    );
     if (missingPhotos.length > 0) {
-      toast.error("Photos obligatoires manquantes", { description: missingPhotos.map((m) => m.label).join(", ") });
-      setStep(3); return;
+      toast.error(t("wizard.toast.missingPhotos"), {
+        description: missingPhotos.map((m) => m.label).join(", "),
+      });
+      setStep(3);
+      return;
     }
     let id = opp.id;
 
@@ -312,10 +390,10 @@ function WizardPage() {
     setSubmitting(true);
     try {
       await submitFn({ data: { id } });
-      toast.success("Opportunité envoyée à Wilmet");
+      toast.success(t("wizard.toast.submitted"));
       navigate({ to: "/opportunities/success/$id", params: { id } });
     } catch (e) {
-      toast.error("Envoi impossible", { description: (e as Error).message });
+      toast.error(t("common.toast.submitError"), { description: (e as Error).message });
     } finally {
       setSubmitting(false);
     }
@@ -328,7 +406,7 @@ function WizardPage() {
 
   async function uploadFiles(files: File[], category: string | null) {
     if (files.length === 0) {
-      toast.error("Aucune photo sélectionnée");
+      toast.error(t("wizard.toast.noPhotoSelected"));
       return;
     }
 
@@ -352,19 +430,30 @@ function WizardPage() {
           if (original.type.startsWith("image/") && original.size > 1_200_000) {
             try {
               const blob = await imageCompression(original, {
-                maxSizeMB: 1.2, maxWidthOrHeight: 2400, useWebWorker: true, initialQuality: 0.82,
+                maxSizeMB: 1.2,
+                maxWidthOrHeight: 2400,
+                useWebWorker: true,
+                initialQuality: 0.82,
               });
               file = new File([blob], original.name, { type: blob.type || original.type });
-            } catch { /* fall back to original */ }
+            } catch {
+              /* fall back to original */
+            }
           }
-          const upload = await createUploadUrlFn({ data: { opportunityId: id, fileName: file.name } });
-          const { error } = await supabase.storage.from("vehicle-photos").uploadToSignedUrl(upload.path, upload.token, file, {
-            contentType: file.type || "image/jpeg",
+          const upload = await createUploadUrlFn({
+            data: { opportunityId: id, fileName: file.name },
           });
+          const { error } = await supabase.storage
+            .from("vehicle-photos")
+            .uploadToSignedUrl(upload.path, upload.token, file, {
+              contentType: file.type || "image/jpeg",
+            });
           if (error) throw error;
           const rec = await addPhotoFn({
             data: {
-              vehicle_opportunity_id: id, storage_path: upload.path, category,
+              vehicle_opportunity_id: id,
+              storage_path: upload.path,
+              category,
               is_main_photo: initialPhotoCount === 0 && uploadedCount === 0,
               sort_order: initialPhotoCount + uploadedCount,
             },
@@ -372,17 +461,21 @@ function WizardPage() {
           setPhotos((p) => [...p, rec as Photo]);
           uploadedCount += 1;
         } catch (e) {
-          toast.error(`Photo non téléchargée: ${original.name}`, { description: (e as Error).message });
+          toast.error(t("wizard.toast.photoUploadError", { name: original.name }), {
+            description: (e as Error).message,
+          });
         }
       }
       if (uploadedCount > 0) {
-        toast.success(uploadedCount === 1 ? "Photo ajoutée" : `${uploadedCount} photos ajoutées`);
+        toast.success(t("wizard.toast.photosAdded", { count: uploadedCount }));
       }
     } catch (e) {
-      toast.error("Téléchargement impossible", { description: (e as Error).message });
+      toast.error(t("wizard.toast.uploadError"), { description: (e as Error).message });
     } finally {
       setUploadingPhotos(false);
-      setPendingPhotos((current) => current.filter((item) => !pending.some((p) => p.id === item.id)));
+      setPendingPhotos((current) =>
+        current.filter((item) => !pending.some((p) => p.id === item.id)),
+      );
       pending.forEach((item) => URL.revokeObjectURL(item.url));
     }
   }
@@ -392,7 +485,7 @@ function WizardPage() {
       await delPhotoFn({ data: { photoId } });
       setPhotos((p) => p.filter((x) => x.id !== photoId));
     } catch (e) {
-      toast.error("Suppression impossible");
+      toast.error(t("wizard.toast.deleteError"));
     }
   }
   async function makeMain(photoId: string) {
@@ -400,7 +493,9 @@ function WizardPage() {
     try {
       await setMainFn({ data: { opportunityId: opp.id, photoId } });
       setPhotos((p) => p.map((x) => ({ ...x, is_main_photo: x.id === photoId })));
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
   async function reorderInCategory(category: string | null, fromId: string, toId: string) {
     if (fromId === toId) return;
@@ -415,13 +510,14 @@ function WizardPage() {
       next.splice(toIdx, 0, m);
       const merged = [...others, ...next];
       const withOrder = merged.map((p, i) => ({ ...p, sort_order: i }));
-      reorderFn({ data: { orders: withOrder.map(({ id, sort_order }) => ({ id, sort_order })) } }).catch(() => {
-        toast.error("Ordre non sauvegardé");
+      reorderFn({
+        data: { orders: withOrder.map(({ id, sort_order }) => ({ id, sort_order })) },
+      }).catch(() => {
+        toast.error(t("wizard.toast.reorderError"));
       });
       return withOrder;
     });
   }
-
 
   const progress = ((step + 1) / STEPS.length) * 100;
 
@@ -432,13 +528,11 @@ function WizardPage() {
       <div className="mx-auto max-w-xl py-10">
         <Card>
           <CardContent className="space-y-3 p-6 text-sm">
-            <h1 className="text-lg font-semibold">Compte en cours d&apos;initialisation</h1>
-            <p className="text-muted-foreground">
-              Votre profil applicatif n&apos;a pas encore été créé, votre type de compte est donc inconnu.
-              Ce n&apos;est pas une restriction liée à votre rôle : contactez Wilmet pour finaliser
-              l&apos;initialisation de votre compte.
-            </p>
-            <Button variant="outline" onClick={() => navigate({ to: "/dashboard" })}>Retour au tableau de bord</Button>
+            <h1 className="text-lg font-semibold">{t("common.accountInitializing.title")}</h1>
+            <p className="text-muted-foreground">{t("wizard.gate.noProfile.text")}</p>
+            <Button variant="outline" onClick={() => navigate({ to: "/dashboard" })}>
+              {t("wizard.gate.backToDashboard")}
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -450,12 +544,11 @@ function WizardPage() {
       <div className="mx-auto max-w-xl py-10">
         <Card>
           <CardContent className="space-y-3 p-6 text-sm">
-            <h1 className="text-lg font-semibold">Fonction réservée aux vendeurs</h1>
-            <p className="text-muted-foreground">
-              Votre compte est configuré comme client (recherche de véhicules). Pour proposer un véhicule à la vente,
-              contactez Wilmet afin que votre compte soit activé en tant que vendeur.
-            </p>
-            <Button variant="outline" onClick={() => navigate({ to: "/dashboard" })}>Retour au tableau de bord</Button>
+            <h1 className="text-lg font-semibold">{t("wizard.gate.notSeller.title")}</h1>
+            <p className="text-muted-foreground">{t("wizard.gate.notSeller.text")}</p>
+            <Button variant="outline" onClick={() => navigate({ to: "/dashboard" })}>
+              {t("wizard.gate.backToDashboard")}
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -464,18 +557,23 @@ function WizardPage() {
 
   return (
     <div className="pb-10" ref={stepRef}>
-
       <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
         <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/dashboard" })}>
-          <ArrowLeft className="mr-1 h-4 w-4" /> Retour
+          <ArrowLeft className="mr-1 h-4 w-4" /> {t("buyer.actions.back")}
         </Button>
         {opp.reference_number && <Badge variant="outline">{opp.reference_number}</Badge>}
       </div>
 
       <div className="mb-6">
-        <h1 tabIndex={-1} data-step-title className="text-2xl font-bold tracking-tight sm:text-3xl outline-none">Nouvelle opportunité véhicule</h1>
+        <h1
+          tabIndex={-1}
+          data-step-title
+          className="text-2xl font-bold tracking-tight sm:text-3xl outline-none"
+        >
+          {t("wizard.title")}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Étape {step + 1} sur {STEPS.length} · {STEPS[step]}
+          {t("buyer.step", { current: step + 1, total: STEPS.length })} · {STEPS[step]}
         </p>
         <Progress value={progress} className="mt-4 h-1.5" />
         <div className="mt-3 hidden gap-2 sm:flex">
@@ -485,9 +583,11 @@ function WizardPage() {
               onClick={() => setStep(i)}
               className={cn(
                 "flex-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors",
-                i === step ? "border-accent bg-accent/10 text-accent" :
-                i < step ? "border-status-accepted bg-status-accepted/40 text-status-accepted-foreground" :
-                "border-border bg-card text-muted-foreground",
+                i === step
+                  ? "border-accent bg-accent/10 text-accent"
+                  : i < step
+                    ? "border-status-accepted bg-status-accepted/40 text-status-accepted-foreground"
+                    : "border-border bg-card text-muted-foreground",
               )}
             >
               {i + 1}. {label}
@@ -500,17 +600,25 @@ function WizardPage() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-            <span>
-              Catalogue indisponible ou incomplet — la saisie libre reste possible, vos informations sont conservées.
-            </span>
+            <span>{t("wizard.referenceData.unavailable")}</span>
           </div>
-          <Button variant="outline" size="sm" onClick={() => void refRefetch()}>Réessayer</Button>
+          <Button variant="outline" size="sm" onClick={() => void refRefetch()}>
+            {t("wizard.retry")}
+          </Button>
         </div>
       )}
 
       <Card className="border-border/70">
         <CardContent className="p-5 sm:p-8">
-          {step === 0 && <Step1 opp={opp} set={set} applyOcr={(f: Partial<OppState>) => setOpp((o) => ({ ...o, ...f }))} refs={refData} refState={refState} />}
+          {step === 0 && (
+            <Step1
+              opp={opp}
+              set={set}
+              applyOcr={(f: Partial<OppState>) => setOpp((o) => ({ ...o, ...f }))}
+              refs={refData}
+              refState={refState}
+            />
+          )}
           {step === 1 && <Step2 opp={opp} set={set} refs={refData} />}
 
           {step === 2 && <Step3 opp={opp} set={set} />}
@@ -536,22 +644,33 @@ function WizardPage() {
         <div className="flex items-center gap-2">
           {step > 0 && (
             <Button variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))}>
-              <ArrowLeft className="mr-1.5 h-4 w-4" /> Précédent
+              <ArrowLeft className="mr-1.5 h-4 w-4" /> {t("wizard.previous")}
             </Button>
           )}
           <Button variant="ghost" onClick={saveDraft} disabled={saving}>
-            <Save className="mr-1.5 h-4 w-4" /> {saving ? "Enregistrement…" : "Enregistrer en brouillon"}
+            <Save className="mr-1.5 h-4 w-4" />{" "}
+            {saving ? t("wizard.saving") : t("wizard.saveDraft")}
           </Button>
         </div>
         <div className="flex items-center gap-2">
           {step < STEPS.length - 1 && (
-            <Button onClick={next} disabled={saving} className="bg-accent text-accent-foreground hover:bg-accent/90">
-              Continuer <ArrowRight className="ml-1.5 h-4 w-4" />
+            <Button
+              onClick={next}
+              disabled={saving}
+              className="bg-accent text-accent-foreground hover:bg-accent/90"
+            >
+              {t("buyer.actions.next")} <ArrowRight className="ml-1.5 h-4 w-4" />
             </Button>
           )}
           {step === STEPS.length - 1 && (
-            <Button onClick={submitAll} disabled={submitting} size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
-              <Send className="mr-1.5 h-4 w-4" /> {submitting ? "Envoi…" : "Envoyer à Wilmet"}
+            <Button
+              onClick={submitAll}
+              disabled={submitting}
+              size="lg"
+              className="bg-accent text-accent-foreground hover:bg-accent/90"
+            >
+              <Send className="mr-1.5 h-4 w-4" />{" "}
+              {submitting ? t("wizard.submitting") : t("wizard.submit")}
             </Button>
           )}
         </div>
@@ -572,7 +691,15 @@ type RefState = { loading: boolean; error: boolean; retry: () => void };
  * referential comes back empty it degrades to a free-text input.
  */
 function RefCombobox({
-  value, onChange, options, placeholder, state, emptyPlaceholder, allowCustom, customLabel, disabled,
+  value,
+  onChange,
+  options,
+  placeholder,
+  state,
+  emptyPlaceholder,
+  allowCustom,
+  customLabel,
+  disabled,
   allowFreeTextFallback = false,
 }: {
   value: string | null | undefined;
@@ -600,21 +727,30 @@ function RefCombobox({
     return [{ value: v, label: v }, ...options];
   }, [options, value]);
 
+  const { t } = useTranslation();
   if (disabled) {
     return <Input disabled placeholder={placeholder} />;
   }
   if (state.loading && merged.length === 0) {
-    return <Input disabled placeholder="Chargement des référentiels…" />;
+    return <Input disabled placeholder={t("wizard.referenceData.loading")} />;
   }
   if (merged.length === 0 && !allowFreeTextFallback) {
     return (
       <div className="space-y-1.5">
-        <Input disabled value={value ?? ""} placeholder="Référentiel indisponible" />
-        <button type="button" onClick={state.retry} className="text-[11px] font-medium text-accent underline">
-          Référentiel indisponible — réessayer
+        <Input
+          disabled
+          value={value ?? ""}
+          placeholder={t("wizard.referenceData.closedListUnavailable")}
+        />
+        <button
+          type="button"
+          onClick={state.retry}
+          className="text-[11px] font-medium text-accent underline"
+        >
+          {t("wizard.referenceData.retryUnavailable")}
         </button>
         <p className="text-[11px] text-muted-foreground">
-          Cette liste est fermée : la saisie libre n'est pas autorisée. Votre brouillon reste enregistrable.
+          {t("wizard.referenceData.closedListText")}
         </p>
       </div>
     );
@@ -622,10 +758,18 @@ function RefCombobox({
   if (merged.length === 0) {
     return (
       <div className="space-y-1.5">
-        <Input value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={emptyPlaceholder ?? placeholder} />
+        <Input
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={emptyPlaceholder ?? placeholder}
+        />
         {state.error && (
-          <button type="button" onClick={state.retry} className="text-[11px] font-medium text-accent underline">
-            Référentiel indisponible — réessayer
+          <button
+            type="button"
+            onClick={state.retry}
+            className="text-[11px] font-medium text-accent underline"
+          >
+            {t("wizard.referenceData.retryUnavailable")}
           </button>
         )}
       </div>
@@ -643,15 +787,30 @@ function RefCombobox({
   );
 }
 
-
-
-function Field({ label, hint, children, action, required }: { label: string; hint?: string; children: React.ReactNode; action?: React.ReactNode; required?: boolean }) {
+function Field({
+  label,
+  hint,
+  children,
+  action,
+  required,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+  required?: boolean;
+}) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Label className="text-xs font-medium text-muted-foreground">
           {label}
-          {required && <span className="ml-1 text-accent" title="Requis à l'envoi">*</span>}
+          {required && (
+            <span className="ml-1 text-accent" title={t("wizard.requiredOnSubmit")}>
+              *
+            </span>
+          )}
         </Label>
         {action}
       </div>
@@ -661,15 +820,29 @@ function Field({ label, hint, children, action, required }: { label: string; hin
   );
 }
 
-
 function Selector({
-  value, onChange, options, placeholder,
-}: { value: string | null | undefined; onChange: (v: string) => void; options: { value: string; label: string }[]; placeholder?: string }) {
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  value: string | null | undefined;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+}) {
+  const { t } = useTranslation();
   return (
     <Select value={value ?? ""} onValueChange={onChange}>
-      <SelectTrigger><SelectValue placeholder={placeholder ?? "Sélectionner"} /></SelectTrigger>
+      <SelectTrigger>
+        <SelectValue placeholder={placeholder ?? t("common.select")} />
+      </SelectTrigger>
       <SelectContent>
-        {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+        {options.map((o) => (
+          <SelectItem key={o.value} value={o.value}>
+            {o.label}
+          </SelectItem>
+        ))}
       </SelectContent>
     </Select>
   );
@@ -678,7 +851,7 @@ function Selector({
 function DatePickerField({
   value,
   onChange,
-  placeholder = "Sélectionner une date",
+  placeholder,
   disableFuture = false,
   minDate,
   maxDate,
@@ -693,6 +866,8 @@ function DatePickerField({
   /** Latest selectable date. */
   maxDate?: Date;
 }) {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t("wizard.pickDate");
   const upper = maxDate ?? (disableFuture ? new Date() : undefined);
   const disabledMatchers = [
     ...(minDate ? [{ before: minDate }] : []),
@@ -712,11 +887,11 @@ function DatePickerField({
           variant="outline"
           className={cn(
             "w-full justify-start text-left font-normal",
-            !value && "text-muted-foreground"
+            !value && "text-muted-foreground",
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(parseISO(value), "dd/MM/yyyy", { locale: fr }) : placeholder}
+          {value ? format(parseISO(value), "dd/MM/yyyy", { locale: fr }) : resolvedPlaceholder}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -736,11 +911,28 @@ function DatePickerField({
   );
 }
 
-function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set; applyOcr: (f: Partial<OppState>) => void; refs: Refs; refState: RefState }) {
+function Step1({
+  opp,
+  set,
+  applyOcr,
+  refs,
+  refState,
+}: {
+  opp: OppState;
+  set: Set;
+  applyOcr: (f: Partial<OppState>) => void;
+  refs: Refs;
+  refState: RefState;
+}) {
+  const { t } = useTranslation();
   const ai = useAiFeatures();
   function handleOcrApply(fields: Record<string, string>) {
     const intFields = new Set([
-      "mileage", "wheelbase_mm", "box_height_mm", "box_width_mm", "box_depth_mm",
+      "mileage",
+      "wheelbase_mm",
+      "box_height_mm",
+      "box_width_mm",
+      "box_depth_mm",
     ]);
     const patch: Partial<OppState> = {};
     for (const [k, v] of Object.entries(fields)) {
@@ -769,14 +961,17 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
       opp.brand && !list.some((o) => o.value === opp.brand)
         ? [{ value: opp.brand, label: opp.brand }, ...list]
         : list;
-    if (!opp.vehicle_category) return withCurrent(all.map((b) => ({ value: b.label, label: b.label })));
+    if (!opp.vehicle_category)
+      return withCurrent(all.map((b) => ({ value: b.label, label: b.label })));
     const allowed = new Set(
       (refs?.categoryBrands ?? [])
         .filter((cb) => cb.category_slug === opp.vehicle_category)
         .map((cb) => cb.brand_slug),
     );
     const filtered = all.filter((b) => allowed.has(b.slug));
-    return withCurrent((filtered.length > 0 ? filtered : all).map((b) => ({ value: b.label, label: b.label })));
+    return withCurrent(
+      (filtered.length > 0 ? filtered : all).map((b) => ({ value: b.label, label: b.label })),
+    );
   }, [refs, opp.vehicle_category, opp.brand]);
 
   const brandSlug = useMemo(
@@ -793,9 +988,10 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
   }, [refs, brandSlug, opp.model]);
 
   const countryOptions = useMemo(
-    () => (refs?.countries ?? [])
-      .filter((c) => EU27_CODES.has(c.code))
-      .map((c) => ({ value: c.name_fr, label: c.name_fr })),
+    () =>
+      (refs?.countries ?? [])
+        .filter((c) => EU27_CODES.has(c.code))
+        .map((c) => ({ value: c.name_fr, label: c.name_fr })),
     [refs],
   );
 
@@ -805,7 +1001,10 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
     const scoped = opp.vehicle_category
       ? all.filter((b) => (b.applies_to ?? []).includes(opp.vehicle_category as string))
       : all;
-    const list = (scoped.length > 0 ? scoped : all).map((b) => ({ value: b.slug, label: b.label_fr }));
+    const list = (scoped.length > 0 ? scoped : all).map((b) => ({
+      value: b.slug,
+      label: b.label_fr,
+    }));
     return opp.body_type && !list.some((o) => o.value === opp.body_type)
       ? [{ value: opp.body_type, label: opp.body_type }, ...list]
       : list;
@@ -832,94 +1031,120 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
     }
   }
 
-
   return (
     <div className="space-y-6">
       {ai.ocr && (
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border-2 border-accent bg-accent p-5 shadow-lg ring-4 ring-accent/20">
-        <div className="space-y-1">
-          <div className="text-lg font-extrabold uppercase tracking-wide text-accent-foreground sm:text-xl">
-            Gagnez du temps avec l'IA
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border-2 border-accent bg-accent p-5 shadow-lg ring-4 ring-accent/20">
+          <div className="space-y-1">
+            <div className="text-lg font-extrabold uppercase tracking-wide text-accent-foreground sm:text-xl">
+              {t("wizard.ocr.banner.title")}
+            </div>
+            <div className="text-sm font-semibold text-accent-foreground/90 sm:text-base">
+              {t("wizard.ocr.banner.text")}
+            </div>
           </div>
-          <div className="text-sm font-semibold text-accent-foreground/90 sm:text-base">
-            Photographiez la plaque et la carte grise : l'IA remplit les champs pour vous.
+          <div className="[&_button]:h-12 [&_button]:border-0 [&_button]:bg-background [&_button]:px-6 [&_button]:text-base [&_button]:font-bold [&_button]:text-accent [&_button]:shadow-md [&_button:hover]:bg-background/90">
+            <OcrPrefillDialog vehicleOpportunityId={opp.id} onApply={handleOcrApply} />
           </div>
         </div>
-        <div className="[&_button]:h-12 [&_button]:border-0 [&_button]:bg-background [&_button]:px-6 [&_button]:text-base [&_button]:font-bold [&_button]:text-accent [&_button]:shadow-md [&_button:hover]:bg-background/90">
-          <OcrPrefillDialog vehicleOpportunityId={opp.id} onApply={handleOcrApply} />
-        </div>
-      </div>
       )}
 
-      <SectionTitle title="Informations générales" hint="Ces éléments identifient le véhicule." />
+      <SectionTitle
+        title={t("wizard.step1.sectionGeneral.title")}
+        hint={t("wizard.step1.sectionGeneral.hint")}
+      />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Catégorie de véhicule" required>
+        <Field label={t("wizard.fields.vehicleCategory")} required>
           <RefCombobox
             value={opp.vehicle_category}
             onChange={(v) => onCategoryChange(v)}
             options={categoryOptions}
-            placeholder="Sélectionner une catégorie"
+            placeholder={t("wizard.step1.selectCategory")}
             state={refState}
           />
         </Field>
-        <Field label="Marque" required hint="Marque absente de la liste ? Saisissez-la, elle sera conservée.">
+        <Field label={t("wizard.fields.brand")} required hint={t("wizard.step1.brandHint")}>
           <RefCombobox
             value={opp.brand}
-            onChange={(v) => { set("brand", v); set("model", null); }}
+            onChange={(v) => {
+              set("brand", v);
+              set("model", null);
+            }}
             options={brandOptions}
-            placeholder={opp.vehicle_category ? "Sélectionner une marque" : "Sélectionnez d'abord une catégorie"}
+            placeholder={
+              opp.vehicle_category
+                ? t("wizard.step1.selectBrand")
+                : t("wizard.step1.selectCategoryFirst")
+            }
             disabled={!opp.vehicle_category}
-            emptyPlaceholder="Saisir la marque"
+            emptyPlaceholder={t("wizard.step1.enterBrand")}
             state={refState}
             allowFreeTextFallback
             allowCustom
-            customLabel={(q) => `Ajouter la marque « ${q} »`}
+            customLabel={(q) => t("wizard.step1.addBrand", { q })}
           />
         </Field>
-        <Field label="Modèle" required hint="Modèle absent de la liste ? Saisissez-le librement.">
+        <Field label={t("wizard.fields.model")} required hint={t("wizard.step1.modelHint")}>
           <RefCombobox
             value={opp.model}
             onChange={(v) => set("model", v)}
             options={modelOptions}
-            placeholder={opp.brand ? "Sélectionner un modèle" : "Sélectionnez d'abord une marque"}
-            emptyPlaceholder="Saisir le modèle"
+            placeholder={
+              opp.brand ? t("wizard.step1.selectModel") : t("wizard.step1.selectBrandFirst")
+            }
+            emptyPlaceholder={t("wizard.step1.enterModel")}
             disabled={!opp.brand}
             state={refState}
             allowFreeTextFallback
             allowCustom
-            customLabel={(q) => `Ajouter le modèle « ${q} »`}
+            customLabel={(q) => t("wizard.step1.addModel", { q })}
           />
         </Field>
-        <Field label="Carrosserie" required hint="Type de carrosserie du véhicule.">
+        <Field label={t("wizard.fields.bodyType")} required hint={t("wizard.step1.bodyTypeHint")}>
           <RefCombobox
             value={opp.body_type}
-            onChange={(v) => { set("body_type", v); if (v !== "autre") set("body_type_other", null); }}
+            onChange={(v) => {
+              set("body_type", v);
+              if (v !== "autre") set("body_type_other", null);
+            }}
             options={bodyTypeOptions}
-            placeholder={opp.vehicle_category ? "Sélectionner une carrosserie" : "Sélectionnez d'abord une catégorie"}
+            placeholder={
+              opp.vehicle_category
+                ? t("wizard.step1.selectBodyType")
+                : t("wizard.step1.selectCategoryFirst")
+            }
             disabled={!opp.vehicle_category}
             state={refState}
           />
         </Field>
         {opp.body_type === "autre" && (
-          <Field label="Précisez la carrosserie" required>
-            <Input value={opp.body_type_other ?? ""} onChange={(e) => set("body_type_other", e.target.value)} placeholder="ex : porte-conteneurs" />
+          <Field label={t("wizard.step1.specifyBodyType")} required>
+            <Input
+              value={opp.body_type_other ?? ""}
+              onChange={(e) => set("body_type_other", e.target.value)}
+              placeholder={t("wizard.step1.bodyTypeOtherPlaceholder")}
+            />
           </Field>
         )}
 
-
-        <Field label="Date de 1re mise en circulation" required>
+        <Field label={t("wizard.fields.firstRegistrationDate")} required>
           <DatePickerField
             value={opp.first_registration_date}
             onChange={(v) => set("first_registration_date", v)}
-            placeholder="Choisir la date"
+            placeholder={t("wizard.fields.pickDate")}
             disableFuture
           />
         </Field>
         {profile.hasOdometer && (
-          <Field label="Kilométrage (km)" required hint="Kilométrage actuel affiché au compteur.">
+          <Field label={t("wizard.fields.mileage")} required hint={t("wizard.step1.mileageHint")}>
             <div className="relative">
               <Input
-                type="number" min={0} max={3000000} step={1000} inputMode="numeric" className="pr-10"
+                type="number"
+                min={0}
+                max={3000000}
+                step={1000}
+                inputMode="numeric"
+                className="pr-10"
                 value={opp.mileage ?? ""}
                 onChange={(e) => set("mileage", e.target.value ? parseInt(e.target.value) : null)}
                 onBlur={(e) => {
@@ -928,37 +1153,67 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
                   if (!Number.isNaN(n)) set("mileage", Math.min(Math.max(n, 0), 3000000));
                 }}
               />
-              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">km</span>
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+                km
+              </span>
             </div>
           </Field>
         )}
-        <Field label="Immatriculation (optionnel)"><Input value={opp.registration_number ?? ""} onChange={(e) => set("registration_number", e.target.value.toUpperCase())} /></Field>
-        <Field label="Numéro de châssis / VIN" required hint="17 caractères, visible sur la plaque constructeur ou le châssis. Requis à l'envoi pour la traçabilité du véhicule."><Input value={opp.vin ?? ""} onChange={(e) => set("vin", e.target.value.toUpperCase())} placeholder="ex : VF3XXXXXXXXXXXXXX" /></Field>
+        <Field label={t("wizard.fields.registrationNumber")}>
+          <Input
+            value={opp.registration_number ?? ""}
+            onChange={(e) => set("registration_number", e.target.value.toUpperCase())}
+          />
+        </Field>
+        <Field label={t("wizard.fields.vin")} required hint={t("wizard.step1.vinHint")}>
+          <Input
+            value={opp.vin ?? ""}
+            onChange={(e) => set("vin", e.target.value.toUpperCase())}
+            placeholder={t("wizard.step1.vinPlaceholder")}
+          />
+        </Field>
       </div>
 
-      <SectionTitle title="Localisation du véhicule" />
+      <SectionTitle title={t("wizard.step1.sectionLocation.title")} />
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Ville" required><Input value={opp.city ?? ""} onChange={(e) => set("city", e.target.value)} /></Field>
-        <Field label="Code postal"><Input value={opp.postal_code ?? ""} onChange={(e) => set("postal_code", e.target.value)} /></Field>
-        <Field label="Pays (UE-27)" required>
+        <Field label={t("wizard.fields.city")} required>
+          <Input value={opp.city ?? ""} onChange={(e) => set("city", e.target.value)} />
+        </Field>
+        <Field label={t("wizard.fields.postalCode")}>
+          <Input
+            value={opp.postal_code ?? ""}
+            onChange={(e) => set("postal_code", e.target.value)}
+          />
+        </Field>
+        <Field label={t("wizard.fields.countryEu")} required>
           <RefCombobox
             value={opp.country}
             onChange={(v) => set("country", v)}
             options={countryOptions}
-            placeholder="Sélectionner un pays"
+            placeholder={t("wizard.step1.selectCountry")}
             state={refState}
           />
         </Field>
-
       </div>
-      <Field label="Lien de localisation (optionnel)" hint="Lien Google Maps ou adresse précise du lieu où se trouve le véhicule.">
-        <Input value={opp.location_url ?? ""} onChange={(e) => set("location_url", e.target.value)} placeholder="https://maps.google.com/…" />
+      <Field label={t("wizard.fields.locationUrl")} hint={t("wizard.step1.locationUrlHint")}>
+        <Input
+          value={opp.location_url ?? ""}
+          onChange={(e) => set("location_url", e.target.value)}
+          placeholder="https://maps.google.com/…"
+        />
       </Field>
 
-      <Field label="Le véhicule est-il visible sur parc ?" required>
-        <RadioGroup value={opp.visible_on_site ?? ""} onValueChange={(v) => set("visible_on_site", v)} className="flex flex-wrap gap-3">
+      <Field label={t("wizard.fields.visibleOnSite")} required>
+        <RadioGroup
+          value={opp.visible_on_site ?? ""}
+          onValueChange={(v) => set("visible_on_site", v)}
+          className="flex flex-wrap gap-3"
+        >
           {VISIBILITY_OPTIONS.map((o) => (
-            <label key={o.value} className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm">
+            <label
+              key={o.value}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm"
+            >
               <RadioGroupItem value={o.value} id={`vs-${o.value}`} />
               <span>{o.label}</span>
             </label>
@@ -970,6 +1225,7 @@ function Step1({ opp, set, applyOcr, refs, refState }: { opp: OppState; set: Set
 }
 
 function Step2({ opp, set, refs }: { opp: OppState; set: Set; refs: Refs }) {
+  const { t } = useTranslation();
   const equip = opp.equipment ?? [];
   const toggle = (v: string) => {
     const next = equip.includes(v) ? equip.filter((x) => x !== v) : [...equip, v];
@@ -991,122 +1247,343 @@ function Step2({ opp, set, refs }: { opp: OppState; set: Set; refs: Refs }) {
   return (
     <div className="space-y-6">
       <SectionTitle
-        title="Caractéristiques"
-        hint={profile.powered ? undefined : "Catégorie non motorisée : les champs moteur ne sont pas demandés."}
+        title={t("wizard.step2.sectionTitle")}
+        hint={profile.powered ? undefined : t("wizard.step2.notPoweredHint")}
       />
       <div className="grid gap-4 sm:grid-cols-2">
         {profile.powered && (
           <>
-            <Field label="Énergie" required><Selector value={opp.fuel_type} onChange={(v) => set("fuel_type", v)} options={fuelOptions} /></Field>
-            <Field label="Boîte de vitesses" required><Selector value={opp.gearbox} onChange={(v) => set("gearbox", v)} options={gearboxOptions} /></Field>
-            <Field label="Puissance" hint="En chevaux (ch) ou kilowatts (kW)."><Input value={opp.power ?? ""} onChange={(e) => set("power", e.target.value)} placeholder="ex : 320 ch / 235 kW" /></Field>
-            <Field label="Norme Euro"><Selector value={opp.euro_standard} onChange={(v) => set("euro_standard", v)} options={euroOptions} /></Field>
+            <Field label={t("wizard.fields.fuelType")} required>
+              <Selector
+                value={opp.fuel_type}
+                onChange={(v) => set("fuel_type", v)}
+                options={fuelOptions}
+              />
+            </Field>
+            <Field label={t("wizard.fields.gearbox")} required>
+              <Selector
+                value={opp.gearbox}
+                onChange={(v) => set("gearbox", v)}
+                options={gearboxOptions}
+              />
+            </Field>
+            <Field label={t("wizard.fields.power")} hint={t("wizard.step2.powerHint")}>
+              <Input
+                value={opp.power ?? ""}
+                onChange={(e) => set("power", e.target.value)}
+                placeholder={t("wizard.step2.powerPlaceholder")}
+              />
+            </Field>
+            <Field label={t("wizard.fields.euroStandard")}>
+              <Selector
+                value={opp.euro_standard}
+                onChange={(v) => set("euro_standard", v)}
+                options={euroOptions}
+              />
+            </Field>
           </>
         )}
-        <Field label="PTAC / poids total autorisé (t)" required hint="En tonnes (ex. 3.5, 19, 44).">
+        <Field
+          label={t("wizard.fields.grossVehicleWeight")}
+          required
+          hint={t("wizard.step2.gvwHint")}
+        >
           <div className="relative">
-            <Input className="pr-8" inputMode="decimal" value={opp.gross_vehicle_weight ?? ""} onChange={(e) => set("gross_vehicle_weight", e.target.value)} placeholder="3.5, 19…" />
-            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">t</span>
+            <Input
+              className="pr-8"
+              inputMode="decimal"
+              value={opp.gross_vehicle_weight ?? ""}
+              onChange={(e) => set("gross_vehicle_weight", e.target.value)}
+              placeholder="3.5, 19…"
+            />
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+              t
+            </span>
           </div>
         </Field>
-        <Field label="Charge utile (kg)" hint="En kilogrammes."><Input value={opp.payload ?? ""} onChange={(e) => set("payload", e.target.value)} /></Field>
-        <Field label="Configuration essieux"><Selector value={opp.axle_configuration} onChange={(v) => set("axle_configuration", v)} options={AXLE_CONFIG_OPTIONS} /></Field>
+        <Field label={t("wizard.fields.payload")} hint={t("wizard.step2.payloadHint")}>
+          <Input value={opp.payload ?? ""} onChange={(e) => set("payload", e.target.value)} />
+        </Field>
+        <Field label={t("wizard.fields.axleConfiguration")}>
+          <Selector
+            value={opp.axle_configuration}
+            onChange={(v) => set("axle_configuration", v)}
+            options={AXLE_CONFIG_OPTIONS}
+          />
+        </Field>
         {profile.powered && (
-          <Field label="Cabine"><Selector value={opp.cabin_type} onChange={(v) => set("cabin_type", v)} options={CABIN_OPTIONS} /></Field>
+          <Field label={t("wizard.fields.cabinType")}>
+            <Selector
+              value={opp.cabin_type}
+              onChange={(v) => set("cabin_type", v)}
+              options={CABIN_OPTIONS}
+            />
+          </Field>
         )}
-        <Field label="Empattement (mm)"><Input type="number" min={0} value={opp.wheelbase_mm ?? ""} onChange={(e) => set("wheelbase_mm", e.target.value ? parseInt(e.target.value) : null)} /></Field>
-        <Field label="Type de suspension"><Selector value={opp.suspension_type} onChange={(v) => set("suspension_type", v)} options={SUSPENSION_OPTIONS} /></Field>
-        <Field label="Dimension des pneus" hint="ex : 315/70 R22.5"><Input value={opp.tyre_size ?? ""} onChange={(e) => set("tyre_size", e.target.value)} /></Field>
+        <Field label={t("wizard.fields.wheelbase")}>
+          <Input
+            type="number"
+            min={0}
+            value={opp.wheelbase_mm ?? ""}
+            onChange={(e) => set("wheelbase_mm", e.target.value ? parseInt(e.target.value) : null)}
+          />
+        </Field>
+        <Field label={t("wizard.fields.suspensionType")}>
+          <Selector
+            value={opp.suspension_type}
+            onChange={(v) => set("suspension_type", v)}
+            options={SUSPENSION_OPTIONS}
+          />
+        </Field>
+        <Field label={t("wizard.fields.tyreSize")} hint={t("wizard.step2.tyreSizeHint")}>
+          <Input value={opp.tyre_size ?? ""} onChange={(e) => set("tyre_size", e.target.value)} />
+        </Field>
       </div>
 
       {profile.hasBody && (
         <>
-          <SectionTitle title="Dimensions intérieures (caisse / benne)" hint="Toutes les dimensions sont en millimètres (mm)." />
+          <SectionTitle
+            title={t("wizard.step2.sectionBody.title")}
+            hint={t("wizard.step2.sectionBody.hint")}
+          />
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Hauteur intérieure (mm)"><Input type="number" min={0} value={opp.box_height_mm ?? ""} onChange={(e) => set("box_height_mm", e.target.value ? parseInt(e.target.value) : null)} /></Field>
-            <Field label="Largeur intérieure (mm)"><Input type="number" min={0} value={opp.box_width_mm ?? ""} onChange={(e) => set("box_width_mm", e.target.value ? parseInt(e.target.value) : null)} /></Field>
-            <Field label="Longueur intérieure (mm)"><Input type="number" min={0} value={opp.box_depth_mm ?? ""} onChange={(e) => set("box_depth_mm", e.target.value ? parseInt(e.target.value) : null)} /></Field>
+            <Field label={t("wizard.fields.boxHeight")}>
+              <Input
+                type="number"
+                min={0}
+                value={opp.box_height_mm ?? ""}
+                onChange={(e) =>
+                  set("box_height_mm", e.target.value ? parseInt(e.target.value) : null)
+                }
+              />
+            </Field>
+            <Field label={t("wizard.fields.boxWidth")}>
+              <Input
+                type="number"
+                min={0}
+                value={opp.box_width_mm ?? ""}
+                onChange={(e) =>
+                  set("box_width_mm", e.target.value ? parseInt(e.target.value) : null)
+                }
+              />
+            </Field>
+            <Field label={t("wizard.fields.boxDepth")}>
+              <Input
+                type="number"
+                min={0}
+                value={opp.box_depth_mm ?? ""}
+                onChange={(e) =>
+                  set("box_depth_mm", e.target.value ? parseInt(e.target.value) : null)
+                }
+              />
+            </Field>
           </div>
         </>
       )}
 
-      <SectionTitle title="Équipements" hint="Confort, levage puis équipements complémentaires." />
+      <SectionTitle
+        title={t("wizard.step2.sectionEquipment.title")}
+        hint={t("wizard.step2.sectionEquipment.hint")}
+      />
       <div className="grid gap-4 sm:grid-cols-2">
         {profile.hasCabin && (
           <>
-            <Field label="Climatisation"><Selector value={opp.has_air_conditioning} onChange={(v) => set("has_air_conditioning", v)} options={YES_NO_OPTIONS} /></Field>
-            <Field label="Chauffage additionnel"><Selector value={opp.has_heating} onChange={(v) => set("has_heating", v)} options={YES_NO_OPTIONS} /></Field>
+            <Field label={t("wizard.fields.hasAirConditioning")}>
+              <Selector
+                value={opp.has_air_conditioning}
+                onChange={(v) => set("has_air_conditioning", v)}
+                options={YES_NO_OPTIONS}
+              />
+            </Field>
+            <Field label={t("wizard.fields.hasHeating")}>
+              <Selector
+                value={opp.has_heating}
+                onChange={(v) => set("has_heating", v)}
+                options={YES_NO_OPTIONS}
+              />
+            </Field>
           </>
         )}
-        <Field label="Crochet / attelage hydraulique"><Selector value={opp.has_hydraulic_hook} onChange={(v) => set("has_hydraulic_hook", v)} options={YES_NO_OPTIONS} /></Field>
-        <Field label="Grue"><Selector value={opp.has_crane} onChange={(v) => set("has_crane", v)} options={YES_NO_OPTIONS} /></Field>
+        <Field label={t("wizard.fields.hasHydraulicHook")}>
+          <Selector
+            value={opp.has_hydraulic_hook}
+            onChange={(v) => set("has_hydraulic_hook", v)}
+            options={YES_NO_OPTIONS}
+          />
+        </Field>
+        <Field label={t("wizard.fields.hasCrane")}>
+          <Selector
+            value={opp.has_crane}
+            onChange={(v) => set("has_crane", v)}
+            options={YES_NO_OPTIONS}
+          />
+        </Field>
       </div>
       {opp.has_crane === "oui" && (
-        <Field label="Détails de la grue" hint="Marque, tonnage/mètre, nombre de sections, VGP.">
-          <Textarea rows={2} value={opp.crane_details ?? ""} onChange={(e) => set("crane_details", e.target.value)} />
+        <Field label={t("wizard.fields.craneDetails")} hint={t("wizard.step2.craneDetailsHint")}>
+          <Textarea
+            rows={2}
+            value={opp.crane_details ?? ""}
+            onChange={(e) => set("crane_details", e.target.value)}
+          />
         </Field>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Hayon élévateur"><Selector value={opp.tail_lift_present} onChange={(v) => set("tail_lift_present", v)} options={YES_NO_OPTIONS} /></Field>
+        <Field label={t("wizard.fields.tailLiftPresent")}>
+          <Selector
+            value={opp.tail_lift_present}
+            onChange={(v) => set("tail_lift_present", v)}
+            options={YES_NO_OPTIONS}
+          />
+        </Field>
         {opp.tail_lift_present === "oui" && (
           <>
-            <Field label="Hayon homologué ?"><Selector value={opp.tail_lift_homologated} onChange={(v) => set("tail_lift_homologated", v)} options={YES_NO_OPTIONS} /></Field>
-            <Field label="Carnet d'homologation fourni ?"><Selector value={opp.tail_lift_homologation_book} onChange={(v) => set("tail_lift_homologation_book", v)} options={YES_NO_OPTIONS} /></Field>
-            <Field label="Carnet d'entretien du hayon fourni ?"><Selector value={opp.tail_lift_maintenance_book} onChange={(v) => set("tail_lift_maintenance_book", v)} options={YES_NO_OPTIONS} /></Field>
-            <Field label="État du hayon"><Selector value={opp.tail_lift_condition} onChange={(v) => set("tail_lift_condition", v)} options={TAIL_LIFT_CONDITION_OPTIONS} /></Field>
+            <Field label={t("wizard.fields.tailLiftHomologated")}>
+              <Selector
+                value={opp.tail_lift_homologated}
+                onChange={(v) => set("tail_lift_homologated", v)}
+                options={YES_NO_OPTIONS}
+              />
+            </Field>
+            <Field label={t("wizard.fields.tailLiftHomologationBook")}>
+              <Selector
+                value={opp.tail_lift_homologation_book}
+                onChange={(v) => set("tail_lift_homologation_book", v)}
+                options={YES_NO_OPTIONS}
+              />
+            </Field>
+            <Field label={t("wizard.fields.tailLiftMaintenanceBook")}>
+              <Selector
+                value={opp.tail_lift_maintenance_book}
+                onChange={(v) => set("tail_lift_maintenance_book", v)}
+                options={YES_NO_OPTIONS}
+              />
+            </Field>
+            <Field label={t("wizard.fields.tailLiftCondition")}>
+              <Selector
+                value={opp.tail_lift_condition}
+                onChange={(v) => set("tail_lift_condition", v)}
+                options={TAIL_LIFT_CONDITION_OPTIONS}
+              />
+            </Field>
           </>
         )}
       </div>
       {opp.tail_lift_present === "oui" && (
-        <Field label="Commentaire hayon" hint="Marque, capacité de levage, dernière VGP.">
-          <Textarea rows={2} value={opp.tail_lift_comment ?? ""} onChange={(e) => set("tail_lift_comment", e.target.value)} />
+        <Field
+          label={t("wizard.fields.tailLiftComment")}
+          hint={t("wizard.step2.tailLiftCommentHint")}
+        >
+          <Textarea
+            rows={2}
+            value={opp.tail_lift_comment ?? ""}
+            onChange={(e) => set("tail_lift_comment", e.target.value)}
+          />
         </Field>
       )}
 
-      <Field label="Autres équipements" hint="Climatisation, chauffage, attelage hydraulique, grue, hayon et suspension sont déjà renseignés ci-dessus.">
+      <Field label={t("wizard.fields.otherEquipment")} hint={t("wizard.step2.otherEquipmentHint")}>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {EQUIPMENT_OPTIONS.map((e) => (
-            <label key={e} className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm">
+            <label
+              key={e}
+              className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm"
+            >
               <Checkbox checked={equip.includes(e)} onCheckedChange={() => toggle(e)} />
               {e}
             </label>
           ))}
         </div>
       </Field>
-      <Field label="Autres équipements (précisez)" hint="Tout équipement non listé ci-dessus.">
-        <Textarea rows={2} value={opp.other_equipment_details ?? ""} onChange={(e) => set("other_equipment_details", e.target.value)} />
+      <Field
+        label={t("wizard.fields.otherEquipmentDetails")}
+        hint={t("wizard.step2.otherEquipmentDetailsHint")}
+      >
+        <Textarea
+          rows={2}
+          value={opp.other_equipment_details ?? ""}
+          onChange={(e) => set("other_equipment_details", e.target.value)}
+        />
       </Field>
-
     </div>
   );
 }
 
 function Step3({ opp, set }: { opp: OppState; set: Set }) {
+  const { t } = useTranslation();
   const ai = useAiFeatures();
   const conditionOptions = CONDITION_OPTIONS;
   const profile = categoryProfile(opp.vehicle_category);
 
   return (
     <div className="space-y-6">
-      <SectionTitle title="État du véhicule" hint="Soyez précis sur les défauts visibles ou connus. Une description transparente permet à Wilmet de vous répondre plus rapidement." />
+      <SectionTitle title={t("wizard.step3.sectionTitle")} hint={t("wizard.step3.sectionHint")} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="État général" required><Selector value={opp.general_condition} onChange={(v) => set("general_condition", v)} options={conditionOptions} /></Field>
+        <Field label={t("wizard.fields.generalCondition")} required>
+          <Selector
+            value={opp.general_condition}
+            onChange={(v) => set("general_condition", v)}
+            options={conditionOptions}
+          />
+        </Field>
         {profile.powered && (
-          <Field label="Le véhicule roule-t-il ?" required><Selector value={opp.vehicle_runs} onChange={(v) => set("vehicle_runs", v)} options={YES_NO_OPTIONS} /></Field>
-        )}
-        <Field label="Contrôle technique valide ?" required><Selector value={opp.technical_inspection_status} onChange={(v) => set("technical_inspection_status", v)} options={YES_NO_OPTIONS} /></Field>
-        {opp.technical_inspection_status === "oui" && (
-          <Field label="Contrôle technique valable jusqu'au" required hint="Date obligatoire lorsque le contrôle technique est valide.">
-            <DatePickerField value={opp.inspection_valid_until} onChange={(v) => set("inspection_valid_until", v)} placeholder="Choisir la date" />
+          <Field label={t("wizard.fields.vehicleRuns")} required>
+            <Selector
+              value={opp.vehicle_runs}
+              onChange={(v) => set("vehicle_runs", v)}
+              options={YES_NO_OPTIONS}
+            />
           </Field>
         )}
-        <Field label="Entretien à jour ?"><Selector value={opp.maintenance_status} onChange={(v) => set("maintenance_status", v)} options={YES_NO_OPTIONS} /></Field>
-        <Field label="Véhicule accidenté ?" required hint="Sinistre déclaré ou réparation structurelle connue. Répondez « À vérifier » si vous n'avez pas l'information."><Selector value={opp.has_accident} onChange={(v) => set("has_accident", v)} options={ACCIDENT_OPTIONS} /></Field>
-        
-        <Field label="Carnet d'entretien disponible ?"><Selector value={opp.has_service_book} onChange={(v) => set("has_service_book", v)} options={YES_NO_OPTIONS} /></Field>
+        <Field label={t("wizard.fields.technicalInspectionStatus")} required>
+          <Selector
+            value={opp.technical_inspection_status}
+            onChange={(v) => set("technical_inspection_status", v)}
+            options={YES_NO_OPTIONS}
+          />
+        </Field>
+        {opp.technical_inspection_status === "oui" && (
+          <Field
+            label={t("wizard.fields.inspectionValidUntil")}
+            required
+            hint={t("wizard.step3.inspectionValidUntilHint")}
+          >
+            <DatePickerField
+              value={opp.inspection_valid_until}
+              onChange={(v) => set("inspection_valid_until", v)}
+              placeholder={t("wizard.fields.pickDate")}
+            />
+          </Field>
+        )}
+        <Field label={t("wizard.fields.maintenanceStatus")}>
+          <Selector
+            value={opp.maintenance_status}
+            onChange={(v) => set("maintenance_status", v)}
+            options={YES_NO_OPTIONS}
+          />
+        </Field>
+        <Field
+          label={t("wizard.fields.hasAccident")}
+          required
+          hint={t("wizard.step3.hasAccidentHint")}
+        >
+          <Selector
+            value={opp.has_accident}
+            onChange={(v) => set("has_accident", v)}
+            options={ACCIDENT_OPTIONS}
+          />
+        </Field>
+
+        <Field label={t("wizard.fields.hasServiceBook")}>
+          <Selector
+            value={opp.has_service_book}
+            onChange={(v) => set("has_service_book", v)}
+            options={YES_NO_OPTIONS}
+          />
+        </Field>
         {profile.hasCabin && (
-          <Field label="Nombre de clés">
+          <Field label={t("wizard.fields.keysCount")}>
             <Selector
               value={opp.keys_count ? String(opp.keys_count) : null}
               onChange={(v) => set("keys_count", v ? parseInt(v, 10) : null)}
@@ -1117,42 +1594,77 @@ function Step3({ opp, set }: { opp: OppState; set: Set }) {
       </div>
       {profile.powered && opp.vehicle_runs === "non" && (
         <Field
-          label="Pourquoi le véhicule ne roule-t-il pas ?" required
-          hint="Champ obligatoire : panne moteur, boîte, freins, batterie, immobilisation administrative…"
-          action={ai.voice ? (
-            <VoiceDictation
-              onText={(t: string) => set("not_running_reason", `${opp.not_running_reason ? opp.not_running_reason + " " : ""}${t}`)}
-            />
-          ) : undefined}
+          label={t("wizard.fields.notRunningReason")}
+          required
+          hint={t("wizard.step3.notRunningReasonHint")}
+          action={
+            ai.voice ? (
+              <VoiceDictation
+                onText={(txt: string) =>
+                  set(
+                    "not_running_reason",
+                    `${opp.not_running_reason ? opp.not_running_reason + " " : ""}${txt}`,
+                  )
+                }
+              />
+            ) : undefined
+          }
         >
-          <Textarea rows={3} value={opp.not_running_reason ?? ""} onChange={(e) => set("not_running_reason", e.target.value)} />
+          <Textarea
+            rows={3}
+            value={opp.not_running_reason ?? ""}
+            onChange={(e) => set("not_running_reason", e.target.value)}
+          />
         </Field>
       )}
       <Field
-        label="Défauts, travaux et commentaires"
-        hint="Défauts mécaniques ou carrosserie, travaux à prévoir, équipements manquants et toute autre remarque utile."
-        action={ai.voice ? (
-          <VoiceDictation
-            onText={(t: string) => set("defects_and_comments", `${opp.defects_and_comments ? opp.defects_and_comments + " " : ""}${t}`)}
-          />
-        ) : undefined}
+        label={t("wizard.fields.defectsAndComments")}
+        hint={t("wizard.step3.defectsAndCommentsHint")}
+        action={
+          ai.voice ? (
+            <VoiceDictation
+              onText={(txt: string) =>
+                set(
+                  "defects_and_comments",
+                  `${opp.defects_and_comments ? opp.defects_and_comments + " " : ""}${txt}`,
+                )
+              }
+            />
+          ) : undefined
+        }
       >
-        <Textarea value={opp.defects_and_comments ?? ""} rows={5} onChange={(e) => set("defects_and_comments", e.target.value)} />
+        <Textarea
+          value={opp.defects_and_comments ?? ""}
+          rows={5}
+          onChange={(e) => set("defects_and_comments", e.target.value)}
+        />
       </Field>
     </div>
   );
 }
 
-
 function Step4({
-  opp, photos, pendingPhotos, uploading, signedUrls, onUpload, onDelete, onMain, onReorder,
+  opp,
+  photos,
+  pendingPhotos,
+  uploading,
+  signedUrls,
+  onUpload,
+  onDelete,
+  onMain,
+  onReorder,
 }: {
   opp: OppState;
-  photos: Photo[]; pendingPhotos: PendingPhoto[]; uploading: boolean; signedUrls: Record<string, string>;
+  photos: Photo[];
+  pendingPhotos: PendingPhoto[];
+  uploading: boolean;
+  signedUrls: Record<string, string>;
   onUpload: (files: File[], category: string | null) => void;
-  onDelete: (id: string) => void; onMain: (id: string) => void;
+  onDelete: (id: string) => void;
+  onMain: (id: string) => void;
   onReorder: (category: string | null, fromId: string, toId: string) => void;
 }) {
+  const { t } = useTranslation();
   const [dragId, setDragId] = useState<string | null>(null);
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -1166,36 +1678,37 @@ function Step4({
   );
   const requiredValues = useMemo(() => new Set(required.map((r) => r.value)), [required]);
   const missingRequired = required.filter(
-    (c) => !photos.some((p) => p.category === c.value) && !pendingPhotos.some((p) => p.category === c.value),
+    (c) =>
+      !photos.some((p) => p.category === c.value) &&
+      !pendingPhotos.some((p) => p.category === c.value),
   );
   return (
     <div className="space-y-6">
-      <SectionTitle title="Photos" hint="Plus le dossier photo est complet, plus l'analyse Wilmet sera rapide." />
+      <SectionTitle title={t("wizard.step4.sectionTitle")} hint={t("wizard.step4.sectionHint")} />
 
       {missingRequired.length > 0 && (
         <div className="rounded-xl border border-accent bg-accent/10 p-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-accent">
-            <AlertTriangle className="h-4 w-4" /> Photos obligatoires manquantes
+            <AlertTriangle className="h-4 w-4" /> {t("wizard.toast.missingPhotos")}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {missingRequired.map((m) => m.label).join(", ")} — l'envoi à Wilmet sera bloqué sans ces photos.
+            {t("wizard.step4.missingRequiredText", {
+              list: missingRequired.map((m) => m.label).join(", "),
+            })}
           </p>
         </div>
       )}
 
-
-
-
       <div className="rounded-xl border border-dashed border-border bg-secondary/40 p-4">
         <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-          <Info className="h-4 w-4 text-accent" /> Checklist qualité
+          <Info className="h-4 w-4 text-accent" /> {t("wizard.step4.checklist.title")}
         </div>
         <ul className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
-          <li>✓ Photos nettes</li>
-          <li>✓ Véhicule complet visible</li>
-          <li>✓ Kilométrage lisible</li>
-          <li>✓ Défauts photographiés</li>
-          <li>✓ Documents utiles ajoutés si disponibles</li>
+          <li>✓ {t("wizard.step4.checklist.sharp")}</li>
+          <li>✓ {t("wizard.step4.checklist.fullVehicle")}</li>
+          <li>✓ {t("wizard.step4.checklist.mileageReadable")}</li>
+          <li>✓ {t("wizard.step4.checklist.defectsPhotographed")}</li>
+          <li>✓ {t("wizard.step4.checklist.documents")}</li>
         </ul>
       </div>
 
@@ -1214,7 +1727,6 @@ function Step4({
         }}
       />
 
-
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {PHOTO_CATEGORIES.map((cat) => {
           const inCat = photos.filter((p) => p.category === cat.value);
@@ -1225,26 +1737,37 @@ function Step4({
                 <div>
                   <div className="flex items-center gap-1.5 text-sm font-semibold">
                     {cat.label}
-                    <span className={cn(
-                      "rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase",
-                      requiredValues.has(cat.value)
-                        ? "bg-accent text-accent-foreground"
-                        : "bg-secondary text-muted-foreground",
-                    )}>
-                      {requiredValues.has(cat.value) ? "Obligatoire" : "Recommandé"}
+                    <span
+                      className={cn(
+                        "rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase",
+                        requiredValues.has(cat.value)
+                          ? "bg-accent text-accent-foreground"
+                          : "bg-secondary text-muted-foreground",
+                      )}
+                    >
+                      {requiredValues.has(cat.value)
+                        ? t("wizard.step4.required")
+                        : t("wizard.step4.recommended")}
                     </span>
                   </div>
 
-
                   <div className="mt-0.5 text-[11px] text-muted-foreground">{cat.helper}</div>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => pick(cat.value)} disabled={uploading}>
-                  <Camera className="mr-1 h-4 w-4" /> {uploading ? "Ajout…" : "Ajouter"}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => pick(cat.value)}
+                  disabled={uploading}
+                >
+                  <Camera className="mr-1 h-4 w-4" />{" "}
+                  {uploading ? t("wizard.step4.adding") : t("wizard.step4.add")}
                 </Button>
               </div>
               {(inCat.length > 0 || pendingInCat.length > 0) && (
                 <div className="mt-3 grid grid-cols-3 gap-2">
-                  {pendingInCat.map((p) => <PendingPhotoTile key={p.id} photo={p} />)}
+                  {pendingInCat.map((p) => (
+                    <PendingPhotoTile key={p.id} photo={p} />
+                  ))}
                   {inCat.map((p) => (
                     <PhotoTile
                       key={p.id}
@@ -1270,20 +1793,28 @@ function Step4({
 
       <div>
         <Button variant="outline" onClick={() => pick(null)} disabled={uploading}>
-          <Camera className="mr-1.5 h-4 w-4" /> {uploading ? "Téléchargement…" : "Ajouter d'autres photos"}
+          <Camera className="mr-1.5 h-4 w-4" />{" "}
+          {uploading ? t("wizard.step4.uploading") : t("wizard.step4.addOtherPhotos")}
         </Button>
-        {(pendingPhotos.some((p) => p.category === null) || photos.some((p) => p.category === null)) && (
+        {(pendingPhotos.some((p) => p.category === null) ||
+          photos.some((p) => p.category === null)) && (
           <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
-            {pendingPhotos.filter((p) => p.category === null).map((p) => <PendingPhotoTile key={p.id} photo={p} />)}
-            {photos.filter((p) => p.category === null).map((p) => (
-              <PhotoTile
-                key={p.id}
-                photo={p}
-                url={signedUrls[p.storage_path]}
-                onDelete={onDelete}
-                onMain={onMain}
-              />
-            ))}
+            {pendingPhotos
+              .filter((p) => p.category === null)
+              .map((p) => (
+                <PendingPhotoTile key={p.id} photo={p} />
+              ))}
+            {photos
+              .filter((p) => p.category === null)
+              .map((p) => (
+                <PhotoTile
+                  key={p.id}
+                  photo={p}
+                  url={signedUrls[p.storage_path]}
+                  onDelete={onDelete}
+                  onMain={onMain}
+                />
+              ))}
           </div>
         )}
       </div>
@@ -1292,50 +1823,86 @@ function Step4({
 }
 
 function PendingPhotoTile({ photo }: { photo: PendingPhoto }) {
+  const { t } = useTranslation();
   return (
     <div className="relative aspect-square overflow-hidden rounded-md border border-accent bg-secondary">
       <img src={photo.url} alt={photo.name} className="h-full w-full object-cover opacity-70" />
       <div className="absolute inset-0 grid place-items-center bg-background/40 text-[11px] font-semibold text-foreground">
-        Ajout…
+        {t("wizard.step4.adding")}
       </div>
     </div>
   );
 }
 
 function PhotoTile({
-  photo, url, onDelete, onMain,
-  isDragging, onDragStart, onDragEnd, onDropOn,
+  photo,
+  url,
+  onDelete,
+  onMain,
+  isDragging,
+  onDragStart,
+  onDragEnd,
+  onDropOn,
 }: {
-  photo: Photo; url?: string;
-  onDelete: (id: string) => void; onMain: (id: string) => void;
+  photo: Photo;
+  url?: string;
+  onDelete: (id: string) => void;
+  onMain: (id: string) => void;
   isDragging?: boolean;
   onDragStart?: () => void;
   onDragEnd?: () => void;
   onDropOn?: (overId: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       draggable
-      onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart?.(); }}
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        onDragStart?.();
+      }}
       onDragEnd={() => onDragEnd?.()}
-      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
-      onDrop={(e) => { e.preventDefault(); onDropOn?.(photo.id); }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDropOn?.(photo.id);
+      }}
       className={cn(
         "group relative aspect-square overflow-hidden rounded-md border border-border bg-secondary cursor-grab active:cursor-grabbing",
         isDragging && "opacity-40 ring-2 ring-accent",
       )}
     >
-      {url ? <img src={url} alt="" draggable={false} className="h-full w-full object-cover pointer-events-none" /> : <ImageIcon className="h-6 w-6 text-muted-foreground m-auto mt-6" />}
+      {url ? (
+        <img
+          src={url}
+          alt=""
+          draggable={false}
+          className="h-full w-full object-cover pointer-events-none"
+        />
+      ) : (
+        <ImageIcon className="h-6 w-6 text-muted-foreground m-auto mt-6" />
+      )}
       {photo.is_main_photo && (
         <span className="absolute left-1 top-1 rounded bg-accent px-1.5 py-0.5 text-[9px] font-semibold uppercase text-accent-foreground">
-          Principale
+          {t("wizard.step4.mainPhoto")}
         </span>
       )}
       <div className="absolute inset-0 flex items-end justify-between gap-1 p-1 opacity-0 transition-opacity group-hover:opacity-100">
-        <button onClick={() => onMain(photo.id)} className="rounded bg-background/90 p-1" title="Photo principale">
+        <button
+          onClick={() => onMain(photo.id)}
+          className="rounded bg-background/90 p-1"
+          title={t("wizard.step4.mainPhoto")}
+        >
           <Star className="h-3.5 w-3.5" />
         </button>
-        <button onClick={() => onDelete(photo.id)} className="rounded bg-background/90 p-1" title="Supprimer">
+        <button
+          onClick={() => onDelete(photo.id)}
+          className="rounded bg-background/90 p-1"
+          title={t("wizard.step4.delete")}
+        >
           <Trash2 className="h-3.5 w-3.5 text-destructive" />
         </button>
       </div>
@@ -1344,170 +1911,317 @@ function PhotoTile({
 }
 
 function Step5({ opp, set }: { opp: OppState; set: Set }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
-      <SectionTitle title="Prix & disponibilité" />
+      <SectionTitle title={t("wizard.step5.sectionTitle")} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Prix souhaité HT (€ HT)" required hint="Montant hors taxes, en euros (supérieur à 0 €). Wilmet pourra revenir vers vous avec une proposition ajustée.">
+        <Field
+          label={t("wizard.fields.desiredPrice")}
+          required
+          hint={t("wizard.step5.desiredPriceHint")}
+        >
           <div className="relative">
             <Input
-              type="number" min={0} max={2000000} step={100} inputMode="decimal" className="pr-9"
+              type="number"
+              min={0}
+              max={2000000}
+              step={100}
+              inputMode="decimal"
+              className="pr-9"
               value={opp.desired_price_excl_tax ?? ""}
-              onChange={(e) => set("desired_price_excl_tax", e.target.value ? parseFloat(e.target.value) : null)}
+              onChange={(e) =>
+                set("desired_price_excl_tax", e.target.value ? parseFloat(e.target.value) : null)
+              }
               onBlur={(e) => {
                 if (!e.target.value) return;
                 const n = parseFloat(e.target.value);
-                if (!Number.isNaN(n)) set("desired_price_excl_tax", Math.min(Math.max(n, 0), 2000000));
+                if (!Number.isNaN(n))
+                  set("desired_price_excl_tax", Math.min(Math.max(n, 0), 2000000));
               }}
             />
-            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">€</span>
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+              €
+            </span>
           </div>
         </Field>
-        <Field label="Prix négociable ?" required><Selector value={opp.price_negotiable} onChange={(v) => set("price_negotiable", v)} options={NEGOTIABLE_OPTIONS} /></Field>
-        <Field label="Disponibilité" required><Selector value={opp.availability} onChange={(v) => set("availability", v)} options={AVAILABILITY_OPTIONS} /></Field>
-        <Field label="Libre de tout gage ?" required hint="Aucun gage, crédit-bail ou nantissement en cours sur le véhicule."><Selector value={opp.free_of_pledge} onChange={(v) => set("free_of_pledge", v)} options={YES_NO_OPTIONS} /></Field>
-
+        <Field label={t("wizard.fields.priceNegotiable")} required>
+          <Selector
+            value={opp.price_negotiable}
+            onChange={(v) => set("price_negotiable", v)}
+            options={NEGOTIABLE_OPTIONS}
+          />
+        </Field>
+        <Field label={t("wizard.fields.availability")} required>
+          <Selector
+            value={opp.availability}
+            onChange={(v) => set("availability", v)}
+            options={AVAILABILITY_OPTIONS}
+          />
+        </Field>
+        <Field
+          label={t("wizard.fields.freeOfPledge")}
+          required
+          hint={t("wizard.step5.freeOfPledgeHint")}
+        >
+          <Selector
+            value={opp.free_of_pledge}
+            onChange={(v) => set("free_of_pledge", v)}
+            options={YES_NO_OPTIONS}
+          />
+        </Field>
       </div>
-      <Field label="Conditions particulières">
-        <Textarea rows={3} value={opp.special_conditions ?? ""} onChange={(e) => set("special_conditions", e.target.value)} />
+      <Field label={t("wizard.fields.specialConditions")}>
+        <Textarea
+          rows={3}
+          value={opp.special_conditions ?? ""}
+          onChange={(e) => set("special_conditions", e.target.value)}
+        />
       </Field>
-      <SectionTitle title="Contact sur place" />
+      <SectionTitle title={t("wizard.step5.sectionContact.title")} />
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Nom" required><Input value={opp.onsite_contact_name ?? ""} onChange={(e) => set("onsite_contact_name", e.target.value)} /></Field>
-        <Field label="Téléphone" required><Input type="tel" value={opp.onsite_contact_phone ?? ""} onChange={(e) => set("onsite_contact_phone", e.target.value)} /></Field>
-        <Field label="Email (optionnel)"><Input type="email" value={opp.onsite_contact_email ?? ""} onChange={(e) => set("onsite_contact_email", e.target.value)} /></Field>
+        <Field label={t("wizard.fields.contactName")} required>
+          <Input
+            value={opp.onsite_contact_name ?? ""}
+            onChange={(e) => set("onsite_contact_name", e.target.value)}
+          />
+        </Field>
+        <Field label={t("wizard.fields.contactPhone")} required>
+          <Input
+            type="tel"
+            value={opp.onsite_contact_phone ?? ""}
+            onChange={(e) => set("onsite_contact_phone", e.target.value)}
+          />
+        </Field>
+        <Field label={t("wizard.fields.contactEmailOptional")}>
+          <Input
+            type="email"
+            value={opp.onsite_contact_email ?? ""}
+            onChange={(e) => set("onsite_contact_email", e.target.value)}
+          />
+        </Field>
       </div>
     </div>
   );
 }
 
-function Step6({ opp, photos, signedUrls, refs }: { opp: OppState; photos: Photo[]; signedUrls: Record<string, string>; refs: Refs }) {
+function Step6({
+  opp,
+  photos,
+  signedUrls,
+  refs,
+}: {
+  opp: OppState;
+  photos: Photo[];
+  signedUrls: Record<string, string>;
+  refs: Refs;
+}) {
+  const { t } = useTranslation();
   const blocking = useMemo(() => {
     const b: string[] = [];
     const covered = new Set(photos.map((p) => p.category).filter(Boolean));
-    const missingPhotos = requiredPhotoCategories(opp as unknown as Record<string, unknown>)
-      .filter((c) => !covered.has(c.value));
+    const missingPhotos = requiredPhotoCategories(opp as unknown as Record<string, unknown>).filter(
+      (c) => !covered.has(c.value),
+    );
     for (const f of missingSubmissionFields(opp as unknown as Record<string, unknown>)) {
-      b.push(`${f.label} — champ obligatoire (étape ${f.step + 1}).`);
+      b.push(t("wizard.step6.missingFieldAtStep", { label: f.label, step: f.step + 1 }));
     }
-    if (categoryProfile(opp.vehicle_category).powered && opp.vehicle_runs === "non" && !opp.not_running_reason?.trim()) b.push("Le motif d'immobilisation est obligatoire lorsque le véhicule ne roule pas.");
-    if (opp.technical_inspection_status === "oui" && !opp.inspection_valid_until) b.push("La date de validité du contrôle technique est obligatoire.");
-    if (missingPhotos.length) b.push(`Photos obligatoires manquantes : ${missingPhotos.map((m) => m.label).join(", ")}.`);
+    if (
+      categoryProfile(opp.vehicle_category).powered &&
+      opp.vehicle_runs === "non" &&
+      !opp.not_running_reason?.trim()
+    )
+      b.push(t("wizard.step6.blockingNotRunningReason"));
+    if (opp.technical_inspection_status === "oui" && !opp.inspection_valid_until)
+      b.push(t("wizard.step6.blockingInspectionDate"));
+    if (missingPhotos.length)
+      b.push(
+        t("wizard.step6.blockingMissingPhotos", {
+          list: missingPhotos.map((m) => m.label).join(", "),
+        }),
+      );
     return b;
-  }, [opp, photos]);
+  }, [opp, photos, t]);
 
   const warnings = useMemo(() => {
     const w: string[] = [];
-    if (!opp.registration_number) w.push("Immatriculation non renseignée (recommandée).");
-    if (!opp.power) w.push("Puissance non renseignée (recommandée).");
-    if (!opp.euro_standard && categoryProfile(opp.vehicle_category).powered) w.push("Norme Euro non renseignée (recommandée).");
-    if (!opp.postal_code) w.push("Code postal non renseigné (recommandé).");
+    if (!opp.registration_number) w.push(t("wizard.step6.warningRegistrationNumber"));
+    if (!opp.power) w.push(t("wizard.step6.warningPower"));
+    if (!opp.euro_standard && categoryProfile(opp.vehicle_category).powered)
+      w.push(t("wizard.step6.warningEuroStandard"));
+    if (!opp.postal_code) w.push(t("wizard.step6.warningPostalCode"));
     return w;
-  }, [opp]);
+  }, [opp, t]);
 
   return (
     <div className="space-y-6">
-      <SectionTitle title="Récapitulatif" hint="Vérifiez les informations avant l'envoi." />
+      <SectionTitle title={t("wizard.step6.sectionTitle")} hint={t("wizard.step6.sectionHint")} />
 
       {blocking.length > 0 && (
         <div className="rounded-xl border border-destructive/50 bg-destructive/5 p-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
-            <AlertTriangle className="h-4 w-4" /> Éléments obligatoires manquants
+            <AlertTriangle className="h-4 w-4" /> {t("wizard.step6.blockingTitle")}
           </div>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-            {blocking.map((w, i) => <li key={i}>{w}</li>)}
+            {blocking.map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
           </ul>
-          <p className="mt-3 text-xs text-muted-foreground">
-            L'envoi à Wilmet est bloqué tant que ces éléments manquent. Vous pouvez enregistrer un brouillon.
-          </p>
+          <p className="mt-3 text-xs text-muted-foreground">{t("wizard.step6.blockingFooter")}</p>
         </div>
       )}
 
       {warnings.length > 0 && (
         <div className="rounded-xl border border-status-analysis bg-status-analysis/40 p-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-status-analysis-foreground">
-            <AlertTriangle className="h-4 w-4" /> Éléments recommandés manquants
+            <AlertTriangle className="h-4 w-4" /> {t("wizard.step6.warningTitle")}
           </div>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-status-analysis-foreground">
-            {warnings.map((w, i) => <li key={i}>{w}</li>)}
+            {warnings.map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
           </ul>
           <p className="mt-3 text-xs text-status-analysis-foreground/80">
-            Vous pouvez tout de même envoyer l'opportunité — un dossier complet accélère l'analyse.
+            {t("wizard.step6.warningFooter")}
           </p>
         </div>
       )}
 
+      <RecapBlock
+        title={t("wizard.step6.blocks.vehicle")}
+        rows={[
+          [
+            t("wizard.recap.category"),
+            (refs?.vehicleCategories ?? []).find((c) => c.slug === opp.vehicle_category)
+              ?.label_fr ?? "—",
+          ],
+          [t("wizard.recap.brandModel"), `${opp.brand ?? "—"} ${opp.model ?? ""}`],
+          [
+            t("wizard.fields.mileage"),
+            opp.mileage ? opp.mileage.toLocaleString("fr-FR") + " km" : "—",
+          ],
+          [t("wizard.fields.registrationNumber"), opp.registration_number ?? "—"],
+          [t("wizard.recap.vin"), opp.vin ?? "—"],
+        ]}
+      />
+      <RecapBlock
+        title={t("wizard.step6.blocks.location")}
+        rows={[
+          [t("wizard.fields.city"), opp.city ?? "—"],
+          [t("wizard.fields.postalCode"), opp.postal_code ?? "—"],
+          [t("wizard.recap.country"), opp.country ?? "—"],
+          [t("wizard.fields.visibleOnSite"), labelFor(VISIBILITY_OPTIONS, opp.visible_on_site)],
+        ]}
+      />
+      <RecapBlock
+        title={t("wizard.step2.sectionTitle")}
+        rows={[
+          [t("wizard.recap.fuelType"), labelFor(FUEL_OPTIONS, opp.fuel_type)],
+          [t("wizard.recap.gearbox"), labelFor(GEARBOX_OPTIONS, opp.gearbox)],
+          [t("wizard.fields.power"), opp.power ?? "—"],
+          [t("wizard.recap.euroStandard"), opp.euro_standard ?? "—"],
+          [t("wizard.recap.gvw"), opp.gross_vehicle_weight ?? "—"],
+          [t("wizard.fields.cabinType"), labelFor(CABIN_OPTIONS, opp.cabin_type)],
+          [t("wizard.recap.wheelbase"), opp.wheelbase_mm ? `${opp.wheelbase_mm} mm` : "—"],
+          [t("wizard.fields.suspensionType"), labelFor(SUSPENSION_OPTIONS, opp.suspension_type)],
+          [t("wizard.fields.tyreSize"), opp.tyre_size ?? "—"],
+          [
+            t("wizard.recap.boxDimensions"),
+            opp.box_height_mm || opp.box_width_mm || opp.box_depth_mm
+              ? `${opp.box_height_mm ?? "—"} × ${opp.box_width_mm ?? "—"} × ${opp.box_depth_mm ?? "—"} mm`
+              : "—",
+          ],
+          [
+            t("wizard.fields.hasAirConditioning"),
+            labelFor(YES_NO_OPTIONS, opp.has_air_conditioning),
+          ],
+          [t("wizard.fields.hasHeating"), labelFor(YES_NO_OPTIONS, opp.has_heating)],
+          [t("wizard.fields.hasHydraulicHook"), labelFor(YES_NO_OPTIONS, opp.has_hydraulic_hook)],
+          [t("wizard.fields.hasCrane"), labelFor(YES_NO_OPTIONS, opp.has_crane)],
+          [t("wizard.fields.tailLiftPresent"), labelFor(YES_NO_OPTIONS, opp.tail_lift_present)],
+          [
+            t("wizard.fields.otherEquipment"),
+            [...(opp.equipment ?? []), opp.other_equipment_details].filter(Boolean).join(", ") ||
+              "—",
+          ],
+        ]}
+      />
+      <RecapBlock
+        title={t("wizard.recap.conditionTitle")}
+        rows={[
+          [t("wizard.fields.generalCondition"), labelFor(CONDITION_OPTIONS, opp.general_condition)],
+          [t("wizard.recap.runs"), labelFor(YES_NO_OPTIONS, opp.vehicle_runs)],
+          ...(opp.vehicle_runs === "non"
+            ? [
+                [t("wizard.fields.notRunningReason"), opp.not_running_reason || "—"] as [
+                  string,
+                  string,
+                ],
+              ]
+            : []),
+          [
+            t("wizard.recap.technicalInspection"),
+            labelFor(YES_NO_OPTIONS, opp.technical_inspection_status),
+          ],
+          ...(opp.technical_inspection_status === "oui"
+            ? [
+                [
+                  t("wizard.recap.inspectionValidUntilShort"),
+                  opp.inspection_valid_until
+                    ? format(parseISO(opp.inspection_valid_until), "dd/MM/yyyy")
+                    : "—",
+                ] as [string, string],
+              ]
+            : []),
+          [t("wizard.recap.maintenanceUpToDate"), labelFor(YES_NO_OPTIONS, opp.maintenance_status)],
 
-      <RecapBlock title="Informations véhicule" rows={[
-        ["Catégorie", (refs?.vehicleCategories ?? []).find((c) => c.slug === opp.vehicle_category)?.label_fr ?? "—"],
-        ["Marque / modèle", `${opp.brand ?? "—"} ${opp.model ?? ""}`],
-        ["Kilométrage", opp.mileage ? opp.mileage.toLocaleString("fr-FR") + " km" : "—"],
-        ["Immatriculation", opp.registration_number ?? "—"],
-        ["VIN", opp.vin ?? "—"],
-      ]} />
-      <RecapBlock title="Localisation" rows={[
-        ["Ville", opp.city ?? "—"],
-        ["Code postal", opp.postal_code ?? "—"],
-        ["Pays", opp.country ?? "—"],
-        ["Visible sur parc", labelFor(VISIBILITY_OPTIONS, opp.visible_on_site)],
-      ]} />
-      <RecapBlock title="Caractéristiques" rows={[
-        ["Énergie", labelFor(FUEL_OPTIONS, opp.fuel_type)],
-        ["Boîte", labelFor(GEARBOX_OPTIONS, opp.gearbox)],
-        ["Puissance", opp.power ?? "—"],
-        ["Norme Euro", opp.euro_standard ?? "—"],
-        ["PTAC", opp.gross_vehicle_weight ?? "—"],
-        ["Cabine", labelFor(CABIN_OPTIONS, opp.cabin_type)],
-        ["Empattement", opp.wheelbase_mm ? `${opp.wheelbase_mm} mm` : "—"],
-        ["Suspension", labelFor(SUSPENSION_OPTIONS, opp.suspension_type)],
-        ["Pneus", opp.tyre_size ?? "—"],
-        ["Dimensions int. (H×L×Lo)", opp.box_height_mm || opp.box_width_mm || opp.box_depth_mm
-          ? `${opp.box_height_mm ?? "—"} × ${opp.box_width_mm ?? "—"} × ${opp.box_depth_mm ?? "—"} mm` : "—"],
-        ["Climatisation", labelFor(YES_NO_OPTIONS, opp.has_air_conditioning)],
-        ["Chauffage additionnel", labelFor(YES_NO_OPTIONS, opp.has_heating)],
-        ["Crochet / attelage hydraulique", labelFor(YES_NO_OPTIONS, opp.has_hydraulic_hook)],
-        ["Grue", labelFor(YES_NO_OPTIONS, opp.has_crane)],
-        ["Hayon", labelFor(YES_NO_OPTIONS, opp.tail_lift_present)],
-        ["Autres équipements", [...(opp.equipment ?? []), opp.other_equipment_details].filter(Boolean).join(", ") || "—"],
-
-      ]} />
-      <RecapBlock title="État" rows={[
-        ["État général", labelFor(CONDITION_OPTIONS, opp.general_condition)],
-        ["Roule", labelFor(YES_NO_OPTIONS, opp.vehicle_runs)],
-        ...(opp.vehicle_runs === "non" ? [["Raison de l'immobilisation", opp.not_running_reason || "—"] as [string, string]] : []),
-        ["Contrôle technique", labelFor(YES_NO_OPTIONS, opp.technical_inspection_status)],
-        ...(opp.technical_inspection_status === "oui"
-          ? [["CT valable jusqu'au", opp.inspection_valid_until ? format(parseISO(opp.inspection_valid_until), "dd/MM/yyyy") : "—"] as [string, string]]
-          : []),
-        ["Entretien à jour", labelFor(YES_NO_OPTIONS, opp.maintenance_status)],
-        
-        ["Nombre de clés", labelFor(KEYS_COUNT_OPTIONS, opp.keys_count ? String(opp.keys_count) : null)],
-        ["Défauts, travaux et commentaires", opp.defects_and_comments || "—"],
-      ]} />
-      <RecapBlock title="Prix" rows={[
-        ["Prix souhaité HT", formatPrice(opp.desired_price_excl_tax)],
-        ["Négociable", labelFor(NEGOTIABLE_OPTIONS, opp.price_negotiable)],
-        ["Disponibilité", labelFor(AVAILABILITY_OPTIONS, opp.availability)],
-        ["Libre de tout gage", labelFor(YES_NO_OPTIONS, opp.free_of_pledge)],
-
-      ]} />
-      <RecapBlock title="Contact sur place" rows={[
-        ["Nom", opp.onsite_contact_name ?? "—"],
-        ["Téléphone", opp.onsite_contact_phone ?? "—"],
-        ["Email", opp.onsite_contact_email ?? "—"],
-      ]} />
+          [
+            t("wizard.fields.keysCount"),
+            labelFor(KEYS_COUNT_OPTIONS, opp.keys_count ? String(opp.keys_count) : null),
+          ],
+          [t("wizard.fields.defectsAndComments"), opp.defects_and_comments || "—"],
+        ]}
+      />
+      <RecapBlock
+        title={t("wizard.recap.priceTitle")}
+        rows={[
+          [t("wizard.recap.desiredPriceShort"), formatPrice(opp.desired_price_excl_tax)],
+          [t("wizard.recap.negotiable"), labelFor(NEGOTIABLE_OPTIONS, opp.price_negotiable)],
+          [t("wizard.fields.availability"), labelFor(AVAILABILITY_OPTIONS, opp.availability)],
+          [t("wizard.recap.freeOfPledgeShort"), labelFor(YES_NO_OPTIONS, opp.free_of_pledge)],
+        ]}
+      />
+      <RecapBlock
+        title={t("wizard.step5.sectionContact.title")}
+        rows={[
+          [t("wizard.recap.name"), opp.onsite_contact_name ?? "—"],
+          [t("wizard.recap.phone"), opp.onsite_contact_phone ?? "—"],
+          [t("wizard.recap.email"), opp.onsite_contact_email ?? "—"],
+        ]}
+      />
 
       <div>
-        <div className="text-sm font-semibold">Photos ({photos.length})</div>
+        <div className="text-sm font-semibold">
+          {t("wizard.step6.photosCount", { count: photos.length })}
+        </div>
         <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
           {photos.map((p) => (
-            <div key={p.id} className="relative aspect-square overflow-hidden rounded-md border border-border bg-secondary">
+            <div
+              key={p.id}
+              className="relative aspect-square overflow-hidden rounded-md border border-border bg-secondary"
+            >
               {signedUrls[p.storage_path] ? (
-                <img src={signedUrls[p.storage_path]} alt="" className="h-full w-full object-cover" />
-              ) : <ImageIcon className="m-auto mt-6 h-6 w-6 text-muted-foreground" />}
+                <img
+                  src={signedUrls[p.storage_path]}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <ImageIcon className="m-auto mt-6 h-6 w-6 text-muted-foreground" />
+              )}
               {p.is_main_photo && (
                 <span className="absolute left-1 top-1 rounded bg-accent px-1 py-0.5 text-[9px] font-semibold uppercase text-accent-foreground">
-                  Principale
+                  {t("wizard.step4.mainPhoto")}
                 </span>
               )}
             </div>
@@ -1526,7 +2240,10 @@ function RecapBlock({ title, rows }: { title: string; rows: [string, React.React
       </div>
       <dl className="grid gap-2 sm:grid-cols-2">
         {rows.map(([k, v], i) => (
-          <div key={i} className="flex items-start justify-between gap-3 border-b border-border/60 pb-1 last:border-b-0">
+          <div
+            key={i}
+            className="flex items-start justify-between gap-3 border-b border-border/60 pb-1 last:border-b-0"
+          >
             <dt className="text-xs text-muted-foreground">{k}</dt>
             <dd className="max-w-[60%] text-right text-sm">{v ?? "—"}</dd>
           </div>

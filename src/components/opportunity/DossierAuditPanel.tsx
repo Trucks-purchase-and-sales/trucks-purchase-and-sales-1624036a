@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { auditOpportunityDossier, type DossierAudit } from "@/lib/dossier-ai.functions";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,9 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, AlertTriangle, ListChecks } from "lucide-react";
 
-const RISK_LABEL: Record<string, string> = { faible: "Risque faible", moyen: "Risque moyen", eleve: "Risque élevé" };
-
 export function DossierAuditPanel({ opportunityId }: { opportunityId: string }) {
+  const { t } = useTranslation();
+  const RISK_LABEL: Record<string, string> = {
+    faible: t("admin.opportunityDetail.dossierAudit.risk.low"),
+    moyen: t("admin.opportunityDetail.dossierAudit.risk.medium"),
+    eleve: t("admin.opportunityDetail.dossierAudit.risk.high"),
+  };
   const auditFn = useServerFn(auditOpportunityDossier);
   const [running, setRunning] = useState(false);
   const [audit, setAudit] = useState<DossierAudit | null>(null);
@@ -19,7 +24,9 @@ export function DossierAuditPanel({ opportunityId }: { opportunityId: string }) 
     try {
       setAudit(await auditFn({ data: { opportunityId } }));
     } catch (e) {
-      toast.error("Analyse impossible", { description: (e as Error).message });
+      toast.error(t("admin.opportunityDetail.dossierAudit.errorToast"), {
+        description: (e as Error).message,
+      });
     } finally {
       setRunning(false);
     }
@@ -30,46 +37,73 @@ export function DossierAuditPanel({ opportunityId }: { opportunityId: string }) 
       <CardContent className="space-y-4 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm font-semibold">
-            <Sparkles className="h-4 w-4 text-primary" /> Contrôles IA du dossier
+            <Sparkles className="h-4 w-4 text-primary" />{" "}
+            {t("admin.opportunityDetail.dossierAudit.heading")}
           </div>
           <div className="flex items-center gap-2">
             {audit && (
-              <Badge variant={audit.risk_level === "eleve" ? "destructive" : audit.risk_level === "moyen" ? "secondary" : "default"}>
+              <Badge
+                variant={
+                  audit.risk_level === "eleve"
+                    ? "destructive"
+                    : audit.risk_level === "moyen"
+                      ? "secondary"
+                      : "default"
+                }
+              >
                 {RISK_LABEL[audit.risk_level] ?? audit.risk_level}
               </Badge>
             )}
             <Button size="sm" onClick={run} disabled={running} className="gap-2">
-              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {running ? "Analyse…" : audit ? "Relancer" : "Analyser le dossier"}
+              {running ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              {running
+                ? t("admin.opportunityDetail.dossierAudit.runningLabel")
+                : audit
+                  ? t("admin.opportunityDetail.dossierAudit.rerunButton")
+                  : t("admin.opportunityDetail.dossierAudit.runButton")}
             </Button>
           </div>
         </div>
 
         {!audit && !running && (
           <p className="text-sm text-muted-foreground">
-            L'IA compare la fiche saisie, les documents et les valeurs extraites par OCR : incohérences,
-            synthèse automatique et informations manquantes.
+            {t("admin.opportunityDetail.dossierAudit.introText")}
           </p>
         )}
 
         {audit && (
           <div className="space-y-4">
             {audit.summary && (
-              <div className="rounded-md border bg-secondary/40 p-3 text-sm leading-relaxed">{audit.summary}</div>
+              <div className="rounded-md border bg-secondary/40 p-3 text-sm leading-relaxed">
+                {audit.summary}
+              </div>
             )}
 
             <div>
               <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <AlertTriangle className="h-3.5 w-3.5" /> Incohérences détectées
+                <AlertTriangle className="h-3.5 w-3.5" />{" "}
+                {t("admin.opportunityDetail.dossierAudit.inconsistenciesHeading")}
               </div>
               {audit.inconsistencies.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Aucune incohérence détectée.</p>
+                <p className="text-sm text-muted-foreground">
+                  {t("admin.opportunityDetail.dossierAudit.noInconsistencies")}
+                </p>
               ) : (
                 <ul className="space-y-2">
                   {audit.inconsistencies.map((i, idx) => (
                     <li key={idx} className="flex items-start gap-2 rounded-md border p-2 text-sm">
                       <Badge
-                        variant={i.severity === "haute" ? "destructive" : i.severity === "moyenne" ? "secondary" : "outline"}
+                        variant={
+                          i.severity === "haute"
+                            ? "destructive"
+                            : i.severity === "moyenne"
+                              ? "secondary"
+                              : "outline"
+                        }
                         className="mt-0.5 shrink-0"
                       >
                         {i.severity}
@@ -86,10 +120,13 @@ export function DossierAuditPanel({ opportunityId }: { opportunityId: string }) 
 
             <div>
               <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <ListChecks className="h-3.5 w-3.5" /> Informations manquantes
+                <ListChecks className="h-3.5 w-3.5" />{" "}
+                {t("admin.opportunityDetail.dossierAudit.missingHeading")}
               </div>
               {audit.missing.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Dossier complet.</p>
+                <p className="text-sm text-muted-foreground">
+                  {t("admin.opportunityDetail.dossierAudit.noMissing")}
+                </p>
               ) : (
                 <ul className="list-disc space-y-1 pl-5 text-sm">
                   {audit.missing.map((m, idx) => (

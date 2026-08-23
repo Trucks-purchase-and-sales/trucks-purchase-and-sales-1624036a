@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { saveOpportunityBenchmark } from "@/lib/opportunity-dossier.functions";
 import { PRICE_ATTRACTIVE_OPTIONS } from "@/lib/wilmet-constants";
@@ -9,7 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { LineChart } from "lucide-react";
 
 type Props = {
@@ -29,6 +36,7 @@ export function BenchmarkPanel({
   priceAttractive,
   benchmarkComment,
 }: Props) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const saveFn = useServerFn(saveOpportunityBenchmark);
   const [estimate, setEstimate] = useState(
@@ -42,11 +50,11 @@ export function BenchmarkPanel({
   const liveGap =
     askedPriceEur != null && parsed != null && parsed > 0
       ? Math.round(((askedPriceEur - parsed) / parsed) * 1000) / 10
-      : marketPriceGapPct ?? null;
+      : (marketPriceGapPct ?? null);
 
   async function save() {
     if (parsed != null && (Number.isNaN(parsed) || parsed < 0)) {
-      toast.error("Estimation de marché invalide");
+      toast.error(t("admin.opportunityDetail.benchmark.invalidEstimateError"));
       return;
     }
     setSaving(true);
@@ -59,10 +67,10 @@ export function BenchmarkPanel({
           benchmarkComment: comment || null,
         },
       });
-      toast.success("Benchmark enregistré");
+      toast.success(t("admin.opportunityDetail.benchmark.savedToast"));
       await qc.invalidateQueries({ queryKey: ["admin-opportunity", opportunityId] });
     } catch {
-      toast.error("Enregistrement impossible");
+      toast.error(t("admin.opportunityDetail.dossier.saveError"));
     } finally {
       setSaving(false);
     }
@@ -73,34 +81,42 @@ export function BenchmarkPanel({
       <CardContent className="space-y-4 p-5">
         <div className="flex items-center gap-2">
           <LineChart className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold">Benchmark prix marché</h3>
+          <h3 className="text-sm font-semibold">
+            {t("admin.opportunityDetail.benchmark.heading")}
+          </h3>
           {liveGap != null && (
             <Badge variant={liveGap > 10 ? "destructive" : "secondary"}>
-              Écart {liveGap > 0 ? "+" : ""}
+              {t("admin.opportunityDetail.benchmark.gapBadgePrefix")} {liveGap > 0 ? "+" : ""}
               {liveGap} %
             </Badge>
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          Prix demandé :{" "}
-          {askedPriceEur != null ? `${askedPriceEur.toLocaleString("fr-FR")} €` : "non renseigné"}.
-          L'écart est calculé automatiquement par rapport à l'estimation de marché saisie.
+          {t("admin.opportunityDetail.benchmark.askedPricePrefix")}{" "}
+          {askedPriceEur != null
+            ? `${askedPriceEur.toLocaleString("fr-FR")} €`
+            : t("admin.opportunityDetail.benchmark.notProvided")}
+          . {t("admin.opportunityDetail.benchmark.autoCalcNote")}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Estimation marché (€ HT)</label>
+            <label className="text-xs text-muted-foreground">
+              {t("admin.opportunityDetail.benchmark.estimateLabel")}
+            </label>
             <Input
               inputMode="decimal"
               value={estimate}
               onChange={(e) => setEstimate(e.target.value)}
-              placeholder="Ex : 24500"
+              placeholder={t("admin.opportunityDetail.benchmark.estimatePlaceholder")}
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Prix attractif ?</label>
+            <label className="text-xs text-muted-foreground">
+              {t("admin.opportunityDetail.benchmark.attractiveLabel")}
+            </label>
             <Select value={attractive || undefined} onValueChange={setAttractive}>
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner" />
+                <SelectValue placeholder={t("common.select")} />
               </SelectTrigger>
               <SelectContent>
                 {PRICE_ATTRACTIVE_OPTIONS.map((o) => (
@@ -113,16 +129,20 @@ export function BenchmarkPanel({
           </div>
         </div>
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Commentaire benchmark</label>
+          <label className="text-xs text-muted-foreground">
+            {t("admin.opportunityDetail.vehicleFields.benchmarkComment")}
+          </label>
           <Textarea
             rows={3}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Comparables observés, arguments de négociation…"
+            placeholder={t("admin.opportunityDetail.benchmark.commentPlaceholder")}
           />
         </div>
         <Button size="sm" onClick={save} disabled={saving}>
-          {saving ? "Enregistrement…" : "Enregistrer le benchmark"}
+          {saving
+            ? t("admin.opportunityDetail.benchmark.savingLabel")
+            : t("admin.opportunityDetail.benchmark.saveButton")}
         </Button>
       </CardContent>
     </Card>

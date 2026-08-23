@@ -1,6 +1,16 @@
 import * as React from "react";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { useServerFn } from "@tanstack/react-start";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,34 +20,34 @@ import { toast } from "sonner";
 import { runOcrScan, recordOcrApplication } from "@/lib/ocr.functions";
 import { extractDocumentText, isOfficeDoc } from "@/lib/document-text";
 
-const FIELD_LABELS: Record<string, string> = {
-  brand: "Marque",
-  model: "Modèle",
-  version: "Version",
-  vin: "VIN",
-  registration_number: "Immatriculation",
-  first_registration_date: "1re mise en circulation",
-  mileage: "Kilométrage",
-  fuel_type: "Carburant",
-  gearbox: "Boîte",
-  power: "Puissance",
-  euro_standard: "Norme Euro",
-  gross_vehicle_weight: "PTAC",
-  payload: "Charge utile",
-  body_type: "Carrosserie",
-  axle_configuration: "Configuration essieux",
-  cabin_type: "Cabine",
-  wheelbase_mm: "Empattement (mm)",
-  suspension_type: "Suspension",
-  tyre_size: "Dimension pneus",
-  box_height_mm: "Hauteur intérieure (mm)",
-  box_width_mm: "Largeur intérieure (mm)",
-  box_depth_mm: "Longueur intérieure (mm)",
-  inspection_valid_until: "CT valable jusqu'au",
-  city: "Ville",
-  postal_code: "Code postal",
-  country: "Pays",
-  vehicle_category: "Catégorie de véhicule",
+const FIELD_LABEL_KEYS: Record<string, string> = {
+  brand: "ocr.fields.brand",
+  model: "ocr.fields.model",
+  version: "ocr.fields.version",
+  vin: "ocr.fields.vin",
+  registration_number: "ocr.fields.registrationNumber",
+  first_registration_date: "ocr.fields.firstRegistrationDate",
+  mileage: "ocr.fields.mileage",
+  fuel_type: "ocr.fields.fuelType",
+  gearbox: "ocr.fields.gearbox",
+  power: "ocr.fields.power",
+  euro_standard: "ocr.fields.euroStandard",
+  gross_vehicle_weight: "ocr.fields.grossVehicleWeight",
+  payload: "ocr.fields.payload",
+  body_type: "ocr.fields.bodyType",
+  axle_configuration: "ocr.fields.axleConfiguration",
+  cabin_type: "ocr.fields.cabinType",
+  wheelbase_mm: "ocr.fields.wheelbaseMm",
+  suspension_type: "ocr.fields.suspensionType",
+  tyre_size: "ocr.fields.tyreSize",
+  box_height_mm: "ocr.fields.boxHeightMm",
+  box_width_mm: "ocr.fields.boxWidthMm",
+  box_depth_mm: "ocr.fields.boxDepthMm",
+  inspection_valid_until: "ocr.fields.inspectionValidUntil",
+  city: "ocr.fields.city",
+  postal_code: "ocr.fields.postalCode",
+  country: "ocr.fields.country",
+  vehicle_category: "ocr.fields.vehicleCategory",
 };
 
 type Detection = {
@@ -58,7 +68,7 @@ async function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(new Error("Lecture du fichier impossible"));
+    r.onerror = () => reject(new Error(i18n.t("ocr.errors.fileReadError")));
     r.readAsDataURL(file);
   });
 }
@@ -71,6 +81,7 @@ export function OcrPrefillDialog({
   /** Called with the accepted fields; parent maps into wizard state. */
   onApply: (fields: Record<string, string>) => void;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const [files, setFiles] = React.useState<File[]>([]);
   const [running, setRunning] = React.useState(false);
@@ -85,9 +96,16 @@ export function OcrPrefillDialog({
     if (!list) return;
     const next: File[] = [];
     for (const f of Array.from(list)) {
-      const acceptable = f.type.startsWith("image/") || f.type === "application/pdf" || isOfficeDoc(f);
-      if (!acceptable) { toast.error(`${f.name}: format non pris en charge`); continue; }
-      if (f.size > MAX_BYTES) { toast.error(`${f.name} dépasse 6 Mo`); continue; }
+      const acceptable =
+        f.type.startsWith("image/") || f.type === "application/pdf" || isOfficeDoc(f);
+      if (!acceptable) {
+        toast.error(t("ocr.errors.unsupportedFormat", { name: f.name }));
+        continue;
+      }
+      if (f.size > MAX_BYTES) {
+        toast.error(t("ocr.errors.tooLarge", { name: f.name }));
+        continue;
+      }
       next.push(f);
     }
     setFiles((cur) => [...cur, ...next].slice(0, MAX_FILES));
@@ -99,16 +117,22 @@ export function OcrPrefillDialog({
     try {
       const mediaFiles = files.filter((f) => !isOfficeDoc(f));
       const officeFiles = files.filter((f) => isOfficeDoc(f));
-      const images = await Promise.all(mediaFiles.map(async (f) => ({ data_url: await fileToDataUrl(f) })));
+      const images = await Promise.all(
+        mediaFiles.map(async (f) => ({ data_url: await fileToDataUrl(f) })),
+      );
       const documents: Array<{ name: string; text: string }> = [];
       for (const f of officeFiles.slice(0, 4)) {
         try {
           documents.push({ name: f.name, text: await extractDocumentText(f) });
         } catch (e) {
-          toast.error(`${f.name} illisible`, { description: (e as Error).message });
+          toast.error(t("ocr.errors.unreadable", { name: f.name }), {
+            description: (e as Error).message,
+          });
         }
       }
-      const res = await runFn({ data: { images, documents, vehicle_opportunity_id: vehicleOpportunityId } });
+      const res = await runFn({
+        data: { images, documents, vehicle_opportunity_id: vehicleOpportunityId },
+      });
       setScanId(res.scanId);
       setDetections(res.detections);
       const s: Selected = {};
@@ -116,10 +140,10 @@ export function OcrPrefillDialog({
         s[d.name] = { value: d.value, keep: d.resolved !== false && d.confidence >= 0.6 };
       }
       setSel(s);
-      if (res.detections.length === 0) toast.info("Aucun champ détecté. Réessayez avec des photos plus nettes.");
-      else toast.success(`${res.detections.length} champ(s) détecté(s)`);
+      if (res.detections.length === 0) toast.info(t("ocr.toast.noFieldsDetected"));
+      else toast.success(t("ocr.toast.fieldsDetected", { count: res.detections.length }));
     } catch (e) {
-      toast.error("Scan impossible", { description: (e as Error).message });
+      toast.error(t("ocr.toast.scanError"), { description: (e as Error).message });
     } finally {
       setRunning(false);
     }
@@ -127,11 +151,18 @@ export function OcrPrefillDialog({
 
   async function apply() {
     const fields: Record<string, string> = {};
-    const applied: Array<{ field_name: string; final_value: string; action: "confirmed" | "edited" | "rejected" }> = [];
+    const applied: Array<{
+      field_name: string;
+      final_value: string;
+      action: "confirmed" | "edited" | "rejected";
+    }> = [];
     for (const d of detections) {
       const s = sel[d.name];
       const value = (s?.value ?? "").trim();
-      if (!s?.keep || !value) { applied.push({ field_name: d.name, final_value: "", action: "rejected" }); continue; }
+      if (!s?.keep || !value) {
+        applied.push({ field_name: d.name, final_value: "", action: "rejected" });
+        continue;
+      }
       fields[d.name] = s.value;
       applied.push({
         field_name: d.name,
@@ -144,43 +175,65 @@ export function OcrPrefillDialog({
       recordFn({ data: { scan_id: scanId, applied } }).catch(() => {});
     }
     const count = Object.keys(fields).length;
-    toast.success(count > 0 ? `${count} champ(s) pré-rempli(s)` : "Aucun champ appliqué");
+    toast.success(
+      count > 0 ? t("ocr.toast.fieldsApplied", { count }) : t("ocr.toast.noFieldsApplied"),
+    );
     reset();
     setOpen(false);
   }
 
   function reset() {
-    setFiles([]); setDetections([]); setSel({}); setScanId(null);
+    setFiles([]);
+    setDetections([]);
+    setSel({});
+    setScanId(null);
   }
 
   function confidenceBadge(c: number) {
-    if (c >= 0.8) return <Badge className="bg-emerald-600 text-white">Sûr {Math.round(c * 100)}%</Badge>;
-    if (c >= 0.5) return <Badge variant="secondary">Moyen {Math.round(c * 100)}%</Badge>;
-    return <Badge variant="destructive">Faible {Math.round(c * 100)}%</Badge>;
+    if (c >= 0.8)
+      return (
+        <Badge className="bg-emerald-600 text-white">
+          {t("ocr.confidence.high", { pct: Math.round(c * 100) })}
+        </Badge>
+      );
+    if (c >= 0.5)
+      return (
+        <Badge variant="secondary">
+          {t("ocr.confidence.medium", { pct: Math.round(c * 100) })}
+        </Badge>
+      );
+    return (
+      <Badge variant="destructive">{t("ocr.confidence.low", { pct: Math.round(c * 100) })}</Badge>
+    );
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) reset();
+      }}
+    >
       <DialogTrigger asChild>
         <Button type="button" variant="outline" className="gap-2">
-          <ScanLine className="h-4 w-4" /> Scanner mes photos (IA)
+          <ScanLine className="h-4 w-4" /> {t("ocr.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Pré-remplir avec l'IA</DialogTitle>
-          <DialogDescription>Importez un document du véhicule : l'IA extrait les informations et vous choisissez celles à appliquer au formulaire.</DialogDescription>
+          <DialogTitle>{t("ocr.dialogTitle")}</DialogTitle>
+          <DialogDescription>{t("ocr.dialogDescription")}</DialogDescription>
         </DialogHeader>
 
         {detections.length === 0 ? (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Ajoutez jusqu'à {MAX_FILES} fichiers (photos, PDF, Excel, Word, CSV) : plaque constructeur, tableau de bord, carte grise, certificat de conformité, contrôle technique…
-              L'IA en extrait automatiquement les champs.
+              {t("ocr.instructions", { maxFiles: MAX_FILES })}
             </p>
             <Label htmlFor="ocr-files" className="block">
               <div className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-border p-6 text-sm hover:bg-secondary/50">
-                <Upload className="h-4 w-4" /> Choisir des photos ou documents (PDF, Excel, Word)
+                <Upload className="h-4 w-4" /> {t("ocr.chooseFiles")}
               </div>
               <input
                 id="ocr-files"
@@ -196,7 +249,11 @@ export function OcrPrefillDialog({
                 {files.map((f, i) => (
                   <div key={i} className="relative aspect-square overflow-hidden rounded-md border">
                     {f.type.startsWith("image/") ? (
-                      <img src={URL.createObjectURL(f)} alt={f.name} className="h-full w-full object-cover" />
+                      <img
+                        src={URL.createObjectURL(f)}
+                        alt={f.name}
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
                       <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-secondary p-2 text-center text-[10px]">
                         <FileText className="h-5 w-5 text-muted-foreground" />
@@ -220,26 +277,34 @@ export function OcrPrefillDialog({
             {detections.map((d) => {
               const s = sel[d.name] ?? { value: d.value, keep: true };
               return (
-                <div key={d.name} className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-md border p-3">
+                <div
+                  key={d.name}
+                  className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-md border p-3"
+                >
                   <div className="space-y-1">
                     <div className="flex items-center justify-between gap-2">
                       <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {FIELD_LABELS[d.name] ?? d.name}
+                        {FIELD_LABEL_KEYS[d.name] ? t(FIELD_LABEL_KEYS[d.name]) : d.name}
                       </Label>
                       <div className="flex items-center gap-1.5">
-                        {d.resolved === false && <Badge variant="destructive">Non reconnu</Badge>}
+                        {d.resolved === false && (
+                          <Badge variant="destructive">{t("ocr.notRecognized")}</Badge>
+                        )}
                         {confidenceBadge(d.confidence)}
                       </div>
                     </div>
                     <Input
                       value={s.value}
-                      onChange={(e) => setSel((cur) => ({ ...cur, [d.name]: { ...(cur[d.name] ?? { keep: true }), value: e.target.value } }))}
+                      onChange={(e) =>
+                        setSel((cur) => ({
+                          ...cur,
+                          [d.name]: { ...(cur[d.name] ?? { keep: true }), value: e.target.value },
+                        }))
+                      }
                       disabled={!s.keep}
                     />
                     {d.resolved === false ? (
-                      <p className="text-[11px] text-destructive">
-                        Valeur non reconnue par le formulaire — corrigez-la ou saisissez le champ manuellement.
-                      </p>
+                      <p className="text-[11px] text-destructive">{t("ocr.valueNotRecognized")}</p>
                     ) : d.display && d.display !== s.value ? (
                       <p className="text-[11px] text-muted-foreground">{d.display}</p>
                     ) : null}
@@ -248,9 +313,20 @@ export function OcrPrefillDialog({
                     type="button"
                     size="sm"
                     variant={s.keep ? "default" : "outline"}
-                    onClick={() => setSel((cur) => ({ ...cur, [d.name]: { ...(cur[d.name] ?? { value: d.value }), keep: !s.keep } }))}
+                    onClick={() =>
+                      setSel((cur) => ({
+                        ...cur,
+                        [d.name]: { ...(cur[d.name] ?? { value: d.value }), keep: !s.keep },
+                      }))
+                    }
                   >
-                    {s.keep ? <><Check className="mr-1 h-3 w-3" /> Garder</> : "Ignoré"}
+                    {s.keep ? (
+                      <>
+                        <Check className="mr-1 h-3 w-3" /> {t("ocr.keep")}
+                      </>
+                    ) : (
+                      t("ocr.ignored")
+                    )}
                   </Button>
                 </div>
               );
@@ -261,13 +337,21 @@ export function OcrPrefillDialog({
         <DialogFooter className="gap-2">
           {detections.length === 0 ? (
             <Button onClick={runScan} disabled={files.length === 0 || running} className="gap-2">
-              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4" />}
-              {running ? "Analyse…" : "Lancer l'analyse"}
+              {running ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ScanLine className="h-4 w-4" />
+              )}
+              {running ? t("ocr.analyzing") : t("ocr.runAnalysis")}
             </Button>
           ) : (
             <>
-              <Button variant="outline" onClick={reset}>Rescanner</Button>
-              <Button onClick={apply} className="gap-2"><Check className="h-4 w-4" /> Appliquer</Button>
+              <Button variant="outline" onClick={reset}>
+                {t("ocr.rescan")}
+              </Button>
+              <Button onClick={apply} className="gap-2">
+                <Check className="h-4 w-4" /> {t("ocr.apply")}
+              </Button>
             </>
           )}
         </DialogFooter>
