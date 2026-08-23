@@ -1,0 +1,259 @@
+V2P Phase 2, section 9.1 — RLS audit by hand
+Run by: Salma, via Supabase SQL editor, against PRODUCTION (no staging project
+exists yet; this is read-only metadata inspection, not data access or active
+probing, so it does not violate the plan's staging-isolation rule).
+Date: 2026-08-23
+Script: pipeline/security/rls-audit.sql, queries 2-4 (query 1 — tables without
+RLS — was already answered "none" by an earlier ad hoc query; see
+apps/wilmet/inventory.md and threat-model.md).
+
+=====================================================================
+Query 2 — every policy with its USING / WITH CHECK expression
+Exported: query-results-export-2026-08-23_17-11-34.csv
+=====================================================================
+cmd;policyname;tablename;using_expr;with_check_expr
+SELECT;affiliate_clicks_read_own_or_staff;affiliate_clicks;"((EXISTS ( SELECT 1
+   FROM affiliate_links l
+  WHERE ((l.id = affiliate_clicks.link_id) AND (l.owner_id = auth.uid())))) OR private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'sales_manager'::app_role, 'company_management'::app_role]))";
+DELETE;affiliate_links_admin_delete;affiliate_links;private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role]);
+INSERT;affiliate_links_admin_insert;affiliate_links;;private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role])
+UPDATE;affiliate_links_admin_update;affiliate_links;private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role])
+SELECT;affiliate_links_read_own_or_staff;affiliate_links;((owner_id = auth.uid()) OR private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'sales_manager'::app_role, 'company_management'::app_role]));
+INSERT;app_settings admin insert;app_settings;;(private.has_role(auth.uid(), 'admin'::app_role) OR private.has_role(auth.uid(), 'platform_admin'::app_role))
+UPDATE;app_settings admin update;app_settings;(private.has_role(auth.uid(), 'admin'::app_role) OR private.has_role(auth.uid(), 'platform_admin'::app_role));(private.has_role(auth.uid(), 'admin'::app_role) OR private.has_role(auth.uid(), 'platform_admin'::app_role))
+SELECT;app_settings_admin_read;app_settings;private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role]);
+SELECT;admin reads audit logs;audit_logs;private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]);
+DELETE;buyer_lead_matches_delete_scoped;buyer_lead_matches;"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM buyer_leads lead
+  WHERE ((lead.id = buyer_lead_matches.buyer_lead_id) AND private.can_write_pipeline_record(auth.uid(), lead.assigned_sales_agent_id, lead.assigned_group_id, COALESCE(lead.assigned_group, 'sales'::staff_group))))))";
+INSERT;buyer_lead_matches_insert_scoped;buyer_lead_matches;;"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM buyer_leads lead
+  WHERE ((lead.id = buyer_lead_matches.buyer_lead_id) AND private.can_write_pipeline_record(auth.uid(), lead.assigned_sales_agent_id, lead.assigned_group_id, COALESCE(lead.assigned_group, 'sales'::staff_group))))))"
+SELECT;buyer_lead_matches_select_scoped;buyer_lead_matches;"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'company_management'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM buyer_leads lead
+  WHERE ((lead.id = buyer_lead_matches.buyer_lead_id) AND private.can_read_pipeline_record(auth.uid(), lead.assigned_sales_agent_id, lead.assigned_group_id, COALESCE(lead.assigned_group, 'sales'::staff_group))))))";
+UPDATE;buyer_lead_matches_update_scoped;buyer_lead_matches;"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM buyer_leads lead
+  WHERE ((lead.id = buyer_lead_matches.buyer_lead_id) AND private.can_write_pipeline_record(auth.uid(), lead.assigned_sales_agent_id, lead.assigned_group_id, COALESCE(lead.assigned_group, 'sales'::staff_group))))))";"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM buyer_leads lead
+  WHERE ((lead.id = buyer_lead_matches.buyer_lead_id) AND private.can_write_pipeline_record(auth.uid(), lead.assigned_sales_agent_id, lead.assigned_group_id, COALESCE(lead.assigned_group, 'sales'::staff_group))))))"
+SELECT;buyer_lead_status_history_select_scoped;buyer_lead_status_history;"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'company_management'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM buyer_leads lead
+  WHERE ((lead.id = buyer_lead_status_history.buyer_lead_id) AND private.can_read_pipeline_record(auth.uid(), lead.assigned_sales_agent_id, lead.assigned_group_id, COALESCE(lead.assigned_group, 'sales'::staff_group))))))";
+INSERT;Anonymous can submit public buyer lead;buyer_leads;;(user_id IS NULL)
+SELECT;Owner reads own buyer lead;buyer_leads;(user_id = auth.uid());
+INSERT;buyer_leads_insert_scoped;buyer_leads;;(((user_id = auth.uid()) AND (private.get_partner_kind(auth.uid()) = 'client'::partner_kind)) OR private.can_write_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'sales'::staff_group)))
+SELECT;buyer_leads_staff_read;buyer_leads;private.can_read_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'sales'::staff_group));
+UPDATE;buyer_leads_write_scoped;buyer_leads;private.can_write_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'sales'::staff_group));private.can_write_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'sales'::staff_group))
+SELECT;future_admin_read;client_quotes;private.has_role(auth.uid(), 'admin'::app_role);
+ALL;commission_rules_admin_all;commission_rules;(private.has_role(auth.uid(), 'admin'::app_role) OR private.has_role(auth.uid(), 'platform_admin'::app_role));(private.has_role(auth.uid(), 'admin'::app_role) OR private.has_role(auth.uid(), 'platform_admin'::app_role))
+SELECT;commission_rules_staff_read;commission_rules;(private.has_role(auth.uid(), 'sales_manager'::app_role) OR private.has_role(auth.uid(), 'company_management'::app_role) OR private.has_role(auth.uid(), 'sales_agent'::app_role));
+SELECT;future_admin_read;cost_estimates;private.has_role(auth.uid(), 'admin'::app_role);
+DELETE;demand_opp_admin_delete;demand_opportunities;private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role]);
+SELECT;demand_opp_client_read;demand_opportunities;(client_id = auth.uid());
+SELECT;demand_opp_staff_read;demand_opportunities;private.can_read_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'sales'::staff_group));
+UPDATE;demand_opp_staff_update;demand_opportunities;private.can_write_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'sales'::staff_group));private.can_write_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'sales'::staff_group))
+INSERT;demand_opp_staff_write;demand_opportunities;;private.can_write_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'sales'::staff_group))
+INSERT;demand_hist_insert;demand_opportunity_status_history;;"(private.has_role(auth.uid(), 'admin'::app_role) OR private.has_role(auth.uid(), 'platform_admin'::app_role) OR private.has_role(auth.uid(), 'company_management'::app_role) OR private.has_role(auth.uid(), 'sales_manager'::app_role) OR (EXISTS ( SELECT 1
+   FROM demand_opportunities d
+  WHERE ((d.id = demand_opportunity_status_history.demand_opportunity_id) AND (d.assigned_sales_agent_id = auth.uid())))))"
+SELECT;demand_hist_read;demand_opportunity_status_history;"(private.has_role(auth.uid(), 'admin'::app_role) OR private.has_role(auth.uid(), 'platform_admin'::app_role) OR private.has_role(auth.uid(), 'company_management'::app_role) OR private.has_role(auth.uid(), 'sales_manager'::app_role) OR (EXISTS ( SELECT 1
+   FROM demand_opportunities d
+  WHERE ((d.id = demand_opportunity_status_history.demand_opportunity_id) AND ((d.assigned_sales_agent_id = auth.uid()) OR (d.client_id = auth.uid()))))))";
+INSERT;info_req_insert_trusted_admin;information_requests;;private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role])
+SELECT;info_req_select_parent_scoped;information_requests;"(EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = information_requests.vehicle_opportunity_id) AND ((opp.partenaire_id = auth.uid()) OR ((opp.status <> 'brouillon'::opportunity_status) AND private.can_read_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, COALESCE(opp.assigned_group, 'purchase'::staff_group)))))))";
+UPDATE;info_req_update_owner_answer;information_requests;"(EXISTS ( SELECT 1
+   FROM vehicle_opportunities o
+  WHERE ((o.id = information_requests.vehicle_opportunity_id) AND (o.partenaire_id = auth.uid()))))";"(EXISTS ( SELECT 1
+   FROM vehicle_opportunities o
+  WHERE ((o.id = information_requests.vehicle_opportunity_id) AND (o.partenaire_id = auth.uid()))))"
+UPDATE;info_req_update_trusted_admin;information_requests;private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role])
+ALL;internal_notes_admin_all;internal_notes;private.has_role(auth.uid(), 'admin'::app_role);private.has_role(auth.uid(), 'admin'::app_role)
+SELECT;future_admin_read;marketplace_inquiries;private.has_role(auth.uid(), 'admin'::app_role);
+ALL;match_candidates admin all;match_candidates;private.has_role(auth.uid(), 'admin'::app_role);private.has_role(auth.uid(), 'admin'::app_role)
+ALL;match_feedback admin all;match_feedback;private.has_role(auth.uid(), 'admin'::app_role);private.has_role(auth.uid(), 'admin'::app_role)
+ALL;match_runs admin all;match_runs;private.has_role(auth.uid(), 'admin'::app_role);private.has_role(auth.uid(), 'admin'::app_role)
+ALL;matching_profiles admin all;matching_profiles;private.has_role(auth.uid(), 'admin'::app_role);private.has_role(auth.uid(), 'admin'::app_role)
+SELECT;notifications_own_select;notifications;(user_id = auth.uid());
+UPDATE;notifications_own_update;notifications;(user_id = auth.uid());
+SELECT;Scan owner reads detections;ocr_field_detections;"(EXISTS ( SELECT 1
+   FROM ocr_scans s
+  WHERE ((s.id = ocr_field_detections.scan_id) AND ((s.uploader_id = auth.uid()) OR private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role])))))";
+ALL;Scan owner writes detections;ocr_field_detections;"(EXISTS ( SELECT 1
+   FROM ocr_scans s
+  WHERE ((s.id = ocr_field_detections.scan_id) AND (s.uploader_id = auth.uid()))))";"(EXISTS ( SELECT 1
+   FROM ocr_scans s
+  WHERE ((s.id = ocr_field_detections.scan_id) AND (s.uploader_id = auth.uid()))))"
+ALL;Scan owner manages sources;ocr_scan_sources;"(EXISTS ( SELECT 1
+   FROM ocr_scans s
+  WHERE ((s.id = ocr_scan_sources.scan_id) AND ((s.uploader_id = auth.uid()) OR private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role])))))";"(EXISTS ( SELECT 1
+   FROM ocr_scans s
+  WHERE ((s.id = ocr_scan_sources.scan_id) AND (s.uploader_id = auth.uid()))))"
+INSERT;Uploader inserts own scans;ocr_scans;;(uploader_id = auth.uid())
+SELECT;Uploader reads own scans;ocr_scans;((uploader_id = auth.uid()) OR private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]));
+UPDATE;Uploader updates own scans;ocr_scans;((uploader_id = auth.uid()) OR private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]));((uploader_id = auth.uid()) OR private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]))
+DELETE;activities_delete_trusted_admin;opportunity_activities;private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role]);
+INSERT;activities_insert_partner_note_editable;opportunity_activities;;"((kind = 'note'::text) AND (author_id = auth.uid()) AND (EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = opportunity_activities.vehicle_opportunity_id) AND (opp.partenaire_id = auth.uid()) AND ((private.has_role(auth.uid(), 'partenaire'::app_role) AND (private.get_partner_kind(auth.uid()) = 'seller'::partner_kind)) OR private.is_external_agent(auth.uid())) AND ((opp.status = 'brouillon'::opportunity_status) OR (opp.owner_side = 'partenaire'::opportunity_owner_side))))))"
+INSERT;activities_insert_staff_scoped;opportunity_activities;;"((author_id = auth.uid()) AND private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role, 'external_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = opportunity_activities.vehicle_opportunity_id) AND (opp.status <> 'brouillon'::opportunity_status) AND private.can_write_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, COALESCE(opp.assigned_group, 'purchase'::staff_group))))))"
+SELECT;activities_select_parent_scoped;opportunity_activities;"(EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = opportunity_activities.vehicle_opportunity_id) AND (((opp.status <> 'brouillon'::opportunity_status) AND private.can_read_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, COALESCE(opp.assigned_group, 'purchase'::staff_group))) OR ((opp.partenaire_id = auth.uid()) AND (opportunity_activities.kind = 'note'::text) AND (opportunity_activities.author_id = auth.uid()))))))";
+UPDATE;activities_update_trusted_admin;opportunity_activities;private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role])
+ALL;op_comm_admin_all;opportunity_commissions;(private.has_role(auth.uid(), 'admin'::app_role) OR private.has_role(auth.uid(), 'platform_admin'::app_role));(private.has_role(auth.uid(), 'admin'::app_role) OR private.has_role(auth.uid(), 'platform_admin'::app_role))
+SELECT;op_comm_partner_read_scoped;opportunity_commissions;((partenaire_id = auth.uid()) AND private.has_any_role(auth.uid(), ARRAY['partenaire'::app_role, 'apporteur'::app_role]));
+SELECT;op_comm_staff_read_scoped;opportunity_commissions;"(private.has_any_role(auth.uid(), ARRAY['sales_manager'::app_role, 'company_management'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM vehicle_opportunities opportunity
+  WHERE ((opportunity.id = opportunity_commissions.vehicle_opportunity_id) AND (opportunity.status <> 'brouillon'::opportunity_status) AND private.can_read_pipeline_record(auth.uid(), opportunity.assigned_sales_agent_id, opportunity.assigned_group_id, COALESCE(opportunity.assigned_group, 'purchase'::staff_group))))))";
+DELETE;opp_decisions_delete_scoped;opportunity_decisions;"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = opportunity_decisions.vehicle_opportunity_id) AND (opp.status <> 'brouillon'::opportunity_status) AND private.can_write_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, COALESCE(opp.assigned_group, 'purchase'::staff_group))))))";
+INSERT;opp_decisions_insert_scoped;opportunity_decisions;;"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = opportunity_decisions.vehicle_opportunity_id) AND (opp.status <> 'brouillon'::opportunity_status) AND private.can_write_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, COALESCE(opp.assigned_group, 'purchase'::staff_group))))))"
+SELECT;opp_decisions_select_scoped;opportunity_decisions;"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'company_management'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = opportunity_decisions.vehicle_opportunity_id) AND (opp.status <> 'brouillon'::opportunity_status) AND private.can_read_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, COALESCE(opp.assigned_group, 'purchase'::staff_group))))))";
+UPDATE;opp_decisions_update_scoped;opportunity_decisions;"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = opportunity_decisions.vehicle_opportunity_id) AND (opp.status <> 'brouillon'::opportunity_status) AND private.can_write_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, COALESCE(opp.assigned_group, 'purchase'::staff_group))))))";"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = opportunity_decisions.vehicle_opportunity_id) AND (opp.status <> 'brouillon'::opportunity_status) AND private.can_write_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, COALESCE(opp.assigned_group, 'purchase'::staff_group))))))"
+DELETE;opp_docs_delete_scoped;opportunity_documents;"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = opportunity_documents.vehicle_opportunity_id) AND (opp.status <> 'brouillon'::opportunity_status) AND private.can_write_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, COALESCE(opp.assigned_group, 'purchase'::staff_group))))))";
+INSERT;opp_docs_insert_scoped;opportunity_documents;;"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = opportunity_documents.vehicle_opportunity_id) AND (opp.status <> 'brouillon'::opportunity_status) AND private.can_write_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, COALESCE(opp.assigned_group, 'purchase'::staff_group))))))"
+SELECT;opp_docs_select_scoped;opportunity_documents;"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'company_management'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = opportunity_documents.vehicle_opportunity_id) AND (opp.status <> 'brouillon'::opportunity_status) AND private.can_read_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, COALESCE(opp.assigned_group, 'purchase'::staff_group))))))";
+UPDATE;opp_docs_update_scoped;opportunity_documents;"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = opportunity_documents.vehicle_opportunity_id) AND (opp.status <> 'brouillon'::opportunity_status) AND private.can_write_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, COALESCE(opp.assigned_group, 'purchase'::staff_group))))))";"(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) AND (EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = opportunity_documents.vehicle_opportunity_id) AND (opp.status <> 'brouillon'::opportunity_status) AND private.can_write_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, COALESCE(opp.assigned_group, 'purchase'::staff_group))))))"
+SELECT;opp_status_history_select_parent_scoped;opportunity_status_history;"(EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = opportunity_status_history.vehicle_opportunity_id) AND ((opp.partenaire_id = auth.uid()) OR ((opp.status <> 'brouillon'::opportunity_status) AND private.can_read_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, COALESCE(opp.assigned_group, 'purchase'::staff_group)))))))";
+SELECT;future_admin_read;options_prioritaires;private.has_role(auth.uid(), 'admin'::app_role);
+SELECT;profiles_select_self_or_admin;profiles;((id = auth.uid()) OR private.has_role(auth.uid(), 'admin'::app_role));
+UPDATE;profiles_update_self;profiles;(id = auth.uid());(id = auth.uid())
+SELECT;future_admin_read;purchase_evaluations;private.has_role(auth.uid(), 'admin'::app_role);
+ALL;admin manages ref_body_types;ref_body_types;private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role])
+SELECT;public read ref_body_types;ref_body_types;true;
+ALL;ref_cat_brands_admin_write;ref_category_brands;private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role])
+SELECT;ref_cat_brands_read;ref_category_brands;true;
+ALL;admin manages countries;ref_countries;private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role])
+SELECT;public read countries;ref_countries;true;
+ALL;admin manages ref_equipment;ref_equipment;private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role])
+SELECT;public read ref_equipment;ref_equipment;true;
+ALL;admin manages ref_euro_standards;ref_euro_standards;private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role])
+SELECT;public read ref_euro_standards;ref_euro_standards;true;
+ALL;admin manages ref_fuel_types;ref_fuel_types;private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role])
+SELECT;public read ref_fuel_types;ref_fuel_types;true;
+ALL;admin manages ref_gearbox_types;ref_gearbox_types;private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role])
+SELECT;public read ref_gearbox_types;ref_gearbox_types;true;
+ALL;admin manages brands;ref_vehicle_brands;private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role])
+SELECT;public read brands;ref_vehicle_brands;true;
+ALL;ref_categories_admin_write;ref_vehicle_categories;private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role])
+SELECT;ref_categories_read;ref_vehicle_categories;true;
+ALL;admin manages models;ref_vehicle_models;private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role])
+SELECT;public read models;ref_vehicle_models;true;
+ALL;admin manages vtypes;ref_vehicle_types;private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role])
+SELECT;public read vtypes;ref_vehicle_types;true;
+SELECT;future_admin_read;resale_listings;private.has_role(auth.uid(), 'admin'::app_role);
+DELETE;sale_listings_admin_delete;sale_listings;private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role]);
+SELECT;sale_listings_staff_read;sale_listings;private.can_read_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'sales'::staff_group));
+UPDATE;sale_listings_staff_update;sale_listings;private.can_write_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'sales'::staff_group));private.can_write_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'sales'::staff_group))
+INSERT;sale_listings_staff_write;sale_listings;;private.can_write_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'sales'::staff_group))
+ALL;admin manages site content;site_content;private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['platform_admin'::app_role, 'admin'::app_role])
+SELECT;public read site content;site_content;true;
+ALL;staff_group_members_admin_write;staff_group_members;private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role])
+SELECT;staff_group_members_read;staff_group_members;((user_id = auth.uid()) OR private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'company_management'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]));
+ALL;staff_groups_admin_write;staff_groups;private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role]);private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role])
+SELECT;staff_groups_staff_read;staff_groups;(private.has_any_role(auth.uid(), ARRAY['admin'::app_role, 'platform_admin'::app_role, 'company_management'::app_role, 'sales_manager'::app_role, 'sales_agent'::app_role]) OR private.is_group_member(auth.uid(), id));
+ALL;self manage preferences;user_preferences;(user_id = auth.uid());(user_id = auth.uid())
+SELECT;user_roles_select_self_or_admin;user_roles;((user_id = auth.uid()) OR private.has_role(auth.uid(), 'admin'::app_role));
+DELETE;opp_delete_own_drafts;vehicle_opportunities;((partenaire_id = auth.uid()) AND (status = 'brouillon'::opportunity_status));
+INSERT;opp_insert_own;vehicle_opportunities;;(((partenaire_id = auth.uid()) AND (status = ANY (ARRAY['brouillon'::opportunity_status, 'envoyee'::opportunity_status])) AND ((private.get_partner_kind(auth.uid()) = 'seller'::partner_kind) OR private.is_external_agent(auth.uid()))) OR private.can_write_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'purchase'::staff_group)))
+UPDATE;opp_partner_update;vehicle_opportunities;((partenaire_id = auth.uid()) AND private.has_role(auth.uid(), 'partenaire'::app_role) AND (private.get_partner_kind(auth.uid()) = 'seller'::partner_kind) AND ((status = 'brouillon'::opportunity_status) OR (owner_side = 'partenaire'::opportunity_owner_side)));((partenaire_id = auth.uid()) AND private.has_role(auth.uid(), 'partenaire'::app_role) AND (private.get_partner_kind(auth.uid()) = 'seller'::partner_kind) AND ((status = ANY (ARRAY['brouillon'::opportunity_status, 'envoyee'::opportunity_status])) OR (owner_side = 'partenaire'::opportunity_owner_side)))
+SELECT;opp_select_scoped;vehicle_opportunities;((partenaire_id = auth.uid()) OR ((status <> 'brouillon'::opportunity_status) AND private.can_read_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'purchase'::staff_group))));
+UPDATE;opp_staff_update;vehicle_opportunities;(((partenaire_id = auth.uid()) AND private.is_external_agent(auth.uid())) OR private.can_write_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'purchase'::staff_group)));(((partenaire_id = auth.uid()) AND private.is_external_agent(auth.uid())) OR private.can_write_pipeline_record(auth.uid(), assigned_sales_agent_id, assigned_group_id, COALESCE(assigned_group, 'purchase'::staff_group)))
+DELETE;vehicle_photos_delete_parent_editable;vehicle_photos;"(EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = vehicle_photos.vehicle_opportunity_id) AND (opp.partenaire_id = auth.uid()) AND ((private.has_role(auth.uid(), 'partenaire'::app_role) AND (private.get_partner_kind(auth.uid()) = 'seller'::partner_kind)) OR private.is_external_agent(auth.uid())) AND ((opp.status = 'brouillon'::opportunity_status) OR (opp.owner_side = 'partenaire'::opportunity_owner_side)))))";
+INSERT;vehicle_photos_insert_parent_editable;vehicle_photos;;"(EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = vehicle_photos.vehicle_opportunity_id) AND (opp.partenaire_id = auth.uid()) AND ((private.has_role(auth.uid(), 'partenaire'::app_role) AND (private.get_partner_kind(auth.uid()) = 'seller'::partner_kind)) OR private.is_external_agent(auth.uid())) AND ((opp.status = 'brouillon'::opportunity_status) OR (opp.owner_side = 'partenaire'::opportunity_owner_side)))))"
+SELECT;vehicle_photos_select_parent_scoped;vehicle_photos;"(EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = vehicle_photos.vehicle_opportunity_id) AND ((opp.partenaire_id = auth.uid()) OR ((opp.status <> 'brouillon'::opportunity_status) AND private.can_read_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, COALESCE(opp.assigned_group, 'purchase'::staff_group)))))))";
+UPDATE;vehicle_photos_update_parent_editable;vehicle_photos;"(EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = vehicle_photos.vehicle_opportunity_id) AND (opp.partenaire_id = auth.uid()) AND ((private.has_role(auth.uid(), 'partenaire'::app_role) AND (private.get_partner_kind(auth.uid()) = 'seller'::partner_kind)) OR private.is_external_agent(auth.uid())) AND ((opp.status = 'brouillon'::opportunity_status) OR (opp.owner_side = 'partenaire'::opportunity_owner_side)))))";"(EXISTS ( SELECT 1
+   FROM vehicle_opportunities opp
+  WHERE ((opp.id = vehicle_photos.vehicle_opportunity_id) AND (opp.partenaire_id = auth.uid()) AND ((private.has_role(auth.uid(), 'partenaire'::app_role) AND (private.get_partner_kind(auth.uid()) = 'seller'::partner_kind)) OR private.is_external_agent(auth.uid())) AND ((opp.status = 'brouillon'::opportunity_status) OR (opp.owner_side = 'partenaire'::opportunity_owner_side)))))"
+
+=====================================================================
+Query 3 — dangerous permissive policies: USING (true) or WITH CHECK (true)
+Exported: query-results-export-2026-08-23_17-11-50.csv
+=====================================================================
+cmd;policyname;tablename;using_expr;with_check
+SELECT;public read ref_equipment;ref_equipment;true;
+SELECT;public read ref_euro_standards;ref_euro_standards;true;
+SELECT;public read brands;ref_vehicle_brands;true;
+SELECT;public read countries;ref_countries;true;
+SELECT;public read models;ref_vehicle_models;true;
+SELECT;public read ref_body_types;ref_body_types;true;
+SELECT;public read ref_fuel_types;ref_fuel_types;true;
+SELECT;public read ref_gearbox_types;ref_gearbox_types;true;
+SELECT;public read site content;site_content;true;
+SELECT;public read vtypes;ref_vehicle_types;true;
+SELECT;ref_cat_brands_read;ref_category_brands;true;
+SELECT;ref_categories_read;ref_vehicle_categories;true;
+
+Every "true" policy found is a SELECT on a public reference/lookup table
+(vehicle taxonomy) or site_content — all intentionally public, non-sensitive
+data. No sensitive table (profiles, buyer_leads, vehicle_opportunities,
+commission tables, user_roles, audit_logs, etc.) has a wide-open policy.
+
+=====================================================================
+Query 4 — tables with RLS enabled but ZERO policies (fully locked)
+Exported: query-results-export-2026-08-23_17-12-06.csv
+=====================================================================
+tablename
+rate_limit_events
+
+rate_limit_events has RLS on with no policies at all, meaning it is
+completely inaccessible through the normal client connection in any
+direction. This matches the app's design: the only sanctioned access path
+is the rate_limit_check() RPC function, which is itself hard-gated to only
+run as the service_role Postgres role (see supabase/migrations/
+20260818010648_...sql). Confirmed intentional, not a gap.
+
+=====================================================================
+CONCLUSION
+=====================================================================
+Phase 2, section 9.1 (audit RLS by hand) is complete. Zero Critical or High
+findings. Every sensitive table has real, scoped policies; the only "true"
+policies are on intentionally-public reference data; the only zero-policy
+table is intentionally fully locked and reachable only via a hardened RPC.
+
+Two minor, non-security items noted for later (see threat-model.md):
+1. A handful of policies check only `admin` (not `platform_admin`) where
+   most others check both via has_any_role — e.g. profiles_select_self_or_admin,
+   user_roles_select_self_or_admin, and the six `future_admin_read` policies.
+   This is MORE restrictive, not less, so it is a possible functional gap
+   (platform_admin unable to do something admin can) rather than a security
+   risk. Worth confirming intent in Phase 3.
+2. demand_opportunity_status_history allows a direct client INSERT (unlike
+   its sibling history tables) but the WITH CHECK is properly scoped to
+   admin/platform_admin/company_management/sales_manager roles or the
+   specific demand's assigned sales agent — confirmed correctly scoped, not
+   a gap.

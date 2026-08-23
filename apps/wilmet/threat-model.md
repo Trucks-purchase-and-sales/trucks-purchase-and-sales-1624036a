@@ -53,9 +53,10 @@ meant to be strictly broader/narrower.
 | `opportunity_commissions` | partner reads another partner's commission | mitigated | `op_comm_partner_read_scoped` requires `partenaire_id = auth.uid()` | ok |
 | `vehicle_photos` / `vehicle-photos` bucket | cross-opportunity read of private vehicle photos | mitigated | parent-scoped RLS + private (non-public) bucket, keyed on folder name | ok (spot-check folder-naming assumption holds) |
 | `information_requests` | partner answers a request more than once or edits admin's message | mitigated | `tg_info_req_owner_guard` restricts to one `status='answered'` transition | ok |
-| `ocr_scans`, `match_candidates`, `internal_notes`, `notifications`, `staff_groups`, and the rest of the 52 tables | anon or cross-user read/write | **verified live: RLS enabled on all 52 tables, no anon policy found on any sensitive table** | real policies exist on every table (owner/staff/admin-scoped) | ✅ ok, broad pass — exact `USING`/`WITH CHECK` logic per policy not yet pulled, so treat as "policy exists and looks right by name," not "logic independently re-derived" |
-| `demand_opportunity_status_history` | forged status-history entry via direct client INSERT | unlike its sibling history tables (`buyer_lead_status_history`, `opportunity_status_history`), this one has a client-reachable INSERT policy | policy exists but its exact scoping wasn't pulled | to verify (Phase 2) — confirm the INSERT is properly scoped to the caller's own records |
+| `ocr_scans`, `match_candidates`, `internal_notes`, `notifications`, `staff_groups`, and the rest of the 52 tables | anon or cross-user read/write | **fully verified live**, including exact `USING`/`WITH CHECK` text (`evidence/phase2-rls-audit.txt`) | real, correctly-scoped policies on every table; every `USING (true)`/`WITH CHECK (true)` found is on intentionally-public reference data (`ref_*`, `site_content`) only | ✅ **ok — logic independently re-derived, 2026-08-23** |
+| `demand_opportunity_status_history` | forged status-history entry via direct client INSERT | unlike its sibling history tables, this one has a client-reachable INSERT policy | **verified:** `WITH CHECK` restricts insert to admin/platform_admin/company_management/sales_manager, or the specific demand's assigned sales agent — not open to end users | ✅ ok — verified 2026-08-23 |
 | 6 tables with only a `future_admin_read` policy (`client_quotes`, `cost_estimates`, `marketplace_inquiries`, `options_prioritaires`, `purchase_evaluations`, `resale_listings`) | none currently — no INSERT policy exists on any of them | none — this looks like unused schema staged for unbuilt features | n/a (functional question, not a security gap) | to confirm with Salma whether these are in use |
+| `rate_limit_events` | anon/authenticated read or write of rate-limit tracking data | RLS enabled, zero policies — fully deny-all through the client | intentional: the only write path is `rate_limit_check()`, an RPC hard-gated to `service_role` only | ✅ ok — verified 2026-08-23 |
 | `LOVABLE_API_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | secret exfiltration into the client bundle | low — both confirmed read only in server-only files/server-fn bodies in this pass | server-side only (verified by grep, not yet verified in the built bundle) | to verify — run `pipeline/security/secret-scan.sh` (Appendix C) against the actual production bundle once the build/publish issue is resolved |
 | RPC functions (`admin_request_information`, `admin_handover_to_partner`) | unauth call / privilege escalation | low | `INVOKER` security + explicit in-body role check | ok |
 | `rate_limit_check` | bypass via direct RPC call as non-service_role | mitigated | hard `RAISE EXCEPTION` unless caller is `service_role` | ok |
@@ -65,15 +66,26 @@ meant to be strictly broader/narrower.
 
 - ~~Confirm the actual RLS state of `user_roles`, `commission_rules`, and
   `audit_logs`~~ — **resolved 2026-08-23**, see the Threats table above.
+- ~~Pull the exact `USING`/`WITH CHECK` clause text for each policy~~ — **resolved
+  2026-08-23**: section 9.1 (audit RLS by hand) is complete, zero Critical/High
+  findings, full text in `evidence/phase2-rls-audit.txt`.
+- ~~Confirm `demand_opportunity_status_history`'s client-reachable INSERT policy is
+  scoped correctly~~ — **resolved 2026-08-23**: it is, see the Threats table above.
+- **New from the full policy read:** a handful of policies check only `admin` where
+  most others check `admin` OR `platform_admin` via `has_any_role` — specifically
+  `profiles_select_self_or_admin`, `user_roles_select_self_or_admin`, and the six
+  `future_admin_read` policies. This makes `platform_admin` *more* restricted than
+  `admin` in exactly these spots, which cuts against the assumption everywhere else in
+  the app that the two roles are equivalent. Likely a functional gap (a `platform_admin`
+  can't view another user's profile or role), not a security risk — worth confirming
+  intent in Phase 3.
 - Reconstruct and commit a baseline migration reflecting the live RLS/schema state, so
   the documentation gap (RLS setup existing only in the live project, not in version
   control) doesn't recur and future changes can be diffed and reviewed.
-- Pull the exact `USING`/`WITH CHECK` clause text for each policy (not just its name and
-  command) to independently re-derive the logic rather than trusting policy names —
-  this pass confirmed *that* policies exist and roughly what they claim to do, not the
-  precise boolean conditions.
-- Confirm `demand_opportunity_status_history`'s client-reachable INSERT policy is scoped
-  correctly (its siblings are read-only).
+- Still needed for 9.2 (active probing): a staging Supabase project and test-user
+  accounts per role — this is the one part of Phase 2 that couldn't be completed against
+  production, since it involves deliberate write/permission attempts that must never
+  touch real data (plan §2, rule 4).
 - Confirm with Salma whether `client_quotes`, `cost_estimates`, `marketplace_inquiries`,
   `options_prioritaires`, `purchase_evaluations`, `resale_listings` are in active use —
   they currently have no write path at all.
