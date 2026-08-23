@@ -22,7 +22,7 @@ open by default. "Policies (live)" below lists every policy actually found via
 | `buyer_lead_matches` | AI match scores/notes | SELECT/INSERT/UPDATE/DELETE, scoped via parent `buyer_leads` |
 | `buyer_lead_status_history` | status transitions | SELECT only (system/trigger-written, no client insert) |
 | `demand_opportunities` | budget, assigned staff, vehicle prefs | SELECT (client + staff), UPDATE, INSERT, DELETE (admin) |
-| `demand_opportunity_status_history` | status transitions | SELECT **and INSERT** for `authenticated` — unlike its sibling history tables, this one allows a direct client insert; worth confirming the INSERT is properly scoped (Phase 2) |
+| `demand_opportunity_status_history` | status transitions | SELECT **and INSERT** for `authenticated` — unlike its sibling history tables, this one allows a direct client insert; verified: `WITH CHECK` restricts it to admin/platform_admin/company_management/sales_manager or the demand's assigned sales agent — not open to end users |
 | `opportunity_commissions` | basis/computed amount EUR, status, partner — **financial** | ALL for admin, SELECT scoped for partner and staff |
 | `opportunity_documents` | storage_path (ID/registration docs) | SELECT/INSERT/UPDATE/DELETE, internal roles + parent scope |
 | `opportunity_decisions` | AI verdict/score | SELECT/INSERT/UPDATE/DELETE, internal roles + parent scope |
