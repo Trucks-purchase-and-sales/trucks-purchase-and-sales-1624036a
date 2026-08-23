@@ -788,6 +788,10 @@ alter table public.staff_group_members add constraint staff_group_members_group_
 alter table public.staff_group_members add constraint staff_group_members_user_id_fkey foreign key (user_id) references auth.users(id);
 alter table public.user_preferences add constraint user_preferences_user_id_fkey foreign key (user_id) references auth.users(id);
 alter table public.user_roles add constraint user_roles_user_id_fkey foreign key (user_id) references auth.users(id);
+-- Required by handle_new_user's "ON CONFLICT (user_id) DO NOTHING" — without
+-- this, every new signup fails with "Database error creating new user"
+-- because that ON CONFLICT clause has no matching constraint to target.
+alter table public.user_roles add constraint user_roles_user_id_key unique (user_id);
 
 alter table public.vehicle_opportunities add constraint vehicle_opportunities_partenaire_id_fkey foreign key (partenaire_id) references auth.users(id);
 alter table public.vehicle_opportunities add constraint vehicle_opportunities_assigned_sales_agent_id_fkey foreign key (assigned_sales_agent_id) references auth.users(id);
