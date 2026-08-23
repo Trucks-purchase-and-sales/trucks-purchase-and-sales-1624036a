@@ -85,9 +85,9 @@ export function CommissionPanel({
     queryKey: ["op-finance", opportunityId],
     queryFn: () => financeFn({ data: { opportunityId } }),
   });
-  const c = (data?.commission ?? null) as
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (Record<string, any> & { profiles?: Person | null }) | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  type CommissionRow = Record<string, any> & { profiles?: Person | null };
+  const c = (data?.commission ?? null) as CommissionRow | null;
 
   const { data: peopleData } = useQuery({
     queryKey: ["commission-beneficiaries"],
