@@ -37,8 +37,12 @@ for why this started ahead of the Phase 0.5 functional sign-off)._
 | `admin` / `platform_admin` | privileged | near-full access; only roles allowed on `/admin/audit`, `/admin/settings`, `/admin/users` |
 
 `admin` and `platform_admin` were not observed to differ in any check found in this
-pass — worth confirming in Phase 2 whether that's intentional or `platform_admin` was
-meant to be strictly broader/narrower.
+pass. **Confirmed (2026-08-24):** every route guard, sidebar check, and role-based
+redirect in `src/` treats them as full synonyms, always checked together
+(`useCurrentRoles.ts`, `useRoleHome.ts`, `AppSidebar.tsx`, every `admin.*` route guard).
+The handful of RLS policies that only recognize `admin` alone (see Threats table) are
+almost certainly a copy-paste inconsistency, not an intentional narrower design —
+low-priority fix for Phase 3, not a security risk (more restrictive, not less).
 
 ## Threats & current control
 
@@ -71,14 +75,9 @@ meant to be strictly broader/narrower.
   findings, full text in `evidence/phase2-rls-audit.txt`.
 - ~~Confirm `demand_opportunity_status_history`'s client-reachable INSERT policy is
   scoped correctly~~ — **resolved 2026-08-23**: it is, see the Threats table above.
-- **New from the full policy read:** a handful of policies check only `admin` where
-  most others check `admin` OR `platform_admin` via `has_any_role` — specifically
-  `profiles_select_self_or_admin`, `user_roles_select_self_or_admin`, and the six
-  `future_admin_read` policies. This makes `platform_admin` *more* restricted than
-  `admin` in exactly these spots, which cuts against the assumption everywhere else in
-  the app that the two roles are equivalent. Likely a functional gap (a `platform_admin`
-  can't view another user's profile or role), not a security risk — worth confirming
-  intent in Phase 3.
+- ~~Verify `admin` vs `platform_admin` is an intentional distinction or accidental
+  duplication~~ — **resolved 2026-08-24**: accidental, see the Roles section above.
+  Low-priority fix for Phase 3.
 - Reconstruct and commit a baseline migration reflecting the live RLS/schema state, so
   the documentation gap (RLS setup existing only in the live project, not in version
   control) doesn't recur and future changes can be diffed and reviewed.
@@ -90,18 +89,18 @@ meant to be strictly broader/narrower.
   artifact — verified by hand); an authenticated non-staff test user saw exactly their
   own 1 seeded row and nothing belonging to anyone else. Full output in
   `evidence/phase2-rls-probe.txt`. This closes out every section of Phase 2 (9.1, 9.2, 9.3).
-- Confirm with Salma whether `client_quotes`, `cost_estimates`, `marketplace_inquiries`,
-  `options_prioritaires`, `purchase_evaluations`, `resale_listings` are in active use —
-  they currently have no write path at all.
-- Type the opaque `data: Json` columns on `client_quotes`, `cost_estimates`,
-  `purchase_evaluations`, `resale_listings`, `marketplace_inquiries`, `options_prioritaires`
-  — can't assess their actual sensitivity or exposure without knowing their real shape.
-- Verify `admin` vs `platform_admin` is an intentional distinction or accidental
-  duplication throughout the codebase.
-- Locate the storage bucket (if any) actually used for `opportunity_documents.storage_path`
-  and `ocr_scan_sources.storage_path` — not found in this pass.
-- Add `LOVABLE_API_KEY` to `.env.example` for onboarding completeness (minor, not a
-  security gap since the running app already has it via Lovable Cloud).
+- ~~Confirm with Salma whether `client_quotes`, `cost_estimates`, `marketplace_inquiries`,
+  `options_prioritaires`, `purchase_evaluations`, `resale_listings` are in active use~~ —
+  **resolved 2026-08-24**: confirmed intentional scaffolding for a planned future
+  feature. Type the opaque `data: Json` columns once that feature is actually built —
+  can't usefully assess their real shape/sensitivity before then.
+- ~~Locate the storage bucket (if any) actually used for `opportunity_documents.storage_path`
+  and `ocr_scan_sources.storage_path`~~ — **resolved 2026-08-24**: no dedicated bucket
+  exists; the only bucket referenced anywhere in the code is `vehicle-photos`, and
+  neither feature has any actual upload path wired up. Salma confirmed she's never
+  tested document upload. Flagged for the Phase 0.5 functional walkthrough — this is a
+  likely-unfinished feature, not a security gap.
+- ~~Add `LOVABLE_API_KEY` to `.env.example`~~ — **resolved 2026-08-24**.
 - Once the Phase 0.5 database/env-var issue is resolved and the app is confirmed
   functional, re-run `pipeline/security/secret-scan.sh` against the actual built/published
   bundle to independently confirm no service-role key or API key leaked into client code —
