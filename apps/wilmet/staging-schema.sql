@@ -37,6 +37,19 @@ grant all on schema public to public;
 drop schema if exists private cascade;
 create schema private;
 
+-- RLS policies only ever RESTRICT access on top of a baseline table-level
+-- grant — they don't grant access themselves. A brand-new Supabase project
+-- gets these grants automatically as part of its own hidden bootstrap
+-- (outside any exported schema); rebuilding the schema by hand skips that
+-- step entirely, so it has to be done explicitly here. Without this, every
+-- single table — even ones with a genuinely public "using (true)" policy —
+-- returns "permission denied for table X" (Postgres error 42501) for
+-- every role, RLS policy content notwithstanding.
+grant usage on schema public to anon, authenticated, service_role;
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
+
 -- =====================================================================
 -- 1) Extensions
 -- =====================================================================
@@ -1571,6 +1584,14 @@ create policy vehicle_photos_update_parent_editable on public.vehicle_photos for
 ) with check (
   exists (select 1 from public.vehicle_opportunities opp where opp.id = vehicle_photos.vehicle_opportunity_id and opp.partenaire_id = auth.uid() and ((private.has_role(auth.uid(),'partenaire') and private.get_partner_kind(auth.uid()) = 'seller') or private.is_external_agent(auth.uid())) and (opp.status = 'brouillon' or opp.owner_side = 'partenaire'))
 );
+
+-- =====================================================================
+-- 9) Safety-net grants for tables already created above (belt-and-braces
+--    alongside the ALTER DEFAULT PRIVILEGES in section 0 — see its comment).
+-- =====================================================================
+grant all on all tables in schema public to anon, authenticated, service_role;
+grant all on all sequences in schema public to anon, authenticated, service_role;
+grant execute on all functions in schema public to anon, authenticated, service_role;
 
 -- =====================================================================
 -- END — after running this, seed a little synthetic reference data
