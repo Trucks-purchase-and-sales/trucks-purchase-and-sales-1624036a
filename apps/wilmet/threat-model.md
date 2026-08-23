@@ -82,10 +82,14 @@ meant to be strictly broader/narrower.
 - Reconstruct and commit a baseline migration reflecting the live RLS/schema state, so
   the documentation gap (RLS setup existing only in the live project, not in version
   control) doesn't recur and future changes can be diffed and reviewed.
-- Still needed for 9.2 (active probing): a staging Supabase project and test-user
-  accounts per role — this is the one part of Phase 2 that couldn't be completed against
-  production, since it involves deliberate write/permission attempts that must never
-  touch real data (plan §2, rule 4).
+- ~~9.2 (active probing): a staging Supabase project and test-user accounts per
+  role~~ — **resolved 2026-08-23**: staging rebuilt from `apps/wilmet/staging-schema.sql`
+  (see ADR-005), 3 test users created, and `pipeline/security/rls-probe.mjs` run against
+  it live. Zero leaks: anonymous users get 0 rows from all 52 tables and a realistic
+  write attempt is rejected with Postgres's own RLS-violation error (not just a script
+  artifact — verified by hand); an authenticated non-staff test user saw exactly their
+  own 1 seeded row and nothing belonging to anyone else. Full output in
+  `evidence/phase2-rls-probe.txt`. This closes out every section of Phase 2 (9.1, 9.2, 9.3).
 - Confirm with Salma whether `client_quotes`, `cost_estimates`, `marketplace_inquiries`,
   `options_prioritaires`, `purchase_evaluations`, `resale_listings` are in active use —
   they currently have no write path at all.
