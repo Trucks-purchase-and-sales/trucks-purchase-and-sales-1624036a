@@ -86,7 +86,8 @@ export function CommissionPanel({
     queryFn: () => financeFn({ data: { opportunityId } }),
   });
   const c = (data?.commission ?? null) as
-    (Record<string, any> & { profiles?: Person | null }) | null; // eslint-disable-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (Record<string, any> & { profiles?: Person | null }) | null;
 
   const { data: peopleData } = useQuery({
     queryKey: ["commission-beneficiaries"],
@@ -112,7 +113,8 @@ export function CommissionPanel({
     setBasisAmount(c.basis_amount_eur != null ? String(c.basis_amount_eur) : "");
     setRuleKind(c.rule_kind ?? "pct_of_purchase");
     setRuleValue(c.rule_value != null ? String(c.rule_value) : "");
-  }, [c?.id, c?.updated_at, c?.computed_amount_eur]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [c?.id, c?.updated_at, c?.computed_amount_eur]);
 
   const preview = useMemo(() => {
     const v = Number(ruleValue);
