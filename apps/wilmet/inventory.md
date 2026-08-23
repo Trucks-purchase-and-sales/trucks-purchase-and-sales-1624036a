@@ -1,58 +1,62 @@
 # Inventory — Wilmet Trucks (one-page attack surface)
 
-_Date: 2026-08-23 · Author: V2P pipeline (Claude) · Source: static repo analysis only
-(code + `src/integrations/supabase/types.ts` + `supabase/migrations/*.sql`), no live
-database access yet. See [ADR-004](decisions/ADR-004-phase1-starts-before-phase0.5-signoff.md)
-for why this was compiled ahead of the Phase 0.5 functional sign-off._
+_Date: 2026-08-23 · Author: V2P pipeline (Claude) · Source: static repo analysis
+(code + `src/integrations/supabase/types.ts` + `supabase/migrations/*.sql`), cross-checked
+against a live read-only query of `pg_tables`/`pg_policies` run by Salma against
+production on 2026-08-23 (see "RLS — verified live" below). See
+[ADR-004](decisions/ADR-004-phase1-starts-before-phase0.5-signoff.md) for why this was
+compiled ahead of the Phase 0.5 functional sign-off._
 
 ## Tables
 
-52 tables in `public`. RLS column reflects only what is provable from the 24 tracked
-migrations — a checkmark means a `CREATE POLICY` was found; "**unknown**" means no
-`ENABLE/DISABLE ROW LEVEL SECURITY` or `CREATE POLICY` statement exists in version
-control for that table at all (see "RLS blind spot" below).
+52 tables in `public`. **RLS is enabled on all 52 tables, confirmed live** — no table is
+open by default. "Policies (live)" below lists every policy actually found via
+`pg_policies`, replacing the repo-only guesses from the first pass of this document.
 
-| Table | Columns (sensitive?) | RLS provable in repo? | Policies found |
-|---|---|---|---|
-| `profiles` | email, first/last name, phone, company, city, country, commission_rate — **PII + financial** | partial | INSERT revoked from `authenticated`/`anon` (only `handle_new_user` trigger / service_role can insert); self-update guarded by trigger; SELECT/base UPDATE policy not in tracked migrations (pre-existing, untracked) |
-| `user_roles` | user_id, role — **authorization root** | **unknown** | none found in any of 24 migrations |
-| `vehicle_opportunities` | purchase/sale/margin prices, contact name/email/phone, VIN, registration — **financial + PII** | yes | scoped SELECT/UPDATE/INSERT via `can_read/write_pipeline_record`; partner-update policy; column-guard trigger |
-| `buyer_leads` | name, email, phone, company, budget, payment method — **PII + financial** | yes | scoped SELECT/UPDATE/INSERT |
-| `buyer_lead_matches` | AI match scores/notes | yes | scoped SELECT/INSERT/UPDATE/DELETE via parent `buyer_leads` |
-| `buyer_lead_status_history` | status transitions | yes | SELECT only (system/trigger-written) |
-| `demand_opportunities` | budget, assigned staff, vehicle prefs | yes | scoped SELECT/UPDATE/INSERT |
-| `demand_opportunity_status_history` | status transitions | **unknown** | none found |
-| `opportunity_commissions` | basis/computed amount EUR, status, partner — **financial** | yes | partner-scoped SELECT, staff-scoped SELECT (admin-all policy referenced but not in tracked files) |
-| `opportunity_documents` | storage_path (ID/registration docs) | yes | SELECT/INSERT/UPDATE/DELETE, internal roles + parent scope |
-| `opportunity_decisions` | AI verdict/score | yes | SELECT/INSERT/UPDATE/DELETE, internal roles + parent scope |
-| `opportunity_status_history` | status transitions | yes | SELECT only |
-| `opportunity_activities` | free-text CRM notes | yes | SELECT/INSERT/UPDATE/DELETE, staff + partner-note-own scoping |
-| `information_requests` | admin↔partner messages | yes | SELECT parent-scoped; INSERT/UPDATE admin-only; owner-guard trigger |
-| `vehicle_photos` | storage_path | yes | SELECT/INSERT/UPDATE/DELETE parent-scoped |
-| `sale_listings` | purchase/sale price EUR, sold_to — **financial + PII-adjacent** | yes | scoped SELECT/UPDATE/INSERT; photo-ownership trigger |
-| `app_settings` | key/value config | partial | SELECT admin-only; no INSERT/UPDATE policy found despite a table GRANT to `authenticated` |
-| `commission_rules` | commission % / formulas — **financial, competitively sensitive** | **unknown** | none found |
-| `audit_logs` | action, actor, metadata — **tamper-evidence trail** | **unknown** | none found |
-| `internal_notes` | free-text CRM notes | **unknown** | none found |
-| `notifications` | user_id, title, body | **unknown** | none found |
-| `match_candidates` / `match_feedback` / `match_runs` / `matching_profiles` | AI matching internals, prompt/token telemetry | **unknown** | none found |
-| `ocr_scans` / `ocr_scan_sources` / `ocr_field_detections` | uploaded document OCR results | **unknown** | none found |
-| `client_quotes` / `cost_estimates` / `purchase_evaluations` / `resale_listings` / `options_prioritaires` / `marketplace_inquiries` | opaque `data` Json — **contents untyped, likely PII/financial** | **unknown** | none found |
-| `affiliate_links` / `affiliate_clicks` | referral codes, click fingerprint hash | **unknown** | none found |
-| `staff_groups` / `staff_group_members` | internal team structure | **unknown** | none found |
-| `user_preferences` | locale only | **unknown** (low sensitivity) | none found |
-| `rate_limit_events` | hashed key, bucket | **unknown** (low sensitivity) | none found |
-| `site_content` | CMS-style key/locale/value | **unknown** (low sensitivity) | none found |
-| `ref_*` (11 tables: body_types, category_brands, countries, equipment, euro_standards, fuel_types, gearbox_types, vehicle_brands, vehicle_categories, vehicle_models, vehicle_types) | static lookup data | **unknown** (low sensitivity — public reference data) | none found |
+| Table | Columns (sensitive?) | Policies (live) |
+|---|---|---|
+| `profiles` | email, first/last name, phone, company, city, country, commission_rate — **PII + financial** | SELECT self-or-admin, UPDATE self; no INSERT policy (insert only via `handle_new_user` trigger/service_role); self-update guarded by `tg_profile_self_update_guard` |
+| `user_roles` | user_id, role — **authorization root** | SELECT self-or-admin only; **no INSERT/UPDATE/DELETE policy exists at all** — role assignment is not reachable through the normal client connection, only via a trusted server-side path |
+| `vehicle_opportunities` | purchase/sale/margin prices, contact name/email/phone, VIN, registration — **financial + PII** | SELECT scoped, UPDATE (staff + partner), INSERT own, DELETE own-drafts; column-guard trigger |
+| `buyer_leads` | name, email, phone, company, budget, payment method — **PII + financial** | INSERT by anon (public lead capture), SELECT own + staff, UPDATE scoped |
+| `buyer_lead_matches` | AI match scores/notes | SELECT/INSERT/UPDATE/DELETE, scoped via parent `buyer_leads` |
+| `buyer_lead_status_history` | status transitions | SELECT only (system/trigger-written, no client insert) |
+| `demand_opportunities` | budget, assigned staff, vehicle prefs | SELECT (client + staff), UPDATE, INSERT, DELETE (admin) |
+| `demand_opportunity_status_history` | status transitions | SELECT **and INSERT** for `authenticated` — unlike its sibling history tables, this one allows a direct client insert; worth confirming the INSERT is properly scoped (Phase 2) |
+| `opportunity_commissions` | basis/computed amount EUR, status, partner — **financial** | ALL for admin, SELECT scoped for partner and staff |
+| `opportunity_documents` | storage_path (ID/registration docs) | SELECT/INSERT/UPDATE/DELETE, internal roles + parent scope |
+| `opportunity_decisions` | AI verdict/score | SELECT/INSERT/UPDATE/DELETE, internal roles + parent scope |
+| `opportunity_status_history` | status transitions | SELECT only (no client insert) |
+| `opportunity_activities` | free-text CRM notes | SELECT/INSERT (staff + own-note partner)/UPDATE/DELETE, admin-trusted for mutation |
+| `information_requests` | admin↔partner messages | SELECT parent-scoped; INSERT admin-only; UPDATE by owner (answer) and by admin; owner-guard trigger |
+| `vehicle_photos` | storage_path | SELECT/INSERT/UPDATE/DELETE, parent-scoped |
+| `sale_listings` | purchase/sale price EUR, sold_to — **financial + PII-adjacent** | SELECT/UPDATE/INSERT staff-scoped, DELETE admin; photo-ownership trigger |
+| `app_settings` | key/value config | SELECT/INSERT/UPDATE, admin only |
+| `commission_rules` | commission % / formulas — **financial, competitively sensitive** | ALL for admin, SELECT for staff — no anon access anywhere |
+| `audit_logs` | action, actor, metadata — **tamper-evidence trail** | SELECT admin-only; **no INSERT/UPDATE/DELETE policy at all** — the trail cannot be written or altered through the normal client connection |
+| `internal_notes` | free-text CRM notes | ALL for admin only (worth confirming other internal staff don't also need write access — functional question, not a security gap) |
+| `notifications` | user_id, title, body | SELECT/UPDATE own only; no client INSERT/DELETE (system-generated) |
+| `match_candidates` / `match_feedback` / `match_runs` / `matching_profiles` | AI matching internals, prompt/token telemetry | ALL for admin only on each |
+| `ocr_scans` / `ocr_scan_sources` / `ocr_field_detections` | uploaded document OCR results | Owner/uploader-scoped SELECT/INSERT/UPDATE/ALL |
+| `client_quotes` / `cost_estimates` / `purchase_evaluations` / `resale_listings` / `options_prioritaires` / `marketplace_inquiries` | opaque `data` Json — contents still untyped | SELECT only, named `future_admin_read` — no INSERT policy on any of the six; these look like schema staged ahead of unbuilt features (matches the unused `commercial_future`/`client_future` roles), worth confirming with Salma whether any are actually in use |
+| `affiliate_links` | referral codes | ALL admin, SELECT own-or-staff |
+| `affiliate_clicks` | click fingerprint hash | SELECT own-or-staff only; no client INSERT policy (writes happen server-side in the public affiliate-click endpoint) |
+| `staff_groups` / `staff_group_members` | internal team structure | ALL admin-write, SELECT staff-read |
+| `user_preferences` | locale only | ALL self-manage (low sensitivity) |
+| `rate_limit_events` | hashed key, bucket | no policy found in either pass (low sensitivity, not user-facing) |
+| `site_content` | CMS-style key/locale/value | ALL admin, SELECT public (low sensitivity, by design) |
+| `ref_*` (11 tables) | static lookup data | ALL admin-write, SELECT public/anon read — correct for public reference data |
 
-**RLS blind spot:** none of the 24 tracked migrations contain the original `CREATE TABLE`
-or baseline `ENABLE ROW LEVEL SECURITY` statements for any table — they are all
-incremental hardening/correction migrations dated 2026-08-17 through 2026-08-19. The
-baseline schema and RLS setup exist only in the live Supabase project, not in this repo.
-**Top priority for Phase 2 (§9.1):** confirm the actual RLS state of `user_roles`,
-`commission_rules`, and `audit_logs` first — these three carry the highest impact if
-open (privilege escalation, competitive/financial exposure, and audit-trail tampering
-respectively).
+**Resolved:** the first pass of this document flagged that none of the 24 tracked
+migrations contain the baseline `CREATE TABLE`/`ENABLE ROW LEVEL SECURITY` statements,
+so RLS state couldn't be confirmed from the repo alone. A live read-only query against
+production (2026-08-23) confirms RLS is enabled everywhere, and that the three
+highest-impact tables (`user_roles`, `commission_rules`, `audit_logs`) are all correctly
+locked down. The underlying documentation gap remains, though: the baseline schema/RLS
+setup still exists only in the live Supabase project, not in version control. Phase 2
+should still reconstruct and commit a baseline migration reflecting the live state, so
+this can be diffed and reviewed like any other change going forward, and so a future
+migration can't silently drop a policy nobody notices is missing from the repo.
 
 ## Roles
 
@@ -75,8 +79,9 @@ Stored in `public.user_roles` (`user_id`, `role app_role`) — not a column on `
 
 Role checks happen **client-side**: `src/lib/route-guards.ts`'s `requireAnyRole()` queries
 `user_roles` via the browser Supabase client inside each route's `beforeLoad` and redirects
-if no matching row exists. This makes the (currently unverified) RLS state of `user_roles`
-itself load-bearing for every route guard in the app.
+if no matching row exists. This makes `user_roles`'s RLS state load-bearing for every route
+guard in the app — now confirmed live: RLS enabled, self-or-admin SELECT only, no client
+write path at all, so this dependency is sound.
 
 ## Routes / pages
 
