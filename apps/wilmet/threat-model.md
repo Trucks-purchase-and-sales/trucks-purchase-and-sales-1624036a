@@ -1,7 +1,9 @@
 # Threat Model — Wilmet Trucks
 
-_Date: 2026-08-23 · Author: V2P pipeline (Claude) · Environment audited: **repo/code only,
-no live database access yet** (see [ADR-004](decisions/ADR-004-phase1-starts-before-phase0.5-signoff.md))._
+_Date: 2026-08-23 · Author: V2P pipeline (Claude) · Environment audited: repo/code,
+cross-checked against a live read-only `pg_tables`/`pg_policies` query run by Salma
+against production on 2026-08-23 (see [ADR-004](decisions/ADR-004-phase1-starts-before-phase0.5-signoff.md)
+for why this started ahead of the Phase 0.5 functional sign-off)._
 
 ## Assets & sensitivity
 
@@ -42,16 +44,18 @@ meant to be strictly broader/narrower.
 
 | Asset | Threat | Realistic? | Current control | Status (verify/ok/gap) |
 |---|---|---|---|---|
-| `user_roles` | self-privilege-escalation (authenticated user inserts own `admin` row) | **yes, plausible** — this table gates every role-restricted route and RLS policy in the app | unknown (no tracked RLS policy for this table at all) | 🔴 **to verify first (Phase 2)** |
-| `commission_rules` | anon/authenticated read of commission formulas | possible if RLS not enabled | unknown (no tracked RLS policy) | 🔴 to verify (Phase 2) |
-| `audit_logs` | authenticated user alters/deletes their own trail after an abuse | undermines the whole audit system if true | unknown (no tracked RLS policy) | 🔴 to verify (Phase 2) |
-| `profiles` | cross-user read of other users' PII/commission_rate | plausible via missing/loose SELECT policy | policy not in tracked migrations (pre-existing, untracked); self-update fields are guarded by `tg_profile_self_update_guard` | to verify |
+| `user_roles` | self-privilege-escalation (authenticated user inserts own `admin` row) | was plausible pending verification | **verified live:** RLS enabled, only a self-or-admin SELECT policy exists — no INSERT/UPDATE/DELETE policy at all, so this is not reachable through the normal client connection | ✅ **ok — verified 2026-08-23** |
+| `commission_rules` | anon/authenticated read of commission formulas | was possible pending verification | **verified live:** RLS enabled, ALL for admin + SELECT for staff, no anon policy anywhere | ✅ **ok — verified 2026-08-23** |
+| `audit_logs` | authenticated user alters/deletes their own trail after an abuse | was plausible pending verification | **verified live:** RLS enabled, admin-only SELECT, no INSERT/UPDATE/DELETE policy at all — the trail cannot be written or altered through the normal client connection | ✅ **ok — verified 2026-08-23** |
+| `profiles` | cross-user read of other users' PII/commission_rate | was plausible pending verification | **verified live:** `profiles_select_self_or_admin` SELECT policy, `profiles_update_self` UPDATE, no INSERT policy; self-update fields additionally guarded by `tg_profile_self_update_guard` | ✅ ok — verified 2026-08-23 |
 | `profiles` | self-escalation via direct UPDATE (e.g. setting own `commission_rate`, `is_active`, `partner_kind`) | mitigated | `tg_profile_self_update_guard` trigger blocks these fields unless `auth.role() = 'service_role'` | ok (verify trigger can't be bypassed via RPC) |
 | `vehicle_opportunities` | partner sets staff-only/financial columns via INSERT/UPDATE | mitigated | `tg_opp_partner_column_guard` state-machine trigger | ok (verify edge cases in Phase 2) |
 | `opportunity_commissions` | partner reads another partner's commission | mitigated | `op_comm_partner_read_scoped` requires `partenaire_id = auth.uid()` | ok |
 | `vehicle_photos` / `vehicle-photos` bucket | cross-opportunity read of private vehicle photos | mitigated | parent-scoped RLS + private (non-public) bucket, keyed on folder name | ok (spot-check folder-naming assumption holds) |
 | `information_requests` | partner answers a request more than once or edits admin's message | mitigated | `tg_info_req_owner_guard` restricts to one `status='answered'` transition | ok |
-| `ocr_scans`, `match_candidates`, `internal_notes`, `notifications`, `staff_groups`, and ~30 other tables | anon or cross-user read/write (RLS state simply unknown) | unverified — could range from fine to wide open | unknown (no tracked RLS policy) | 🔴 to verify (Phase 2), lower priority than the three above given lower sensitivity or narrower blast radius |
+| `ocr_scans`, `match_candidates`, `internal_notes`, `notifications`, `staff_groups`, and the rest of the 52 tables | anon or cross-user read/write | **verified live: RLS enabled on all 52 tables, no anon policy found on any sensitive table** | real policies exist on every table (owner/staff/admin-scoped) | ✅ ok, broad pass — exact `USING`/`WITH CHECK` logic per policy not yet pulled, so treat as "policy exists and looks right by name," not "logic independently re-derived" |
+| `demand_opportunity_status_history` | forged status-history entry via direct client INSERT | unlike its sibling history tables (`buyer_lead_status_history`, `opportunity_status_history`), this one has a client-reachable INSERT policy | policy exists but its exact scoping wasn't pulled | to verify (Phase 2) — confirm the INSERT is properly scoped to the caller's own records |
+| 6 tables with only a `future_admin_read` policy (`client_quotes`, `cost_estimates`, `marketplace_inquiries`, `options_prioritaires`, `purchase_evaluations`, `resale_listings`) | none currently — no INSERT policy exists on any of them | none — this looks like unused schema staged for unbuilt features | n/a (functional question, not a security gap) | to confirm with Salma whether these are in use |
 | `LOVABLE_API_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | secret exfiltration into the client bundle | low — both confirmed read only in server-only files/server-fn bodies in this pass | server-side only (verified by grep, not yet verified in the built bundle) | to verify — run `pipeline/security/secret-scan.sh` (Appendix C) against the actual production bundle once the build/publish issue is resolved |
 | RPC functions (`admin_request_information`, `admin_handover_to_partner`) | unauth call / privilege escalation | low | `INVOKER` security + explicit in-body role check | ok |
 | `rate_limit_check` | bypass via direct RPC call as non-service_role | mitigated | hard `RAISE EXCEPTION` unless caller is `service_role` | ok |
@@ -59,15 +63,20 @@ meant to be strictly broader/narrower.
 
 ## Open questions to resolve in Phase 2
 
-- **Highest priority:** confirm the actual RLS state (enabled? policies? or genuinely
-  open) of `user_roles`, `commission_rules`, and `audit_logs` — none of the 24 tracked
-  migrations touch these three at all, so their protection (if any) exists only in the
-  live, untracked baseline. `user_roles` matters most: every route guard and most RLS
-  policies in the app trust its contents.
-- Confirm whether the ~30 other tables with no tracked RLS statement (`notifications`,
-  `internal_notes`, `ocr_*`, `match_*`, `staff_groups`, the opaque-`data` tables, etc.)
-  have real protection, and reconstruct/commit the missing baseline migration once
-  confirmed, so this blind spot doesn't recur.
+- ~~Confirm the actual RLS state of `user_roles`, `commission_rules`, and
+  `audit_logs`~~ — **resolved 2026-08-23**, see the Threats table above.
+- Reconstruct and commit a baseline migration reflecting the live RLS/schema state, so
+  the documentation gap (RLS setup existing only in the live project, not in version
+  control) doesn't recur and future changes can be diffed and reviewed.
+- Pull the exact `USING`/`WITH CHECK` clause text for each policy (not just its name and
+  command) to independently re-derive the logic rather than trusting policy names —
+  this pass confirmed *that* policies exist and roughly what they claim to do, not the
+  precise boolean conditions.
+- Confirm `demand_opportunity_status_history`'s client-reachable INSERT policy is scoped
+  correctly (its siblings are read-only).
+- Confirm with Salma whether `client_quotes`, `cost_estimates`, `marketplace_inquiries`,
+  `options_prioritaires`, `purchase_evaluations`, `resale_listings` are in active use —
+  they currently have no write path at all.
 - Type the opaque `data: Json` columns on `client_quotes`, `cost_estimates`,
   `purchase_evaluations`, `resale_listings`, `marketplace_inquiries`, `options_prioritaires`
   — can't assess their actual sensitivity or exposure without knowing their real shape.
