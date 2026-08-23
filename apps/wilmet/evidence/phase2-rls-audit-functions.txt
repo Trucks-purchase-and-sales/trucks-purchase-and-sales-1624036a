@@ -1,0 +1,70 @@
+V2P Phase 2 — schema reconstruction source queries
+Run by: Salma, via the same read-only SQL editor used for the 9.1 RLS
+audit, against PRODUCTION.
+Date: 2026-08-23
+Purpose: gather everything needed to rebuild an accurate staging schema
+(apps/wilmet/staging-schema.sql) WITHOUT ever sharing the production
+database password (see ADR-005). All four queries below are pure
+read-only catalog/metadata inspection.
+
+The raw CSV exports (function definitions, column definitions, primary/
+foreign keys, enum values) were pasted directly into the conversation
+and used verbatim to build apps/wilmet/staging-schema.sql. This file
+records that the source data came from production's live catalog, not
+from guessing or from the incomplete tracked migration history, so the
+staging schema's fidelity can be traced back to its source.
+
+Query 1 — exact body of every helper/guard/trigger function:
+  select n.nspname as schema, p.proname as function_name, pg_get_functiondef(p.oid) as definition
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where (n.nspname = 'private' and p.proname in ('has_role','has_any_role','get_partner_kind','is_group_member'))
+     or p.proname like 'tg_%'
+     or p.proname = 'handle_new_user'
+  order by n.nspname, p.proname;
+-> returned 4 previously-untracked private.* helpers, 1 previously-
+   untracked public.handle_new_user, and 4 previously-tracked guard
+   trigger functions plus 13 business-logic-only trigger functions
+   (reference-number generation, notifications, computed commission,
+   status-history logging, quality scoring) that were deliberately
+   NOT ported into staging — see staging-schema.sql header for why.
+
+Query 2 — exact column definitions for every public table:
+  select table_name, column_name, data_type, udt_name, is_nullable, column_default,
+         character_maximum_length, numeric_precision, numeric_scale
+  from information_schema.columns
+  where table_schema = 'public'
+  order by table_name, ordinal_position;
+-> full column list for all 52 tables, used to write every CREATE TABLE
+   statement in staging-schema.sql.
+
+Query 3 — primary and foreign keys:
+  select tc.table_name, tc.constraint_type, kcu.column_name,
+         ccu.table_name as foreign_table_name, ccu.column_name as foreign_column_name
+  from information_schema.table_constraints tc
+  join information_schema.key_column_usage kcu
+    on tc.constraint_name = kcu.constraint_name and tc.table_schema = kcu.table_schema
+  left join information_schema.constraint_column_usage ccu
+    on tc.constraint_name = ccu.constraint_name and tc.table_schema = ccu.table_schema
+  where tc.table_schema = 'public' and tc.constraint_type in ('PRIMARY KEY','FOREIGN KEY')
+  order by tc.table_name, tc.constraint_type;
+-> every FK whose target table came back blank was a reference to
+   auth.users(id) (every "who did this" uuid column in the schema:
+   actor_id, owner_id, created_by, changed_by, user_id, uploader_id,
+   admin_id, approved_by, decided_by, verified_by, ran_by,
+   assigned_sales_agent_id, partenaire_id, referred_by, client_id,
+   changed_by_user_id) — consistent with profiles.id itself also
+   referencing auth.users(id), Supabase's standard pattern.
+
+Query 4 — every enum type and its exact values:
+  select t.typname as enum_name, e.enumlabel as value
+  from pg_type t
+  join pg_enum e on t.oid = e.enumtypid
+  join pg_namespace n on n.oid = t.typnamespace
+  where n.nspname = 'public'
+  order by t.typname, e.enumsortorder;
+-> 34 enum types, all reproduced verbatim in staging-schema.sql section 2.
+
+Full raw CSV outputs were pasted into the conversation on 2026-08-23 and
+are not duplicated here in full (very large) — apps/wilmet/staging-schema.sql
+is the authoritative, reviewable artifact built from them.
