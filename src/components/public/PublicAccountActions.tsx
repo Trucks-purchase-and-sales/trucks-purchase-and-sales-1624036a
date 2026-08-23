@@ -59,7 +59,7 @@ export function PublicAccountActions() {
       <LanguageSwitcher compact />
       {home === undefined ? null : home ? (
         <Button asChild size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
-          <Link to={home as never}>Mon espace</Link>
+          <Link to={home as never}>{t("nav.mySpace")}</Link>
         </Button>
       ) : (
         <>

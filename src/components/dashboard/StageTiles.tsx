@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { STATUS_LABEL, FUNNEL_STAGES, type OpportunityStatus } from "@/lib/wilmet-constants";
 import { StatTileButton, StatTileLink, type TileTint } from "./StatTile";
 import type { LinkComponentProps } from "@tanstack/react-router";
@@ -25,14 +26,17 @@ type Common = {
 };
 
 function stages(counts: Common["counts"], hideEmpty?: boolean, list?: OpportunityStatus[]) {
-  return (list ?? FUNNEL_STAGES).filter((s: OpportunityStatus) => !hideEmpty || (counts[s] ?? 0) > 0);
+  return (list ?? FUNNEL_STAGES).filter(
+    (s: OpportunityStatus) => !hideEmpty || (counts[s] ?? 0) > 0,
+  );
 }
 
 function Shell({ title, children }: { title?: string; children: React.ReactNode }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2">
       <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {title ?? "Cycle de vente"}
+        {title ?? t("dashboard.stageTiles.defaultTitle")}
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-7">{children}</div>
     </div>
@@ -41,7 +45,13 @@ function Shell({ title, children }: { title?: string; children: React.ReactNode 
 
 /** Stage tiles that filter the list on the same page. */
 export function StageTiles({
-  counts, activeStatus, onSelect, hideEmpty, loading, title, stages: stageList,
+  counts,
+  activeStatus,
+  onSelect,
+  hideEmpty,
+  loading,
+  title,
+  stages: stageList,
 }: Common & { activeStatus?: string | null; onSelect: (status: OpportunityStatus) => void }) {
   const list = stages(counts, hideEmpty, stageList);
   if (list.length === 0) return null;
@@ -65,7 +75,12 @@ export function StageTiles({
 
 /** Stage tiles that link to another page, pre-filtered by status. */
 export function StageTilesLinked({
-  counts, buildLink, hideEmpty, loading, title, stages: stageList,
+  counts,
+  buildLink,
+  hideEmpty,
+  loading,
+  title,
+  stages: stageList,
 }: Common & { buildLink: (status: OpportunityStatus) => LinkComponentProps }) {
   const list = stages(counts, hideEmpty, stageList);
   if (list.length === 0) return null;

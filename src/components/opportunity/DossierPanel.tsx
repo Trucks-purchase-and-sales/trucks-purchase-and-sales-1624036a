@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   getOpportunityDossier,
@@ -19,7 +20,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ShieldCheck, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +40,7 @@ type DocRow = {
 };
 
 export function DossierPanel({ opportunityId }: { opportunityId: string }) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const loadFn = useServerFn(getOpportunityDossier);
   const docFn = useServerFn(upsertOpportunityDocument);
@@ -43,7 +51,7 @@ export function DossierPanel({ opportunityId }: { opportunityId: string }) {
     queryFn: () => loadFn({ data: { opportunityId } }),
   });
 
-  const docs = (data?.documents ?? []) as DocRow[];
+  const docs = (data?.documents ?? []) as DocRow[]; // eslint-disable-line react-hooks/exhaustive-deps
   const byType = useMemo(() => {
     const m: Record<string, DocRow> = {};
     for (const d of docs) m[d.doc_type] = d;
@@ -58,10 +66,19 @@ export function DossierPanel({ opportunityId }: { opportunityId: string }) {
 
   async function setDocStatus(docType: string, status: string, notes?: string | null) {
     try {
-      await docFn({ data: { opportunityId, docType, status: status as never, notes: notes ?? byType[docType]?.notes ?? null } });
+      await docFn({
+        data: {
+          opportunityId,
+          docType,
+          status: status as never,
+          notes: notes ?? byType[docType]?.notes ?? null,
+        },
+      });
       await qc.invalidateQueries({ queryKey: ["opp-dossier", opportunityId] });
     } catch (e) {
-      toast.error("Enregistrement impossible", { description: (e as Error).message });
+      toast.error(t("admin.opportunityDetail.dossier.saveError"), {
+        description: (e as Error).message,
+      });
     }
   }
 
@@ -72,7 +89,7 @@ export function DossierPanel({ opportunityId }: { opportunityId: string }) {
   const [savingDecision, setSavingDecision] = useState(false);
 
   const effectiveScores =
-    scores ?? ((data?.decision?.scores as Record<string, number> | undefined) ?? {});
+    scores ?? (data?.decision?.scores as Record<string, number> | undefined) ?? {};
   const effectiveVerdict = verdict ?? data?.decision?.verdict ?? null;
   const effectiveNotes = notes ?? data?.decision?.notes ?? "";
 
@@ -94,10 +111,14 @@ export function DossierPanel({ opportunityId }: { opportunityId: string }) {
           notes: effectiveNotes || null,
         },
       });
-      toast.success(`Décision enregistrée — score ${res.total_score ?? 0}/100`);
+      toast.success(
+        t("admin.opportunityDetail.dossier.decisionSavedToast", { score: res.total_score ?? 0 }),
+      );
       await qc.invalidateQueries({ queryKey: ["opp-dossier", opportunityId] });
     } catch (e) {
-      toast.error("Enregistrement impossible", { description: (e as Error).message });
+      toast.error(t("admin.opportunityDetail.dossier.saveError"), {
+        description: (e as Error).message,
+      });
     } finally {
       setSavingDecision(false);
     }
@@ -109,7 +130,12 @@ export function DossierPanel({ opportunityId }: { opportunityId: string }) {
     return g;
   }, []);
 
-  if (isLoading) return <p className="text-sm text-muted-foreground">Chargement du dossier…</p>;
+  if (isLoading)
+    return (
+      <p className="text-sm text-muted-foreground">
+        {t("admin.opportunityDetail.dossier.loadingLabel")}
+      </p>
+    );
 
   return (
     <div className="space-y-4">
@@ -118,9 +144,15 @@ export function DossierPanel({ opportunityId }: { opportunityId: string }) {
         <CardContent className="space-y-4 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-sm font-semibold">
-              <ShieldCheck className="h-4 w-4 text-accent" /> Dossier de conformité
+              <ShieldCheck className="h-4 w-4 text-accent" />{" "}
+              {t("admin.opportunityDetail.dossier.complianceHeading")}
             </div>
-            <Badge variant="outline">{validatedRequired}/{requiredList.length} pièces obligatoires validées</Badge>
+            <Badge variant="outline">
+              {t("admin.opportunityDetail.dossier.validatedBadge", {
+                validated: validatedRequired,
+                total: requiredList.length,
+              })}
+            </Badge>
           </div>
           <Progress value={completion} className="h-1.5" />
 
@@ -137,24 +169,32 @@ export function DossierPanel({ opportunityId }: { opportunityId: string }) {
                     </div>
                     {row?.verified_at && (
                       <div className="text-[11px] text-muted-foreground">
-                        Validé le {formatDateTime(row.verified_at)}
+                        {t("admin.opportunityDetail.dossier.validatedOnLabel")}{" "}
+                        {formatDateTime(row.verified_at)}
                       </div>
                     )}
                   </div>
                   <div
                     className={cn(
                       "h-2 w-2 shrink-0 rounded-full",
-                      status === "valide" ? "bg-status-accepted-foreground"
-                        : status === "recu" ? "bg-status-info-foreground"
-                        : status === "demande" ? "bg-status-analysis-foreground"
-                        : "bg-muted-foreground/40",
+                      status === "valide"
+                        ? "bg-status-accepted-foreground"
+                        : status === "recu"
+                          ? "bg-status-info-foreground"
+                          : status === "demande"
+                            ? "bg-status-analysis-foreground"
+                            : "bg-muted-foreground/40",
                     )}
                   />
                   <Select value={status} onValueChange={(v) => setDocStatus(doc.value, v)}>
-                    <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-[170px]">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {DOCUMENT_STATUS_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        <SelectItem key={o.value} value={o.value}>
+                          {o.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -170,16 +210,24 @@ export function DossierPanel({ opportunityId }: { opportunityId: string }) {
         <CardContent className="space-y-4 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-sm font-semibold">
-              <Gauge className="h-4 w-4 text-accent" /> Grille Go / No-Go (interne)
+              <Gauge className="h-4 w-4 text-accent" />{" "}
+              {t("admin.opportunityDetail.dossier.goNoGoHeading")}
             </div>
-            <Badge variant="outline">Score {liveTotal ?? "—"}/100</Badge>
+            <Badge variant="outline">
+              {t("admin.opportunityDetail.dossier.scoreBadge", { score: liveTotal ?? "—" })}
+            </Badge>
           </div>
 
           {Object.entries(groups).map(([group, criteria]) => (
             <div key={group} className="space-y-2">
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{group}</div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {group}
+              </div>
               {criteria.map((c) => (
-                <div key={c.key} className="flex flex-wrap items-center gap-3 rounded-md border border-border/60 bg-card px-3 py-2">
+                <div
+                  key={c.key}
+                  className="flex flex-wrap items-center gap-3 rounded-md border border-border/60 bg-card px-3 py-2"
+                >
                   <div className="min-w-[200px] flex-1">
                     <div className="text-sm">{c.label}</div>
                     {c.hint && <div className="text-[11px] text-muted-foreground">{c.hint}</div>}
@@ -208,23 +256,31 @@ export function DossierPanel({ opportunityId }: { opportunityId: string }) {
 
           <div className="grid gap-3 sm:grid-cols-[240px_1fr]">
             <div className="space-y-1.5">
-              <div className="text-xs font-medium text-muted-foreground">Verdict</div>
+              <div className="text-xs font-medium text-muted-foreground">
+                {t("admin.opportunityDetail.dossier.verdictLabel")}
+              </div>
               <Select value={effectiveVerdict ?? ""} onValueChange={setVerdict}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("common.select")} />
+                </SelectTrigger>
                 <SelectContent>
                   {DECISION_VERDICTS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <div className="text-xs font-medium text-muted-foreground">Notes internes</div>
+              <div className="text-xs font-medium text-muted-foreground">
+                {t("admin.opportunityDetail.dossier.notesLabel")}
+              </div>
               <Textarea
                 rows={3}
                 value={effectiveNotes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Points de vigilance, conditions du GO, benchmark prix…"
+                placeholder={t("admin.opportunityDetail.dossier.notesPlaceholder")}
               />
             </div>
           </div>
@@ -232,11 +288,15 @@ export function DossierPanel({ opportunityId }: { opportunityId: string }) {
           <div className="flex items-center justify-between gap-3">
             <div className="text-[11px] text-muted-foreground">
               {data?.decision?.decided_at
-                ? `Dernière décision : ${formatDateTime(data.decision.decided_at)}`
-                : "Aucune décision enregistrée."}
+                ? t("admin.opportunityDetail.dossier.lastDecisionLabel", {
+                    date: formatDateTime(data.decision.decided_at),
+                  })
+                : t("admin.opportunityDetail.dossier.noDecision")}
             </div>
             <Button onClick={saveDecision} disabled={savingDecision}>
-              {savingDecision ? "Enregistrement…" : "Enregistrer la décision"}
+              {savingDecision
+                ? t("admin.opportunityDetail.dossier.savingLabel")
+                : t("admin.opportunityDetail.dossier.saveDecisionButton")}
             </Button>
           </div>
         </CardContent>

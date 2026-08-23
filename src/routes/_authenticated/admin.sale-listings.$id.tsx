@@ -2,15 +2,26 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  getSaleListing, updateSaleListing, markSaleListingSold,
+  getSaleListing,
+  updateSaleListing,
+  markSaleListingSold,
 } from "@/lib/sale-listings.functions";
 import { adminListSalesAgents } from "@/lib/admin.functions";
 import { signPhotoUrls } from "@/lib/opportunities.functions";
-import { SALE_LISTING_STATUS_LABEL, SALE_LISTING_STATUS_CLASS, marginOf } from "@/lib/sale-listings.constants";
 import {
-  AVAILABILITY_OPTIONS, VAT_OPTIONS, formatPrice, formatDateTime, labelFor,
+  SALE_LISTING_STATUS_LABEL,
+  SALE_LISTING_STATUS_CLASS,
+  marginOf,
+} from "@/lib/sale-listings.constants";
+import {
+  AVAILABILITY_OPTIONS,
+  VAT_OPTIONS,
+  formatPrice,
+  formatDateTime,
+  labelFor,
 } from "@/lib/wilmet-constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,8 +29,21 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ArrowLeft, ArrowUpRight, Save, Trophy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/sale-listings/$id")({
@@ -33,6 +57,7 @@ export const Route = createFileRoute("/_authenticated/admin/sale-listings/$id")(
 });
 
 function Detail() {
+  const { t } = useTranslation();
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -42,14 +67,17 @@ function Detail() {
   const signFn = useServerFn(signPhotoUrls);
   const agentsFn = useServerFn(adminListSalesAgents);
 
-  const { data } = useQuery({ queryKey: ["sale-listing", id], queryFn: () => getFn({ data: { id } }) });
+  const { data } = useQuery({
+    queryKey: ["sale-listing", id],
+    queryFn: () => getFn({ data: { id } }),
+  });
   const { data: agentsData } = useQuery({ queryKey: ["sales-agents"], queryFn: () => agentsFn() });
 
-  const listing = data?.listing as any;
-  const opp = listing?.vehicle_opportunities as any;
+  const listing = data?.listing as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const opp = listing?.vehicle_opportunities as any; // eslint-disable-line @typescript-eslint/no-explicit-any
   const kept = useMemo(() => {
     const ids: string[] = listing?.photo_ids ?? [];
-    return ((data?.photos ?? []) as any[]).filter((p) => ids.includes(p.id));
+    return ((data?.photos ?? []) as any[]).filter((p) => ids.includes(p.id)); // eslint-disable-line @typescript-eslint/no-explicit-any
   }, [data, listing]);
   const paths = kept.map((p) => p.storage_path);
   const { data: urlsData } = useQuery({
@@ -85,13 +113,17 @@ function Detail() {
     setNotes(listing.notes ?? "");
     setAgent(listing.assigned_sales_agent_id ?? "none");
     setSoldPrice(listing.sale_price_excl_tax != null ? String(listing.sale_price_excl_tax) : "");
-  }, [listing?.id]);
+  }, [listing?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!listing) return <div className="py-20 text-center text-muted-foreground">Chargement…</div>;
+  if (!listing)
+    return <div className="py-20 text-center text-muted-foreground">{t("common.loading")}</div>;
 
   const isSold = listing.status === "vendue";
-  const margin = marginOf(isSold ? listing.sold_price_excl_tax : Number(price) || null, listing.purchase_price_snapshot);
-  const agents = (agentsData?.agents ?? []) as any[];
+  const margin = marginOf(
+    isSold ? listing.sold_price_excl_tax : Number(price) || null,
+    listing.purchase_price_snapshot,
+  );
+  const agents = (agentsData?.agents ?? []) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["sale-listing", id] });
@@ -101,41 +133,60 @@ function Detail() {
 
   async function run<T>(fn: () => Promise<T>, okMsg: string) {
     setBusy(true);
-    try { await fn(); toast.success(okMsg); invalidate(); }
-    catch (e) { toast.error("Erreur", { description: (e as Error).message }); }
-    finally { setBusy(false); }
+    try {
+      await fn();
+      toast.success(okMsg);
+      invalidate();
+    } catch (e) {
+      toast.error(t("admin.common.error"), { description: (e as Error).message });
+    } finally {
+      setBusy(false);
+    }
   }
 
   const save = () =>
-    run(() => updFn({
-      data: {
-        id,
-        title: title.trim(),
-        description: description || null,
-        salePrice: Number(price) > 0 ? Number(price) : null,
-        vatRegime: vat,
-        availability,
-        city: city || null,
-        country: country || null,
-        notes: notes || null,
-        assignedSalesAgentId: agent === "none" ? null : agent,
-      },
-    }), "Offre enregistrée");
+    run(
+      () =>
+        updFn({
+          data: {
+            id,
+            title: title.trim(),
+            description: description || null,
+            salePrice: Number(price) > 0 ? Number(price) : null,
+            vatRegime: vat,
+            availability,
+            city: city || null,
+            country: country || null,
+            notes: notes || null,
+            assignedSalesAgentId: agent === "none" ? null : agent,
+          },
+        }),
+      t("admin.saleListings.detail.savedToast"),
+    );
 
   const setStatus = (s: "brouillon" | "publiee" | "reservee" | "retiree") =>
-    run(() => updFn({ data: { id, status: s } }), `Statut : ${SALE_LISTING_STATUS_LABEL[s]}`);
+    run(
+      () => updFn({ data: { id, status: s } }),
+      `${t("admin.saleListings.detail.statusToastPrefix")} ${SALE_LISTING_STATUS_LABEL[s]}`,
+    );
 
   async function confirmSold() {
     const p = Number(soldPrice);
-    if (!Number.isFinite(p) || p <= 0 || !soldTo.trim()) { toast.error("Prix et acheteur requis"); return; }
-    await run(() => soldFn({ data: { id, soldPrice: p, soldTo: soldTo.trim() } }), "Offre vendue");
+    if (!Number.isFinite(p) || p <= 0 || !soldTo.trim()) {
+      toast.error(t("admin.saleListings.detail.soldValidationError"));
+      return;
+    }
+    await run(
+      () => soldFn({ data: { id, soldPrice: p, soldTo: soldTo.trim() } }),
+      t("admin.saleListings.detail.soldToast"),
+    );
     setSoldOpen(false);
   }
 
   return (
     <div className="space-y-6 pb-10">
       <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/admin/sale-listings" })}>
-        <ArrowLeft className="mr-1 h-4 w-4" /> Retour aux offres
+        <ArrowLeft className="mr-1 h-4 w-4" /> {t("admin.saleListings.detail.backButton")}
       </Button>
 
       <div className="rounded-xl border border-border/70 bg-card p-5">
@@ -145,42 +196,86 @@ function Detail() {
               <Badge className={SALE_LISTING_STATUS_CLASS[listing.status]}>
                 {SALE_LISTING_STATUS_LABEL[listing.status] ?? listing.status}
               </Badge>
-              {listing.reference_number && <Badge variant="outline">{listing.reference_number}</Badge>}
+              {listing.reference_number && (
+                <Badge variant="outline">{listing.reference_number}</Badge>
+              )}
             </div>
             <h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">{listing.title}</h1>
             <div className="mt-1 text-sm text-muted-foreground">
-              {opp?.brand} {opp?.model} · {opp?.year ?? "—"} · {opp?.mileage ? `${opp.mileage} km` : "—"}
+              {opp?.brand} {opp?.model} · {opp?.year ?? "—"} ·{" "}
+              {opp?.mileage ? `${opp.mileage} km` : "—"}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Kpi label="Achat HT" value={formatPrice(listing.purchase_price_snapshot)} />
-            <Kpi label="Vente HT" value={formatPrice(listing.sold_price_excl_tax ?? listing.sale_price_excl_tax)} />
-            <Kpi label="Marge" value={margin ? `${formatPrice(margin.amount)} · ${margin.pct.toFixed(1)} %` : "—"} />
-            <Kpi label="Vendue le" value={listing.sold_at ? formatDateTime(listing.sold_at) : "—"} />
+            <Kpi
+              label={t("admin.saleListings.detail.kpi.purchase")}
+              value={formatPrice(listing.purchase_price_snapshot)}
+            />
+            <Kpi
+              label={t("admin.saleListings.detail.kpi.sale")}
+              value={formatPrice(listing.sold_price_excl_tax ?? listing.sale_price_excl_tax)}
+            />
+            <Kpi
+              label={t("admin.saleListings.detail.kpi.margin")}
+              value={margin ? `${formatPrice(margin.amount)} · ${margin.pct.toFixed(1)} %` : "—"}
+            />
+            <Kpi
+              label={t("admin.saleListings.detail.kpi.soldAt")}
+              value={listing.sold_at ? formatDateTime(listing.sold_at) : "—"}
+            />
           </div>
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
           {!isSold && listing.status !== "publiee" && (
-            <Button size="sm" disabled={busy} onClick={() => setStatus("publiee")}>Publier</Button>
+            <Button size="sm" disabled={busy} onClick={() => setStatus("publiee")}>
+              {t("admin.saleListings.detail.publishButton")}
+            </Button>
           )}
           {!isSold && listing.status === "publiee" && (
-            <Button size="sm" variant="outline" disabled={busy} onClick={() => setStatus("reservee")}>Marquer réservée</Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() => setStatus("reservee")}
+            >
+              {t("admin.saleListings.detail.markReservedButton")}
+            </Button>
           )}
           {!isSold && (
-            <Button size="sm" className="bg-status-accepted text-status-accepted-foreground hover:bg-status-accepted/80" disabled={busy} onClick={() => setSoldOpen(true)}>
-              <Trophy className="mr-1 h-4 w-4" /> Marquer vendue
+            <Button
+              size="sm"
+              className="bg-status-accepted text-status-accepted-foreground hover:bg-status-accepted/80"
+              disabled={busy}
+              onClick={() => setSoldOpen(true)}
+            >
+              <Trophy className="mr-1 h-4 w-4" /> {t("admin.saleListings.detail.markSoldButton")}
             </Button>
           )}
           {!isSold && listing.status !== "retiree" && (
-            <Button size="sm" variant="outline" disabled={busy} onClick={() => setStatus("retiree")}>Retirer</Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() => setStatus("retiree")}
+            >
+              {t("admin.saleListings.detail.withdrawButton")}
+            </Button>
           )}
           {!isSold && listing.status === "retiree" && (
-            <Button size="sm" variant="outline" disabled={busy} onClick={() => setStatus("brouillon")}>Remettre en brouillon</Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() => setStatus("brouillon")}
+            >
+              {t("admin.saleListings.detail.backToDraftButton")}
+            </Button>
           )}
           <Button size="sm" variant="outline" asChild>
             <Link to="/admin/opportunities/$id" params={{ id: listing.vehicle_opportunity_id }}>
-              Voir l'opportunité d'origine <ArrowUpRight className="ml-1 h-4 w-4" />
+              {t("admin.saleListings.detail.viewOriginButton")}{" "}
+              <ArrowUpRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>
         </div>
@@ -189,65 +284,107 @@ function Detail() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardContent className="space-y-4 p-5">
-            <div className="text-sm font-semibold">Annonce</div>
+            <div className="text-sm font-semibold">
+              {t("admin.saleListings.detail.listingHeading")}
+            </div>
             <div className="space-y-1.5">
-              <Label>Titre</Label>
+              <Label>{t("admin.common.fields.title")}</Label>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} disabled={isSold} />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>Prix de vente HT (€)</Label>
-                <Input type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)} disabled={isSold} />
+                <Label>{t("admin.saleListings.detail.salePriceLabel")}</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  disabled={isSold}
+                />
               </div>
               <div className="space-y-1.5">
-                <Label>Régime de TVA</Label>
+                <Label>{t("admin.common.fields.vatRegime")}</Label>
                 <Select value={vat} onValueChange={setVat} disabled={isSold}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {VAT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Disponibilité</Label>
-                <Select value={availability} onValueChange={setAvailability} disabled={isSold}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {AVAILABILITY_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Commercial assigné</Label>
-                <Select value={agent} onValueChange={setAgent} disabled={isSold}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Pool groupe Vente</SelectItem>
-                    {agents.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>{a.first_name} {a.last_name}</SelectItem>
+                    {VAT_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Ville</Label>
+                <Label>{t("admin.common.fields.availability")}</Label>
+                <Select value={availability} onValueChange={setAvailability} disabled={isSold}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AVAILABILITY_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("admin.saleListings.detail.assignedAgentLabel")}</Label>
+                <Select value={agent} onValueChange={setAgent} disabled={isSold}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      {t("admin.saleListings.detail.agentPoolOption")}
+                    </SelectItem>
+                    {agents.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.first_name} {a.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("admin.common.fields.city")}</Label>
                 <Input value={city} onChange={(e) => setCity(e.target.value)} disabled={isSold} />
               </div>
               <div className="space-y-1.5">
-                <Label>Pays</Label>
-                <Input value={country} onChange={(e) => setCountry(e.target.value)} disabled={isSold} />
+                <Label>{t("admin.common.fields.country")}</Label>
+                <Input
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  disabled={isSold}
+                />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Description</Label>
-              <Textarea rows={6} value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSold} />
+              <Label>{t("admin.common.fields.description")}</Label>
+              <Textarea
+                rows={6}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={isSold}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label>Notes internes</Label>
-              <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} disabled={isSold} />
+              <Label>{t("admin.saleListings.detail.notesLabel")}</Label>
+              <Textarea
+                rows={3}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                disabled={isSold}
+              />
             </div>
             {!isSold && (
-              <Button onClick={save} disabled={busy}><Save className="mr-1 h-4 w-4" /> Enregistrer</Button>
+              <Button onClick={save} disabled={busy}>
+                <Save className="mr-1 h-4 w-4" /> {t("admin.common.save")}
+              </Button>
             )}
           </CardContent>
         </Card>
@@ -255,28 +392,58 @@ function Detail() {
         <div className="space-y-6">
           <Card>
             <CardContent className="space-y-3 p-5">
-              <div className="text-sm font-semibold">Véhicule</div>
-              <Row label="Réf. opportunité" value={opp?.reference_number ?? "—"} />
-              <Row label="Type" value={opp?.vehicle_type ?? "—"} />
-              <Row label="Kilométrage" value={opp?.mileage ? `${opp.mileage} km` : "—"} />
-              <Row label="Carburant" value={opp?.fuel_type ?? "—"} />
-              <Row label="Boîte" value={opp?.gearbox ?? "—"} />
-              <Row label="Norme Euro" value={opp?.euro_standard ?? "—"} />
-              <Row label="TVA (achat)" value={labelFor(VAT_OPTIONS, opp?.vat_recoverable)} />
-              {isSold && <Row label="Acheteur" value={listing.sold_to ?? "—"} />}
+              <div className="text-sm font-semibold">
+                {t("admin.saleListings.detail.vehicleHeading")}
+              </div>
+              <Row
+                label={t("admin.saleListings.detail.vehicle.refLabel")}
+                value={opp?.reference_number ?? "—"}
+              />
+              <Row
+                label={t("admin.saleListings.detail.vehicle.type")}
+                value={opp?.vehicle_type ?? "—"}
+              />
+              <Row
+                label={t("admin.saleListings.detail.vehicle.mileage")}
+                value={opp?.mileage ? `${opp.mileage} km` : "—"}
+              />
+              <Row
+                label={t("admin.saleListings.detail.vehicle.fuel")}
+                value={opp?.fuel_type ?? "—"}
+              />
+              <Row
+                label={t("admin.saleListings.detail.vehicle.gearbox")}
+                value={opp?.gearbox ?? "—"}
+              />
+              <Row
+                label={t("admin.saleListings.detail.vehicle.euroStandard")}
+                value={opp?.euro_standard ?? "—"}
+              />
+              <Row
+                label={t("admin.saleListings.detail.vehicle.vatAtPurchase")}
+                value={labelFor(VAT_OPTIONS, opp?.vat_recoverable)}
+              />
+              {isSold && (
+                <Row
+                  label={t("admin.saleListings.detail.vehicle.buyer")}
+                  value={listing.sold_to ?? "—"}
+                />
+              )}
             </CardContent>
           </Card>
 
           {kept.length > 0 && (
             <Card>
               <CardContent className="space-y-3 p-5">
-                <div className="text-sm font-semibold">Photos ({kept.length})</div>
+                <div className="text-sm font-semibold">
+                  {t("admin.saleListings.detail.photosHeading", { count: kept.length })}
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   {kept.map((p) => (
                     <img
                       key={p.id}
                       src={urls[p.storage_path]}
-                      alt={p.category ?? "Photo du véhicule"}
+                      alt={p.category ?? t("admin.saleListings.detail.photoAlt")}
                       loading="lazy"
                       className="aspect-video w-full rounded-md object-cover"
                     />
@@ -290,23 +457,41 @@ function Detail() {
 
       <Dialog open={soldOpen} onOpenChange={setSoldOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Marquer l'offre vendue</DialogTitle><DialogDescription>Enregistrez la vente et le montant final de cette annonce.</DialogDescription></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{t("admin.saleListings.detail.soldDialog.title")}</DialogTitle>
+            <DialogDescription>
+              {t("admin.saleListings.detail.soldDialog.description")}
+            </DialogDescription>
+          </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Prix de vente réel HT (€)</Label>
-              <Input type="number" min="0" value={soldPrice} onChange={(e) => setSoldPrice(e.target.value)} />
+              <Label>{t("admin.saleListings.detail.soldDialog.priceLabel")}</Label>
+              <Input
+                type="number"
+                min="0"
+                value={soldPrice}
+                onChange={(e) => setSoldPrice(e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label>Acheteur</Label>
-              <Input value={soldTo} onChange={(e) => setSoldTo(e.target.value)} placeholder="Société / contact" />
+              <Label>{t("admin.saleListings.detail.vehicle.buyer")}</Label>
+              <Input
+                value={soldTo}
+                onChange={(e) => setSoldTo(e.target.value)}
+                placeholder={t("admin.saleListings.detail.soldDialog.buyerPlaceholder")}
+              />
             </div>
             <p className="text-xs text-muted-foreground">
-              L'opportunité d'origine passera en « Closed Won » avec ce prix de vente.
+              {t("admin.saleListings.detail.soldDialog.note")}
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSoldOpen(false)}>Annuler</Button>
-            <Button onClick={confirmSold} disabled={busy}>Confirmer</Button>
+            <Button variant="outline" onClick={() => setSoldOpen(false)}>
+              {t("admin.common.cancel")}
+            </Button>
+            <Button onClick={confirmSold} disabled={busy}>
+              {t("admin.common.confirm")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

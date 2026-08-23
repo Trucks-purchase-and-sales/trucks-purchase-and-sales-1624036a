@@ -9,6 +9,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthedLayout() {
   useI18nInit();
+  const { t } = useTranslation();
   const { userId } = Route.useRouteContext();
 
   const { data: roles } = useQuery({
@@ -91,15 +93,15 @@ function AuthedLayout() {
     if (!disabled) return;
     void (async () => {
       await supabase.auth.signOut();
-      toast.error("Votre compte a été désactivé. Contactez l'administrateur.");
+      toast.error(t("appShell.disabled.message"));
       navigate({ to: "/auth", replace: true });
     })();
-  }, [disabled, navigate]);
+  }, [disabled, navigate, t]);
 
   if (disabled) {
     return (
       <div className="grid min-h-screen place-items-center p-6 text-center text-sm text-muted-foreground">
-        Votre compte a été désactivé. Contactez l&apos;administrateur.
+        {t("appShell.disabled.message")}
       </div>
     );
   }
@@ -109,11 +111,8 @@ function AuthedLayout() {
     return (
       <div className="grid min-h-screen place-items-center p-6">
         <div className="max-w-md space-y-3 text-center text-sm">
-          <h1 className="text-lg font-semibold">Compte en cours d&apos;initialisation</h1>
-          <p className="text-muted-foreground">
-            Votre profil applicatif est introuvable. Votre compte n&apos;a pas été initialisé
-            correctement. Contactez l&apos;administrateur pour le finaliser.
-          </p>
+          <h1 className="text-lg font-semibold">{t("common.accountInitializing.title")}</h1>
+          <p className="text-muted-foreground">{t("appShell.profileMissing.text")}</p>
         </div>
       </div>
     );
@@ -144,6 +143,7 @@ function AuthedLayout() {
 }
 
 function NotificationBell() {
+  const { t } = useTranslation();
   const { userId } = Route.useRouteContext();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -193,7 +193,7 @@ function NotificationBell() {
       .eq("user_id", userId)
       .is("read_at", null);
     if (error) {
-      toast.error("Impossible de marquer les notifications comme lues", {
+      toast.error(t("appShell.notifications.markReadError"), {
         description: error.message,
       });
       return;
@@ -215,13 +215,15 @@ function NotificationBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <div className="flex items-center justify-between px-2 py-1.5">
-          <DropdownMenuLabel className="p-0 text-sm">Notifications</DropdownMenuLabel>
+          <DropdownMenuLabel className="p-0 text-sm">
+            {t("appShell.notifications.title")}
+          </DropdownMenuLabel>
           {unread > 0 && (
             <button
               onClick={markAllRead}
               className="text-xs font-medium text-accent hover:underline"
             >
-              Tout marquer lu
+              {t("appShell.notifications.markAllRead")}
             </button>
           )}
         </div>
@@ -229,7 +231,7 @@ function NotificationBell() {
         <div className="max-h-96 overflow-y-auto">
           {(notifs ?? []).length === 0 && (
             <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-              Aucune notification
+              {t("appShell.notifications.empty")}
             </div>
           )}
           {(notifs ?? []).map((n) => (
@@ -259,6 +261,7 @@ function NotificationBell() {
 }
 
 function ProfileMenu() {
+  const { t } = useTranslation();
   const { email } = Route.useRouteContext();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -287,12 +290,12 @@ function ProfileMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link to="/profile">
-            <User className="mr-2 h-4 w-4" /> Mon profil
+            <User className="mr-2 h-4 w-4" /> {t("appShell.profileMenu.myProfile")}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={signOut}>
-          <LogOut className="mr-2 h-4 w-4" /> Se déconnecter
+          <LogOut className="mr-2 h-4 w-4" /> {t("appShell.profileMenu.signOut")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

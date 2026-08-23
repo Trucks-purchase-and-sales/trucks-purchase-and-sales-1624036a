@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useTranslation } from "react-i18next";
 import { MessageCircle, Send, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ function isWithinHours(cfg: { always_on: boolean; start_hour: number; end_hour: 
 
 /** Public AI assistant that qualifies a buyer request outside office hours. */
 export function AssistantWidget() {
+  const { t } = useTranslation();
   const fn = useServerFn(getPublicAssistantSettings);
   const { data: assistant } = useQuery({
     queryKey: ["public-assistant-settings"],
@@ -36,13 +38,17 @@ export function AssistantWidget() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
-  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [messages, busy]);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+  }, [messages, busy]);
 
-  const active = !!assistant?.enabled && isWithinHours({
-    always_on: assistant.always_on,
-    start_hour: assistant.start_hour,
-    end_hour: assistant.end_hour,
-  });
+  const active =
+    !!assistant?.enabled &&
+    isWithinHours({
+      always_on: assistant.always_on,
+      start_hour: assistant.start_hour,
+      end_hour: assistant.end_hour,
+    });
   if (!mounted || !active) return null;
 
   const send = async () => {
@@ -73,21 +79,27 @@ export function AssistantWidget() {
       };
       if (body.consentRequired) {
         setGdprConsent(false);
-        setMessages((m) => [...m, {
-          role: "assistant",
-          content: body.error ?? "Votre consentement est requis pour utiliser l'assistant.",
-        }]);
+        setMessages((m) => [
+          ...m,
+          {
+            role: "assistant",
+            content: body.error ?? t("assistant.consentRequiredFallback"),
+          },
+        ]);
       } else if (body.available === false) {
-        setMessages((m) => [...m, { role: "assistant", content: "L'assistant n'est pas disponible pour le moment. Utilisez le formulaire « Chercher un véhicule » et nous vous répondons rapidement." }]);
+        setMessages((m) => [...m, { role: "assistant", content: t("assistant.unavailable") }]);
       } else if (body.reply) {
         setMessages((m) => [...m, { role: "assistant", content: body.reply as string }]);
         if (body.reference) setReference(body.reference);
       } else {
-        setMessages((m) => [...m, { role: "assistant", content: body.error ?? "Une erreur est survenue, réessayez." }]);
+        setMessages((m) => [
+          ...m,
+          { role: "assistant", content: body.error ?? t("assistant.genericError") },
+        ]);
       }
     } catch (e) {
       console.error(e);
-      setMessages((m) => [...m, { role: "assistant", content: "Connexion impossible. Réessayez dans un instant." }]);
+      setMessages((m) => [...m, { role: "assistant", content: t("assistant.connectionError") }]);
     } finally {
       setBusy(false);
     }
@@ -99,10 +111,10 @@ export function AssistantWidget() {
         <div className="flex h-[34rem] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xl">
           <div className="flex items-center justify-between border-b border-border bg-primary px-4 py-3 text-primary-foreground">
             <div>
-              <p className="text-sm font-semibold">Assistant Wilmet</p>
-              <p className="text-xs opacity-80">Décrivez votre besoin, nous rappelons</p>
+              <p className="text-sm font-semibold">{t("assistant.title")}</p>
+              <p className="text-xs opacity-80">{t("assistant.subtitle")}</p>
             </div>
-            <button type="button" aria-label="Fermer l'assistant" onClick={() => setOpen(false)}>
+            <button type="button" aria-label={t("assistant.close")} onClick={() => setOpen(false)}>
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -110,20 +122,25 @@ export function AssistantWidget() {
           <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4 text-sm">
             {messages.length === 0 && (
               <p className="rounded-lg bg-muted p-3 text-muted-foreground">
-                Bonjour 👋 Quel type de véhicule industriel recherchez-vous ?
+                {t("assistant.greeting")}
               </p>
             )}
             {messages.map((m, i) => (
-              <p key={i} className={m.role === "user"
-                ? "ml-auto max-w-[85%] rounded-lg bg-primary px-3 py-2 text-primary-foreground"
-                : "max-w-[90%] whitespace-pre-line rounded-lg bg-muted px-3 py-2"}>
+              <p
+                key={i}
+                className={
+                  m.role === "user"
+                    ? "ml-auto max-w-[85%] rounded-lg bg-primary px-3 py-2 text-primary-foreground"
+                    : "max-w-[90%] whitespace-pre-line rounded-lg bg-muted px-3 py-2"
+                }
+              >
                 {m.content}
               </p>
             ))}
-            {busy && <p className="text-xs text-muted-foreground">L'assistant rédige…</p>}
+            {busy && <p className="text-xs text-muted-foreground">{t("assistant.typing")}</p>}
             {reference && (
               <p className="rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-xs">
-                Demande enregistrée — référence <strong>{reference}</strong>.
+                {t("assistant.referenceSaved", { reference })}
               </p>
             )}
           </div>
@@ -142,13 +159,13 @@ export function AssistantWidget() {
                 htmlFor="assistant-gdpr-consent"
                 className="cursor-pointer text-[11px] leading-relaxed text-muted-foreground"
               >
-                J’accepte que mes messages et coordonnées soient traités par Wilmet pour répondre à ma demande.{' '}
+                {t("assistant.consentLabel")}{" "}
                 <a
                   href="/confidentialite"
                   className="font-medium text-foreground underline underline-offset-2"
                   onClick={(event) => event.stopPropagation()}
                 >
-                  Politique de confidentialité
+                  {t("assistant.privacyLink")}
                 </a>
               </label>
             </div>
@@ -156,13 +173,18 @@ export function AssistantWidget() {
 
           <form
             className="flex items-center gap-2 p-3"
-            onSubmit={(e) => { e.preventDefault(); void send(); }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              void send();
+            }}
           >
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={gdprConsent ? "Votre message…" : "Acceptez d’abord la confidentialité"}
-              aria-label="Votre message"
+              placeholder={
+                gdprConsent ? t("assistant.placeholder") : t("assistant.placeholderConsentRequired")
+              }
+              aria-label={t("assistant.messageAriaLabel")}
               maxLength={2000}
               disabled={busy || !gdprConsent}
             />
@@ -170,7 +192,7 @@ export function AssistantWidget() {
               type="submit"
               size="icon"
               disabled={busy || !gdprConsent || !input.trim()}
-              aria-label="Envoyer"
+              aria-label={t("assistant.sendAriaLabel")}
             >
               <Send className="h-4 w-4" />
             </Button>
@@ -178,7 +200,7 @@ export function AssistantWidget() {
         </div>
       ) : (
         <Button onClick={() => setOpen(true)} size="lg" className="gap-2 rounded-full shadow-lg">
-          <MessageCircle className="h-5 w-5" /> Assistant
+          <MessageCircle className="h-5 w-5" /> {t("assistant.openButton")}
         </Button>
       )}
     </div>

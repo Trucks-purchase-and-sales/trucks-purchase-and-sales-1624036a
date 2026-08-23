@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { LegalLayout } from "@/components/LegalLayout";
+import { useI18nInit } from "@/i18n/useI18nInit";
 
 export const Route = createFileRoute("/cgv")({
   head: () => ({
@@ -13,70 +15,46 @@ export const Route = createFileRoute("/cgv")({
 });
 
 function Page() {
+  useI18nInit();
+  const { t } = useTranslation();
   return (
-    <LegalLayout title="Conditions Générales de Vente" updated="19 juillet 2026">
+    <LegalLayout title={t("legal.cgv.title")} updated={t("legal.updatedDate")}>
       <section>
-        <h2>1. Champ d'application</h2>
-        <p>
-          Les présentes CGV s'appliquent à toute transaction de véhicule industriel conclue entre Wilmet et un
-          acheteur professionnel via la plateforme Wilmet Trucks.
-        </p>
+        <h2>{t("legal.cgv.s1.heading")}</h2>
+        <p>{t("legal.cgv.s1.body")}</p>
       </section>
 
       <section>
-        <h2>2. Commande et acompte</h2>
-        <p>
-          Toute commande devient ferme à réception d'un bon de commande signé et du versement d'un acompte,
-          généralement de 20 % du prix HT, sauf mention contraire. Le solde est réglé avant enlèvement du véhicule
-          ou selon les modalités précisées dans le bon de commande.
-        </p>
+        <h2>{t("legal.cgv.s2.heading")}</h2>
+        <p>{t("legal.cgv.s2.body")}</p>
       </section>
 
       <section>
-        <h2>3. Prix</h2>
-        <p>
-          Les prix sont exprimés en Euros (EUR), hors taxes. La TVA applicable et son régime (autoliquidation
-          intracommunautaire, marge, etc.) sont précisés sur chaque devis et facture.
-        </p>
+        <h2>{t("legal.cgv.s3.heading")}</h2>
+        <p>{t("legal.cgv.s3.body")}</p>
       </section>
 
       <section>
-        <h2>4. Livraison et transfert de propriété</h2>
-        <p>
-          Sauf clause de réserve de propriété expressément stipulée, le transfert de propriété intervient au
-          paiement complet du prix. Les frais de transport et d'immatriculation sont à la charge de l'acheteur,
-          sauf accord contraire.
-        </p>
+        <h2>{t("legal.cgv.s4.heading")}</h2>
+        <p>{t("legal.cgv.s4.body")}</p>
       </section>
 
       <section>
-        <h2>5. Garantie</h2>
-        <p>
-          Les véhicules sont vendus d'occasion, en l'état, avec les garanties légales applicables aux ventes
-          entre professionnels. L'acheteur reconnaît avoir pris connaissance de l'état du véhicule avant
-          signature.
-        </p>
+        <h2>{t("legal.cgv.s5.heading")}</h2>
+        <p>{t("legal.cgv.s5.body")}</p>
       </section>
 
       <section>
-        <h2>6. Rétractation</h2>
-        <p>
-          La vente entre professionnels ne bénéficie pas du droit de rétractation prévu par le Code de la
-          consommation.
-        </p>
+        <h2>{t("legal.cgv.s6.heading")}</h2>
+        <p>{t("legal.cgv.s6.body")}</p>
       </section>
 
       <section>
-        <h2>7. Litiges</h2>
-        <p>
-          Les présentes CGV sont soumises au droit français. Tout litige relève de la compétence exclusive
-          des tribunaux du siège social de Wilmet.
-        </p>
+        <h2>{t("legal.cgv.s7.heading")}</h2>
+        <p>{t("legal.cgv.s7.body")}</p>
       </section>
 
-      <p className="text-xs text-muted-foreground">
-        ⚠️ Modèle — à personnaliser (délais, pénalités de retard, clause de réserve de propriété) et faire relire.
-      </p>
+      <p className="text-xs text-muted-foreground">{t("legal.cgv.draftNotice")}</p>
     </LegalLayout>
   );
 }

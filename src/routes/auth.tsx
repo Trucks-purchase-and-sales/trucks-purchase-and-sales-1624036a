@@ -1,5 +1,6 @@
 import { createFileRoute, Link, redirect, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import wilmetLogo from "@/assets/wilmet-logo.png.asset.json";
 import { Button } from "@/components/ui/button";
@@ -14,13 +15,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useI18nInit } from "@/i18n/useI18nInit";
 import { resolveRoleHome } from "@/hooks/useRoleHome";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  NEW_PASSWORD_HELP,
-  NEW_PASSWORD_MIN_LENGTH,
-  validateNewPassword,
-} from "@/lib/password-policy";
+import { NEW_PASSWORD_MIN_LENGTH, validateNewPassword } from "@/lib/password-policy";
 import { getStoredRef } from "@/lib/referral";
 import { PROVIDER_TYPE_OPTIONS } from "@/lib/wilmet-constants";
 
@@ -35,20 +33,9 @@ export const Route = createFileRoute("/auth")({
     kind: s.kind === "seller" ? "seller" : s.kind === "client" ? "client" : undefined,
   }),
   beforeLoad: async () => {
-    // The Supabase client lazily constructs on first access and throws if it
-    // can't (e.g. missing env vars in this deployment). That must not take
-    // down the sign-in page itself -- worst case, show the form and let the
-    // user try again, rather than a dead error screen.
-    let session: Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"] = null;
-    try {
-      const { data } = await supabase.auth.getSession();
-      session = data.session;
-    } catch (error) {
-      console.error("[auth] session check failed; showing the sign-in form", error);
-      return;
-    }
-    if (session) {
-      const home = await resolveRoleHome(session.user.id);
+    const { data } = await supabase.auth.getSession();
+    if (data.session) {
+      const home = await resolveRoleHome(data.session.user.id);
       throw redirect({ to: home });
     }
   },
@@ -56,6 +43,8 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
+  useI18nInit();
+  const { t } = useTranslation();
   const { mode, kind } = useSearch({ from: "/auth" });
   const navigate = useNavigate();
   const [tab, setTab] = useState<"login" | "signup" | "forgot">(
@@ -87,17 +76,17 @@ function AuthPage() {
             <CardHeader className="pb-4">
               <CardTitle className="text-xl">
                 {tab === "signup"
-                  ? "Créer un compte partenaire"
+                  ? t("auth.title.signup")
                   : tab === "forgot"
-                    ? "Mot de passe oublié"
-                    : "Connexion partenaire"}
+                    ? t("auth.title.forgot")
+                    : t("auth.title.login")}
               </CardTitle>
               <CardDescription>
                 {tab === "signup"
-                  ? "Rejoignez le portail partenaires Wilmet en quelques secondes."
+                  ? t("auth.subtitle.signup")
                   : tab === "forgot"
-                    ? "Nous vous enverrons un e-mail pour réinitialiser votre mot de passe."
-                    : "Accédez à votre espace pour suivre vos opportunités."}
+                    ? t("auth.subtitle.forgot")
+                    : t("auth.subtitle.login")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -107,8 +96,8 @@ function AuthPage() {
                   onValueChange={(value) => selectAuthTab(value as "login" | "signup")}
                 >
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="login">Connexion</TabsTrigger>
-                    <TabsTrigger value="signup">Inscription</TabsTrigger>
+                    <TabsTrigger value="login">{t("auth.tabs.login")}</TabsTrigger>
+                    <TabsTrigger value="signup">{t("auth.tabs.signup")}</TabsTrigger>
                   </TabsList>
                   <TabsContent value="login" className="mt-6">
                     <LoginForm
@@ -135,9 +124,7 @@ function AuthPage() {
             </CardContent>
           </Card>
 
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            En continuant, vous acceptez d'être contacté(e) par Wilmet au sujet de vos opportunités.
-          </p>
+          <p className="mt-6 text-center text-xs text-muted-foreground">{t("auth.disclaimer")}</p>
         </div>
       </div>
     </div>
@@ -151,6 +138,7 @@ function LoginForm({
   onForgot: () => void;
   onSuccess: (userId: string) => void | Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -161,18 +149,18 @@ function LoginForm({
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error || !data.user) {
-      toast.error("Connexion impossible", {
-        description: error?.message ?? "Erreur inconnue",
+      toast.error(t("auth.login.errorTitle"), {
+        description: error?.message ?? t("auth.login.errorFallback"),
       });
       return;
     }
-    toast.success("Bienvenue");
+    toast.success(t("auth.login.successTitle"));
     await onSuccess(data.user.id);
   }
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <Field label="Email">
+      <Field label={t("buyer.fields.email")}>
         <Input
           type="email"
           required
@@ -181,7 +169,7 @@ function LoginForm({
           autoComplete="email"
         />
       </Field>
-      <Field label="Mot de passe">
+      <Field label={t("auth.fields.password")}>
         <Input
           type="password"
           required
@@ -196,7 +184,7 @@ function LoginForm({
           onClick={onForgot}
           className="text-xs font-medium text-accent hover:underline"
         >
-          Mot de passe oublié ?
+          {t("auth.login.forgotLink")}
         </button>
       </div>
       <Button
@@ -204,19 +192,20 @@ function LoginForm({
         className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
         size="lg"
       >
-        {loading ? "Connexion…" : "Se connecter"}
+        {loading ? t("auth.login.submitLoading") : t("auth.login.submit")}
       </Button>
     </form>
   );
 }
 
-function readableSignupError(message: string): string {
+/** message stays as-is when it doesn't match a known Auth failure signature. */
+function readableSignupError(message: string, fallback: string): string {
   const normalized = message.toLowerCase();
   if (
     normalized.includes("database error saving new user") ||
     normalized.includes("error occurred")
   ) {
-    return "Le compte n'a pas pu être finalisé. Réessayez dans un instant ; si le problème persiste, contactez Wilmet.";
+    return fallback;
   }
   return message;
 }
@@ -230,6 +219,7 @@ function SignupForm({
   onAuthenticated: (userId: string) => void | Promise<void>;
   initialKind?: "client" | "seller";
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
@@ -258,15 +248,15 @@ function SignupForm({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (kind !== "client" && kind !== "seller") {
-      toast.error("Type de compte requis", {
-        description: "Indiquez si vous souhaitez vendre ou acheter un véhicule.",
+      toast.error(t("auth.signup.kindRequiredTitle"), {
+        description: t("auth.signup.kindRequiredDescription"),
       });
       return;
     }
 
     const passwordValidation = validateNewPassword(form.password);
     if (!passwordValidation.valid) {
-      toast.error("Mot de passe trop court", { description: passwordValidation.message });
+      toast.error(t("auth.password.tooShortTitle"), { description: passwordValidation.message });
       return;
     }
 
@@ -275,8 +265,8 @@ function SignupForm({
       const check = await fetch("/api/public/signup-check", { method: "POST" });
       if (check.status === 429) {
         const body = await check.json().catch(() => ({}));
-        toast.error("Trop de tentatives", {
-          description: body?.error ?? "Merci de réessayer plus tard.",
+        toast.error(t("auth.signup.rateLimitedTitle"), {
+          description: body?.error ?? t("auth.signup.rateLimitedFallback"),
         });
         setLoading(false);
         return;
@@ -314,14 +304,16 @@ function SignupForm({
         setPendingEmail(form.email);
         return;
       }
-      toast.error("Inscription impossible", {
-        description: readableSignupError(error.message),
+      toast.error(t("auth.signup.errorTitle"), {
+        description: readableSignupError(error.message, t("auth.signup.errorFallback")),
       });
       return;
     }
 
     if (data.session) {
-      toast.success("Compte créé", { description: "Bienvenue sur Wilmet Opportunités." });
+      toast.success(t("auth.signup.successTitle"), {
+        description: t("auth.signup.successDescription"),
+      });
       await onAuthenticated(data.session.user.id);
       return;
     }
@@ -346,12 +338,12 @@ function SignupForm({
     setResending(false);
 
     if (error) {
-      toast.error("Envoi impossible", { description: error.message });
+      toast.error(t("auth.resend.errorTitle"), { description: error.message });
       return;
     }
 
-    toast.success("E-mail renvoyé", {
-      description: `Un nouveau lien a été envoyé à ${email}.`,
+    toast.success(t("auth.resend.successTitle"), {
+      description: t("auth.resend.successDescription", { email }),
     });
     setSubmittedEmail(email);
     setPendingEmail(null);
@@ -376,11 +368,11 @@ function SignupForm({
               <path d="M12 16h.01" />
             </svg>
           </div>
-          <h3 className="text-base font-bold">Un compte existe déjà</h3>
+          <h3 className="text-base font-bold">{t("auth.pending.title")}</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            L'adresse <span className="break-all font-medium text-foreground">{pendingEmail}</span>{" "}
-            a déjà été utilisée pour créer un compte, mais celui-ci n'a pas encore été confirmé par
-            e-mail.
+            {t("auth.pending.textBefore")}{" "}
+            <span className="break-all font-medium text-foreground">{pendingEmail}</span>{" "}
+            {t("auth.pending.textAfter")}
           </p>
         </div>
         <Button
@@ -389,14 +381,14 @@ function SignupForm({
           className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
           size="lg"
         >
-          {resending ? "Envoi…" : "Renvoyer l'e-mail de confirmation"}
+          {resending ? t("auth.common.sendingLoading") : t("auth.pending.resendButton")}
         </Button>
         <button
           type="button"
           onClick={() => setPendingEmail(null)}
           className="mx-auto block text-xs font-medium text-muted-foreground hover:text-foreground"
         >
-          Utiliser une autre adresse
+          {t("auth.pending.useAnotherEmail")}
         </button>
       </div>
     );
@@ -419,22 +411,17 @@ function SignupForm({
               <path d="M20 6L9 17l-5-5" />
             </svg>
           </div>
-          <h3 className="text-xl font-bold">Vérifiez votre boîte e-mail</h3>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Nous venons d'envoyer un lien de confirmation à
-          </p>
+          <h3 className="text-xl font-bold">{t("auth.submitted.title")}</h3>
+          <p className="mt-3 text-sm text-muted-foreground">{t("auth.submitted.textBefore")}</p>
           <p className="mt-1 break-all text-base font-semibold text-foreground">{submittedEmail}</p>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Cliquez sur le lien reçu pour activer votre compte, puis revenez ici pour vous
-            connecter.
-          </p>
+          <p className="mt-3 text-sm text-muted-foreground">{t("auth.submitted.textAfter")}</p>
         </div>
         <Button
           onClick={onShowLogin}
           className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
           size="lg"
         >
-          Aller à la connexion
+          {t("auth.submitted.goToLogin")}
         </Button>
         <div className="text-center">
           <button
@@ -443,12 +430,10 @@ function SignupForm({
             disabled={resending}
             className="text-xs font-medium text-accent hover:underline disabled:opacity-50"
           >
-            {resending ? "Envoi…" : "Vous n'avez rien reçu ? Renvoyer l'e-mail"}
+            {resending ? t("auth.common.sendingLoading") : t("auth.submitted.resendPrompt")}
           </button>
         </div>
-        <p className="text-center text-xs text-muted-foreground">
-          Pensez à vérifier vos spams si l'e-mail n'arrive pas.
-        </p>
+        <p className="text-center text-xs text-muted-foreground">{t("auth.submitted.spamNote")}</p>
       </div>
     );
   }
@@ -457,13 +442,21 @@ function SignupForm({
     <form onSubmit={submit} className="space-y-4">
       <div className="space-y-2 rounded-lg border border-border/70 bg-secondary/40 p-3">
         <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Votre compte
+          {t("auth.signup.accountSectionLabel")}
         </Label>
         <div className="grid grid-cols-2 gap-2">
           {(
             [
-              { value: "seller", title: "Je vends", hint: "Je propose des véhicules" },
-              { value: "client", title: "J'achète", hint: "Je cherche des véhicules" },
+              {
+                value: "seller",
+                title: t("auth.signup.kindSellerTitle"),
+                hint: t("auth.signup.kindSellerHint"),
+              },
+              {
+                value: "client",
+                title: t("auth.signup.kindClientTitle"),
+                hint: t("auth.signup.kindClientHint"),
+              },
             ] as const
           ).map((option) => (
             <button
@@ -482,20 +475,18 @@ function SignupForm({
             </button>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground">
-          Ce choix est définitif : un compte est soit vendeur, soit acheteur.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("auth.signup.kindNote")}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Prénom">
+        <Field label={t("buyer.fields.firstName")}>
           <Input
             required
             value={form.first_name}
             onChange={(e) => set("first_name", e.target.value)}
           />
         </Field>
-        <Field label="Nom">
+        <Field label={t("buyer.fields.lastName")}>
           <Input
             required
             value={form.last_name}
@@ -504,14 +495,14 @@ function SignupForm({
         </Field>
       </div>
 
-      <Field label="Société">
+      <Field label={t("buyer.fields.company")}>
         <Input value={form.company_name} onChange={(e) => set("company_name", e.target.value)} />
       </Field>
 
-      <Field label="Type de partenaire">
+      <Field label={t("auth.fields.providerType")}>
         <Select value={form.provider_type} onValueChange={(value) => set("provider_type", value)}>
           <SelectTrigger>
-            <SelectValue placeholder="Sélectionner" />
+            <SelectValue placeholder={t("common.select")} />
           </SelectTrigger>
           <SelectContent>
             {PROVIDER_TYPE_OPTIONS.map((option) => (
@@ -524,7 +515,7 @@ function SignupForm({
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Email">
+        <Field label={t("buyer.fields.email")}>
           <Input
             type="email"
             required
@@ -533,7 +524,7 @@ function SignupForm({
             autoComplete="email"
           />
         </Field>
-        <Field label="Téléphone">
+        <Field label={t("buyer.fields.phone")}>
           <Input
             type="tel"
             required
@@ -545,15 +536,15 @@ function SignupForm({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Ville">
+        <Field label={t("buyer.fields.city")}>
           <Input required value={form.city} onChange={(e) => set("city", e.target.value)} />
         </Field>
-        <Field label="Pays">
+        <Field label={t("buyer.fields.country")}>
           <Input required value={form.country} onChange={(e) => set("country", e.target.value)} />
         </Field>
       </div>
 
-      <Field label="Mot de passe">
+      <Field label={t("auth.fields.password")}>
         <Input
           type="password"
           required
@@ -562,7 +553,9 @@ function SignupForm({
           onChange={(e) => set("password", e.target.value)}
           autoComplete="new-password"
         />
-        <p className="text-xs text-muted-foreground">{NEW_PASSWORD_HELP}</p>
+        <p className="text-xs text-muted-foreground">
+          {t("auth.passwordHelp", { min: NEW_PASSWORD_MIN_LENGTH })}
+        </p>
       </Field>
 
       <Button
@@ -570,13 +563,14 @@ function SignupForm({
         className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
         size="lg"
       >
-        {loading ? "Création…" : "Créer mon compte"}
+        {loading ? t("auth.signup.submitLoading") : t("auth.signup.submit")}
       </Button>
     </form>
   );
 }
 
 function ForgotForm({ onBack }: { onBack: () => void }) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -589,17 +583,19 @@ function ForgotForm({ onBack }: { onBack: () => void }) {
     setLoading(false);
 
     if (error) {
-      toast.error("Échec de l'envoi", { description: error.message });
+      toast.error(t("auth.forgot.errorTitle"), { description: error.message });
       return;
     }
 
-    toast.success("E-mail envoyé", { description: "Consultez votre boîte de réception." });
+    toast.success(t("auth.forgot.successTitle"), {
+      description: t("auth.forgot.successDescription"),
+    });
     onBack();
   }
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <Field label="Email">
+      <Field label={t("buyer.fields.email")}>
         <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
       </Field>
       <Button
@@ -607,14 +603,14 @@ function ForgotForm({ onBack }: { onBack: () => void }) {
         className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
         size="lg"
       >
-        {loading ? "Envoi…" : "Envoyer le lien"}
+        {loading ? t("auth.common.sendingLoading") : t("auth.forgot.submit")}
       </Button>
       <button
         type="button"
         onClick={onBack}
         className="mx-auto block text-xs font-medium text-muted-foreground hover:text-foreground"
       >
-        Retour à la connexion
+        {t("auth.forgot.back")}
       </button>
     </form>
   );
