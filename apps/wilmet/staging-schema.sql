@@ -25,15 +25,23 @@
 -- =====================================================================
 
 -- =====================================================================
--- 0) Extensions
+-- 0) Reset — makes this script safe to re-run from scratch at any time
+--    (e.g. after a mid-script error) on a fresh/disposable STAGING
+--    project. This is the standard Supabase "reset the public schema"
+--    snippet. NEVER run this against a project holding real data.
+-- =====================================================================
+drop schema if exists public cascade;
+create schema public;
+grant all on schema public to postgres;
+grant all on schema public to public;
+drop schema if exists private cascade;
+create schema private;
+
+-- =====================================================================
+-- 1) Extensions
 -- =====================================================================
 create extension if not exists pgcrypto;
 create extension if not exists vector;
-
--- =====================================================================
--- 1) Schemas
--- =====================================================================
-create schema if not exists private;
 
 -- =====================================================================
 -- 2) Enum types
@@ -910,63 +918,78 @@ as $function$
 $function$;
 
 create or replace function private.can_read_all_pipeline(_user_id uuid)
- returns boolean
- language sql stable security definer set search_path to 'public'
-as $function$
-  select private.has_any_role(_user_id, ARRAY['admin','platform_admin','company_management','sales_manager']::app_role[]);
+returns boolean language sql stable security definer set search_path to 'public' as $function$
+  select private.has_any_role(_user_id, ARRAY['admin','platform_admin','company_management','sales_manager']::public.app_role[]);
 $function$;
 
 create or replace function private.can_write_all_pipeline(_user_id uuid)
- returns boolean
- language sql stable security definer set search_path to 'public'
-as $function$
-  select private.has_any_role(_user_id, ARRAY['admin','platform_admin','sales_manager']::app_role[]);
+returns boolean language sql stable security definer set search_path to 'public' as $function$
+  select private.has_any_role(_user_id, ARRAY['admin','platform_admin','sales_manager']::public.app_role[]);
 $function$;
 
 create or replace function private.is_internal_sales_agent(_user_id uuid)
- returns boolean
- language sql stable security definer set search_path to 'public'
-as $function$
-  select private.has_role(_user_id, 'sales_agent'::app_role);
+returns boolean language sql stable security definer set search_path to 'public' as $function$
+  select private.has_role(_user_id, 'sales_agent'::public.app_role);
 $function$;
 
 create or replace function private.is_external_agent(_user_id uuid)
- returns boolean
- language sql stable security definer set search_path to 'public'
-as $function$
-  select private.has_role(_user_id, 'external_agent'::app_role);
+returns boolean language sql stable security definer set search_path to 'public' as $function$
+  select private.has_role(_user_id, 'external_agent'::public.app_role);
 $function$;
 
-create or replace function private.staff_scope_allows(_user_id uuid, _side staff_scope)
- returns boolean
- language sql stable security definer set search_path to 'public'
-as $function$
-  select exists (
-    select 1 from public.profiles
-    where id = _user_id and (staff_scope = 'both' or staff_scope = _side)
-  );
+-- NOTE: the 4th parameter is staff_group (2 values: purchase/sales), NOT
+-- staff_scope (3 values: purchase/sales/both) — these are two different
+-- enum types. profiles.staff_scope is compared to it via ::text since
+-- Postgres won't implicitly compare two different enum types.
+create or replace function private.staff_scope_allows(_user_id uuid, _side public.staff_group)
+returns boolean language sql stable security definer set search_path to 'public' as $function$
+  select coalesce(
+    (select staff_scope::text = 'both' or staff_scope::text = _side::text
+       from public.profiles where id = _user_id),
+    false);
 $function$;
 
-create or replace function private.can_read_pipeline_record(_user_id uuid, _assigned_sales_agent_id uuid, _assigned_group_id uuid, _side staff_scope)
- returns boolean
- language sql stable security definer set search_path to 'public'
-as $function$
-  select
-    _assigned_sales_agent_id = _user_id
-    or private.is_group_member(_user_id, _assigned_group_id)
-    or private.can_read_all_pipeline(_user_id)
-    or (private.is_external_agent(_user_id) and _assigned_sales_agent_id = _user_id);
+create or replace function private.can_read_pipeline_record(_user_id uuid, _assigned uuid, _group_id uuid, _side public.staff_group)
+returns boolean language sql stable security definer set search_path to 'public' as $function$
+  select private.can_read_all_pipeline(_user_id)
+      or (_assigned is not null and _assigned = _user_id and (private.is_internal_sales_agent(_user_id) or private.is_external_agent(_user_id)))
+      or (
+        private.is_internal_sales_agent(_user_id)
+        and (
+          private.is_group_member(_user_id, _group_id)
+          or (_assigned is null and _group_id is null and private.staff_scope_allows(_user_id, _side))
+        )
+      );
 $function$;
 
-create or replace function private.can_write_pipeline_record(_user_id uuid, _assigned_sales_agent_id uuid, _assigned_group_id uuid, _side staff_scope)
- returns boolean
- language sql stable security definer set search_path to 'public'
-as $function$
-  select
-    _assigned_sales_agent_id = _user_id
-    or (private.is_group_member(_user_id, _assigned_group_id) and private.staff_scope_allows(_user_id, _side))
-    or private.can_write_all_pipeline(_user_id);
+create or replace function private.can_write_pipeline_record(_user_id uuid, _assigned uuid, _group_id uuid, _side public.staff_group)
+returns boolean language sql stable security definer set search_path to 'public' as $function$
+  select private.can_write_all_pipeline(_user_id)
+      or (_assigned is not null and _assigned = _user_id
+          and (private.is_internal_sales_agent(_user_id) or private.is_external_agent(_user_id)))
+      or (
+        private.is_internal_sales_agent(_user_id)
+        and (
+          private.is_group_member(_user_id, _group_id)
+          or (_assigned is null and _group_id is null and private.staff_scope_allows(_user_id, _side))
+        )
+      );
 $function$;
+
+revoke all on function private.can_read_all_pipeline(uuid) from public;
+revoke all on function private.can_write_all_pipeline(uuid) from public;
+revoke all on function private.is_internal_sales_agent(uuid) from public;
+revoke all on function private.is_external_agent(uuid) from public;
+revoke all on function private.staff_scope_allows(uuid, public.staff_group) from public;
+revoke all on function private.can_read_pipeline_record(uuid, uuid, uuid, public.staff_group) from public;
+revoke all on function private.can_write_pipeline_record(uuid, uuid, uuid, public.staff_group) from public;
+grant execute on function private.can_read_all_pipeline(uuid) to authenticated, service_role;
+grant execute on function private.can_write_all_pipeline(uuid) to authenticated, service_role;
+grant execute on function private.is_internal_sales_agent(uuid) to authenticated, service_role;
+grant execute on function private.is_external_agent(uuid) to authenticated, service_role;
+grant execute on function private.staff_scope_allows(uuid, public.staff_group) to authenticated, service_role;
+grant execute on function private.can_read_pipeline_record(uuid, uuid, uuid, public.staff_group) to authenticated, service_role;
+grant execute on function private.can_write_pipeline_record(uuid, uuid, uuid, public.staff_group) to authenticated, service_role;
 
 create or replace function public.handle_new_user()
  returns trigger
