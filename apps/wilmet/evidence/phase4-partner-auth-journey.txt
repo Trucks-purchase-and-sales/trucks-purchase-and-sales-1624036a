@@ -1,0 +1,86 @@
+V2P Phase 4 — first authenticated Playwright journey (login, role
+restriction, logout)
+Written by: Claude, 2026-08-25.
+
+What this adds: e2e/tests/partner-auth-journey.pw.ts — three tests
+covering three of the plan's example "5 critical smoke journeys"
+(login, load the authenticated home, logout) plus one authz regression
+test (a low-privilege partner is denied /admin and bounced to their
+own dashboard). This is the first Playwright spec in this repo that
+drives a REAL authenticated browser session rather than only the
+public/anonymous shell — closing the gap explicitly called out in
+docs/security/staging-security-e2e.md's "What remains separate"
+section ("browser-level seller/buyer/admin journeys — Playwright").
+
+Identity strategy: mirrors tests/staging/security.staging.ts's
+provisionIdentity() pattern exactly — a throwaway partner
+(partenaire/seller) is created via the Supabase Auth admin API in
+test.beforeAll using a service-role key, and deleted in test.afterAll.
+Requires E2E_SUPABASE_URL and E2E_SUPABASE_SERVICE_ROLE_KEY; the whole
+file skips cleanly (not a failure) when they're absent, so the
+existing credential-free public-smoke suite and CI's test:list step
+are unaffected.
+
+Evidence boundary (see docs/security/staging-security-e2e.md's own
+classification): this is currently IMPLEMENTED and CI-validated
+(playwright test --list discovers and parses it correctly; @playwright/test
++ @supabase/supabase-js were added to e2e/package.json and installed
+clean). It is NOT YET staging-verified end-to-end, for a reason worth
+recording precisely rather than glossing over:
+
+Finding #5 (new, environment-specific — not an app bug): the app's
+local dev server, when run from this project's actual working
+directory (inside a OneDrive-synced folder on this Windows machine),
+intermittently enters an infinite reload loop: every time a route is
+compiled for the first time, @tanstack/router-plugin rewrites
+src/routeTree.gen.ts, and something in this environment (near-certainly
+OneDrive's background sync touching the same file mid-write) causes
+the dev-server's file watcher to perceive that write as an external
+change, triggering another regeneration, indefinitely, at roughly
+1-second intervals ("[vite] page reload src/routeTree.gen.ts" logged
+in a tight loop). Plain HTTP requests (curl) still return correct 200
+responses throughout, so the site itself keeps working for ordinary
+browsing — but Playwright's navigation-completion tracking interprets
+the constant reload signal as "still navigating," so any test that
+waits on a fresh route stalls or times out. This reproduced identically
+whether driven by Playwright's test runner or by a hand-written
+Node script hitting the same server with the same routes, and recurred
+after multiple clean restarts (killing the process, clearing
+.tanstack/tmp, and resetting src/routeTree.gen.ts to its committed
+state each time) — so it is not a one-off fluke, but it is also not
+constant: one restart briefly ran clean long enough to get a real
+signal (see below) before the loop resumed on the very next attempt.
+
+What was independently confirmed despite the flaky browser layer:
+  - Identity provisioning is correct: a direct Node script (no browser)
+    created a throwaway partner via the admin API, set its profile and
+    partenaire/seller role exactly as this spec does, and signed in
+    with the anon client using the same credentials — zero errors,
+    real session returned. The backend side of this spec's setup is
+    proven sound.
+  - The login submit handler's code (src/routes/auth.tsx's LoginForm)
+    is correctly sequenced: it awaits signInWithPassword, then awaits
+    resolveRoleHome(uid), then navigates — no apparent race between
+    session persistence and the subsequent authenticated-route
+    beforeLoad's supabase.auth.getUser() check.
+  - One browser-driven attempt that happened to run without the reload
+    loop's interference still ended with the URL back at
+    /auth?mode=login instead of /dashboard after a real form
+    submit+click. Given everything above reads correctly in the source
+    and the identity is proven valid at the API level, the most likely
+    explanation is that this one run was still touched by the same
+    environment instability in a subtler way (e.g. a stray reload
+    landing between submit and redirect) rather than a genuine app
+    bug — but this is a hypothesis, not a confirmed conclusion. Treat
+    this spec as unverified, not as evidence of either a passing or a
+    failing app behavor, until it's re-run somewhere without this
+    interference.
+
+Recommended next step: re-run `E2E_SUPABASE_URL=... E2E_SUPABASE_SERVICE_ROLE_KEY=...
+PLAYWRIGHT_BASE_URL=... PLAYWRIGHT_TARGET_LABEL=local npm test` for
+this file specifically from a non-OneDrive-synced environment (a
+GitHub Actions runner, WSL, or any plain local folder outside OneDrive)
+to get a clean, trustworthy pass/fail signal, then update this file's
+evidence boundary to "staging-verified" accordingly. This OneDrive
+interaction is worth keeping in mind for any future local Playwright
+work on this project from this same machine/folder.
