@@ -42,6 +42,11 @@ export default defineConfig({
   ],
   use: {
     baseURL: parsedBaseURL.toString(),
+    // The app renders French by default and switches based on the browser's
+    // reported locale after hydration (src/i18n/index.ts). Without pinning
+    // this, Playwright's en-US default causes every French-text assertion
+    // to fail against a real, working app — not an app bug.
+    locale: "fr-FR",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",

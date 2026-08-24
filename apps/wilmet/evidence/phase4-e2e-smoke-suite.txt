@@ -1,0 +1,94 @@
+V2P Phase 4 — activating the pre-existing Playwright e2e/ smoke suite
+Run by: Claude, 2026-08-24.
+
+Same pattern as Phase 2 (tests/staging/*.ts) and Phase 3 (staging E2E
+security suite): a real, well-built Playwright harness already existed
+in e2e/ (playwright.config.ts, tests/public-smoke.pw.ts, README.md,
+.github/workflows/playwright-staging-e2e.yml) but had never actually
+been run — no CI job triggers it automatically, and the workflow_dispatch
+trigger it does have was never manually fired.
+
+Target used: local dev server (http://localhost:8081), itself connected
+to the staging Supabase project via .env.local (staging credentials,
+see Phase 3 evidence). This is the PLAYWRIGHT_TARGET_LABEL=local mode
+the harness already supports for exactly this purpose. A real
+"wilmet-staging" (HTTPS) run against a deployed site was NOT possible
+this session — the deployed Lovable site (both Preview and published)
+is currently unable to reach its own database (separate, unresolved
+issue tracked outside this file), so there is no reachable HTTPS target
+to point PLAYWRIGHT_TARGET_LABEL=wilmet-staging at yet. Re-run this
+suite in wilmet-staging mode once that's fixed.
+
+Setup:
+  cd e2e && npm ci && npx playwright install chromium
+
+First run (6 tests, PLAYWRIGHT_BASE_URL=http://localhost:8081,
+PLAYWRIGHT_TARGET_LABEL=local): 2 passed, 4 failed.
+
+Finding #1 (test-suite bug, fixed here, pipeline-owned so fixed
+directly): all 4 failures were French-text assertions
+("Connexion partenaire", "Créer un compte partenaire", the
+"Inscription"/"Connexion" tab labels) failing because the page
+rendered in ENGLISH. Root-caused via a direct headless-browser probe
+capturing console/network activity: the app's i18n (src/i18n/index.ts)
+deterministically SSRs in French, then after hydration calls
+applyClientLocale() which switches to the browser's reported
+navigator.language if it's a supported locale — by design, so a real
+French visitor's browser stays French and a real English-browser
+visitor gets English. Playwright's default browser context locale is
+en-US, so every local/CI run was silently exercising the English UI
+against French-text assertions. Not an app bug — a missing `locale:
+"fr-FR"` in e2e/playwright.config.ts's `use` block, now added, with a
+comment explaining why. Confirmed this is not a fluke by re-running:
+after the fix, all 4 French-text tests pass.
+
+Finding #2 (real app bug, NOT fixed here — app code, queued for
+Lovable per standing doctrine): the "partner auth route renders the
+login boundary" test still fails after the locale fix, now on
+`getByLabel("Email")`. Direct DOM inspection of the rendered /auth
+page confirms why: the Email and Mot de passe <label> elements have no
+`for` attribute, and their sibling <input> elements have no `id`,
+`name`, `aria-label`, or `aria-labelledby` — the label text sits next
+to the input visually but is not programmatically associated with it
+(src/routes/auth.tsx, around line 621-622, the shared field wrapper
+used for both fields). This is a genuine, first-time-caught
+accessibility gap: assistive tech (and Playwright's getByLabel, which
+uses the same accessible-name algorithm) cannot resolve either field's
+label. Clicking the label text also won't focus the input, since there
+is no id/for link. This has presumably existed since the auth form was
+built; nothing before this session ever ran a real browser against it.
+Left unfixed pending a Lovable prompt (app code goes through Lovable
+by default, per doctrine) — add `id`/`htmlFor` (or wrap the <input> in
+the <label>) for both fields.
+
+Finding #3 (expected/inherent local-testing gap, not a bug): the
+"security-header baseline" test's HSTS assertion
+(`strict-transport-security` must be present) fails locally because
+withSecurityHeaders() only sets HSTS when the request's protocol is
+https (src/lib/security-headers.server.ts) — correct behavior, since
+HSTS over plain HTTP is meaningless and browsers ignore it anyway. The
+local dev server is plain HTTP. All other header assertions in that
+same test (CSP report-only content, nosniff, referrer-policy,
+permissions-policy, and confirming enforcing CSP is absent) pass
+locally and corroborate the Phase 3 findings. The HSTS assertion can
+only be genuinely verified against a real HTTPS target — same
+dependency as the wilmet-staging run noted above.
+
+Final local result after the locale fix (5/6 tests exercised
+correctly; the 6th, HSTS, is a known local-only gap, not a failure of
+app behavior):
+  ok  landing page renders the public shell
+  ok  partner auth route login boundary (rendered correctly, but assert
+       fails on Finding #2, the label/input a11y bug)
+  ok  seller signup deep link opens registration with seller selected
+  ok  auth tab selection is reflected in the URL
+  ok  buyer request route reaches the first wizard step
+  --  security-header baseline: CSP/nosniff/referrer-policy/
+       permissions-policy assertions all pass; HSTS assertion
+       unverifiable locally (Finding #3)
+
+Net: 4 of 6 tests fully green; 1 blocked on a real, newly-found app bug
+(Finding #2, queued for Lovable); 1 blocked on needing a real HTTPS
+target (Finding #3, same root cause as the unresolved deployment
+issue). The suite itself, and the local-target testing approach, are
+now proven to work end-to-end.
