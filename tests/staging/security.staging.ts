@@ -470,10 +470,17 @@ test("profile self-service allows benign fields but rejects privilege-adjacent c
 
 test("vehicle photo bucket enforces ownership, MIME allowlist and 10 MiB limit", async () => {
   await check("vehicle-photo storage boundary with real JWT", async () => {
-    const validPath = `${sellerAOpportunityId}/e2e/${runId}.png`;
-    const disallowedPath = `${sellerAOpportunityId}/e2e/${runId}.txt`;
-    const oversizedPath = `${sellerAOpportunityId}/e2e/${runId}-oversized.png`;
-    const crossOwnerPath = `${sellerAOpportunityId}/e2e/${runId}-seller-b.png`;
+    // Uses a fresh draft rather than sellerAOpportunityId: by this point in the
+    // file, earlier tests have already submitted that opportunity to Wilmet
+    // (status=envoyee, owner_side=wilmet), so the seller-photo-edit RLS policy
+    // (status=brouillon OR owner_side=partenaire) correctly no longer allows
+    // sellerA to write into it — matching the same rule enforced everywhere
+    // else in the app once an opportunity leaves the seller's hands.
+    const photoOpportunityId = await createSellerDraft(sellerA, "seller-a-photo-draft");
+    const validPath = `${photoOpportunityId}/e2e/${runId}.png`;
+    const disallowedPath = `${photoOpportunityId}/e2e/${runId}.txt`;
+    const oversizedPath = `${photoOpportunityId}/e2e/${runId}-oversized.png`;
+    const crossOwnerPath = `${photoOpportunityId}/e2e/${runId}-seller-b.png`;
     createdStoragePaths.push(validPath, disallowedPath, oversizedPath, crossOwnerPath);
 
     const onePixelPng = Buffer.from(
