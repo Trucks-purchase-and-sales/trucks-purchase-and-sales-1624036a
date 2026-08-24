@@ -161,10 +161,7 @@ async function provisionIdentity(input: {
   );
   failOnError(profile.error, `upsert profile ${input.label}`);
 
-  const removeExistingRoles = await service
-    .from("user_roles")
-    .delete()
-    .eq("user_id", user.id);
+  const removeExistingRoles = await service.from("user_roles").delete().eq("user_id", user.id);
   failOnError(removeExistingRoles.error, `clear roles ${input.label}`);
 
   const role = await service.from("user_roles").insert({
@@ -232,21 +229,13 @@ async function createSellerDraft(
 }
 
 async function rowVisible(client: SupabaseClient, id: string): Promise<boolean> {
-  const result = await client
-    .from("vehicle_opportunities")
-    .select("id")
-    .eq("id", id)
-    .maybeSingle();
+  const result = await client.from("vehicle_opportunities").select("id").eq("id", id).maybeSingle();
   failOnError(result.error, `read vehicle opportunity ${id}`);
   return result.data?.id === id;
 }
 
 async function getOpportunityAsService(id: string) {
-  const result = await service
-    .from("vehicle_opportunities")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const result = await service.from("vehicle_opportunities").select("*").eq("id", id).single();
   failOnError(result.error, `service read vehicle opportunity ${id}`);
   return result.data;
 }
@@ -566,6 +555,8 @@ afterAll(async () => {
   }
 
   if (cleanupFailed) {
-    throw new Error("Staging security E2E cleanup was not fully successful; inspect workflow logs.");
+    throw new Error(
+      "Staging security E2E cleanup was not fully successful; inspect workflow logs.",
+    );
   }
 });
