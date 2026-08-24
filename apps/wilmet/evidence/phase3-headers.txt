@@ -1,0 +1,45 @@
+V2P Phase 3, section 3 — HTTP security headers
+Verified by: Claude, 2026-08-24. Direct isolated test of
+withSecurityHeaders() (src/lib/security-headers.server.ts), not a live
+HTTP probe — the built server output targets an edge/Workers runtime
+(fetch(request, env, ctx), wrangler.json present in .output/server/),
+so it can't be run as a plain local Node process. Since the function
+under test is a pure function of (Response, Request) -> Response using
+only standard Web Fetch API primitives, tested it directly instead of
+fighting the deployment tooling.
+
+Synthetic request: https://wilmet.example.com/ (https, so HSTS applies)
+
+Result:
+  content-security-policy               (missing)   -- intentional, see below
+  content-security-policy-report-only   present, full policy
+  strict-transport-security             present: max-age=31536000
+  x-frame-options                       (missing)   -- real gap
+  x-content-type-options                present: nosniff
+  referrer-policy                       present: strict-origin-when-cross-origin
+  permissions-policy                    present: geolocation=(), microphone=(), payment=(), usb=()
+  x-dns-prefetch-control                present: off
+
+Compared against the plan's checklist (CSP, HSTS, X-Frame-Options,
+X-Content-Type-Options, Referrer-Policy):
+
+- X-Content-Type-Options, Referrer-Policy, HSTS: already implemented,
+  confirmed present.
+- CSP: implemented but deliberately report-only, per an explicit comment
+  in the source explaining the team is staging it — waiting to observe
+  real traffic on a working deployment before enforcing. Reasonable,
+  intentional, not an oversight. Revisit once the site is live again.
+- X-Frame-Options: genuinely missing. No `frame-ancestors` CSP directive
+  either, so there is currently NO clickjacking protection active at
+  all. This is the one real, actionable gap. Queued as a Lovable prompt
+  per Salma's choice (see the two prepared prompts for when credits
+  return).
+
+Not yet run: pipeline/security/headers-check.mjs against the actual
+live/published site (needs the Phase 0.5 database/env-var issue
+resolved first, and a real reachable TARGET_URL). This isolated
+function-level test proves the logic is correct; it does not prove the
+deployed site actually invokes this code path with no
+build/environment issue in front of it — re-run headers-check.mjs
+against production once it's reachable again, same as the earlier note
+about re-running the secret scan against the real bundle.
