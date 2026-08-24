@@ -1,0 +1,141 @@
+V2P Phase 3 kickoff — discovered and ran the repo's pre-existing staging
+security E2E suite (tests/staging/security.staging.ts), which is far more
+rigorous than the generic RLS probe used earlier (real business-workflow
+scenarios: seller draft privacy, submission handoffs, tamper resistance,
+cross-role scoping, profile self-edit guards, photo bucket ownership/
+MIME/size limits — not just generic anon/authenticated table access).
+Run by: Claude, against the staging project built in ADR-005, using bun
+(installed for this session; `bun install` itself hung indefinitely for
+2+ hours in this environment for unknown reasons — worked around by
+running `bun test` directly against the existing npm-populated
+node_modules, which was sufficient since bun is a runtime, not just an
+installer, and the one dependency this suite needs was already present).
+Date: 2026-08-24.
+
+=====================================================================
+Round 1 — first run, 8 pass / 1 fail
+=====================================================================
+Failure: "vehicle photo bucket enforces ownership..." — "Bucket not
+found". Root cause: staging-schema.sql (built in ADR-005) created every
+table, function, and public-schema policy, but never created the actual
+Supabase Storage bucket object itself — that's a separate API, not
+something a SQL script can do. Fixed by creating the bucket directly via
+the Storage admin API with the same settings as production (private,
+10 MiB limit, image MIME types only).
+
+=====================================================================
+Round 2 — same failure, different error: "new row violates row-level
+security policy"
+=====================================================================
+Root cause: a genuine gap in the original Phase 2 audit (9.1). That
+audit's queries were scoped to `schemaname = 'public'` only. Vehicle
+photo access is actually enforced by RLS policies on `storage.objects`
+— a different schema entirely — which were never independently checked.
+staging-schema.sql never included them. Pulled the exact policies
+verbatim from the tracked migration
+(supabase/migrations/20260819004000_vehicle_photo_parent_scope.sql) and
+added them to staging-schema.sql section 8b, applied to staging.
+pipeline/security/rls-audit.sql updated to scan both 'public' and
+'storage' schemas going forward, so this class of gap can't recur
+silently for this or any future project using this pipeline.
+
+=====================================================================
+Round 3 — same failure again, despite the new policies existing
+=====================================================================
+Verified via `select policyname, cmd, roles from pg_policies where
+schemaname='storage' and tablename='objects'` that all 4 policies were
+present and correctly defined. Root cause turned out to be unrelated to
+the new policies: after an earlier full staging-schema.sql RESET (run
+to apply the missing-grants fix), the three manual test users' `profiles`
+and `user_roles` rows were wiped and never recreated — the auto-fill
+trigger only fires on NEW auth.users signups, not retroactively for
+already-existing accounts, so the follow-up "just re-run the role UPDATE
+statements" instructions silently matched zero rows instead of erroring.
+Fixed directly via the Storage/REST admin API (INSERT, not UPDATE, since
+the rows didn't exist) rather than asking Salma to run more SQL.
+
+Manually reproduced the exact failing upload as a correctly-configured
+seller identity against a real seeded draft — it succeeded (HTTP 200),
+confirming the storage.objects policies themselves were correct all
+along; the problem was purely in the test-fixture setup, not the policy.
+
+=====================================================================
+Round 4 — automated suite still failed identically; isolated with a
+standalone debug script
+=====================================================================
+Directly reproduced provisionIdentity()'s exact sequence via a temporary
+Node script using @supabase/supabase-js. Confirmed: creating a user via
+the admin API auto-assigns a default 'partenaire' role (via
+handle_new_user()'s trigger), and a second explicit role insert for the
+same user_id without first deleting the trigger's default row throws a
+23505 unique-constraint violation (added in an earlier fix, see
+fix/staging-schema-user-roles-unique). This looked like it should break
+every test, but a full re-read of security.staging.ts's
+provisionIdentity() showed it already deletes any existing role row
+before inserting the desired one — so this was a dead end, not the real
+cause.
+
+=====================================================================
+Round 5 — the actual root cause: a pre-existing bug in the test file
+itself
+=====================================================================
+The photo-upload test reuses `sellerAOpportunityId`, a single opportunity
+created once in beforeAll and shared across all 9 sequential tests. By
+test #4 ("submission hands the opportunity to the purchase pool"), that
+same opportunity has already been submitted to Wilmet's internal
+pipeline (status: brouillon -> envoyee, owner_side: partenaire -> wilmet)
+and stays that way through test #6. By the time test #9 (photo upload)
+runs, the opportunity is legitimately no longer editable by the seller —
+exactly the same rule enforced everywhere else in the app once an
+opportunity leaves the seller's hands. The test was asserting an upload
+that should, correctly, be rejected by that point in its own sequence.
+
+This test file appears to have never actually been run against a live
+database before this session (it requires a self-service Supabase
+project — exactly the kind that didn't exist until ADR-005's staging
+project was built), which is why this ordering bug was never caught.
+
+FIX (tests/staging/security.staging.ts): the photo-upload test now
+creates its own fresh draft via createSellerDraft() instead of reusing
+the already-submitted sellerAOpportunityId. This is test infrastructure,
+not app code — no Lovable involvement needed, fixed directly.
+
+=====================================================================
+Round 6 — new failure: 60s/120s timeout on the oversized-file check
+=====================================================================
+Isolated with a direct curl reproduction (bypassing the JS client and
+Bun entirely) uploading a real 10 MiB+1 byte file. Confirmed this is
+genuine Supabase Storage platform behavior on this project: the server
+returns "100 Continue", accepts the entire upload, and only then
+evaluates and rejects it with 413 Payload Too Large — taking ~2 minutes
+20 seconds end-to-end on this project/region, not milliseconds. Not a
+bug in any policy or in the test; the size limit IS enforced correctly,
+it's just slow. Re-ran with a longer per-test timeout to accommodate it.
+
+=====================================================================
+FINAL RESULT — 9 pass, 0 fail
+=====================================================================
+Ran 9 tests across 1 file. [147.75s]
+
+Every core security assertion in this suite passes against the real,
+correctly-configured staging environment: seller draft isolation across
+identities and staff, privileged-field stripping on insert, submission
+workflow and purchase-pool scoping, tamper resistance on submitted rows,
+information-request hand-back round-trips, internal/external role
+scoping, profile self-update guards, and vehicle-photo bucket ownership/
+MIME/size enforcement.
+
+=====================================================================
+WHAT THIS SESSION ACTUALLY FOUND, NET OF ALL THE DETOURS
+=====================================================================
+- One real, if narrow, audit gap: storage-schema RLS policies were never
+  independently checked in Phase 2's original 9.1 pass. Now fixed in the
+  reusable pipeline/security/rls-audit.sql for future use, and the actual
+  production policies were confirmed correct (copied verbatim from a
+  tracked migration, and now proven to work as intended in staging).
+- One real bug in test infrastructure (not app code, not a security
+  issue): fixed directly, no Lovable needed.
+- Zero real security defects. Every dead end above was either staging
+  environment setup (bucket, test-fixture data) or an artifact of never
+  having run this test suite live before — not a flaw in the app's
+  actual access-control logic.

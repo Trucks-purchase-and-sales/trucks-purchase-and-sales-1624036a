@@ -1586,6 +1586,70 @@ create policy vehicle_photos_update_parent_editable on public.vehicle_photos for
 );
 
 -- =====================================================================
+-- 8b) storage.objects policies for the vehicle-photos bucket. MISSED in the
+--     original 9.1 audit because that pass only queried pg_policies where
+--     schemaname = 'public' — these live in the storage schema instead, so
+--     they were never independently checked until this staging run caught
+--     it directly (real-JWT upload test failed with "new row violates RLS").
+--     Verbatim from supabase/migrations/20260819004000_vehicle_photo_parent_scope.sql.
+--     Requires the vehicle-photos bucket to already exist (created via the
+--     Storage API/dashboard — not something a SQL script can do).
+-- =====================================================================
+drop policy if exists vehicle_photo_objects_select_parent_scoped on storage.objects;
+drop policy if exists vehicle_photo_objects_insert_parent_editable on storage.objects;
+drop policy if exists vehicle_photo_objects_update_parent_editable on storage.objects;
+drop policy if exists vehicle_photo_objects_delete_parent_editable on storage.objects;
+
+create policy vehicle_photo_objects_select_parent_scoped on storage.objects for select to authenticated using (
+  bucket_id = 'vehicle-photos' and exists (
+    select 1 from public.vehicle_opportunities opp
+    where opp.id::text = (storage.foldername(objects.name))[1]
+      and (
+        opp.partenaire_id = auth.uid()
+        or (opp.status <> 'brouillon' and private.can_read_pipeline_record(auth.uid(), opp.assigned_sales_agent_id, opp.assigned_group_id, coalesce(opp.assigned_group,'purchase')))
+      )
+  )
+);
+
+create policy vehicle_photo_objects_insert_parent_editable on storage.objects for insert to authenticated with check (
+  bucket_id = 'vehicle-photos' and exists (
+    select 1 from public.vehicle_opportunities opp
+    where opp.id::text = (storage.foldername(objects.name))[1]
+      and opp.partenaire_id = auth.uid()
+      and ((private.has_role(auth.uid(),'partenaire') and private.get_partner_kind(auth.uid()) = 'seller') or private.is_external_agent(auth.uid()))
+      and (opp.status = 'brouillon' or opp.owner_side = 'partenaire')
+  )
+);
+
+create policy vehicle_photo_objects_update_parent_editable on storage.objects for update to authenticated using (
+  bucket_id = 'vehicle-photos' and exists (
+    select 1 from public.vehicle_opportunities opp
+    where opp.id::text = (storage.foldername(objects.name))[1]
+      and opp.partenaire_id = auth.uid()
+      and ((private.has_role(auth.uid(),'partenaire') and private.get_partner_kind(auth.uid()) = 'seller') or private.is_external_agent(auth.uid()))
+      and (opp.status = 'brouillon' or opp.owner_side = 'partenaire')
+  )
+) with check (
+  bucket_id = 'vehicle-photos' and exists (
+    select 1 from public.vehicle_opportunities opp
+    where opp.id::text = (storage.foldername(objects.name))[1]
+      and opp.partenaire_id = auth.uid()
+      and ((private.has_role(auth.uid(),'partenaire') and private.get_partner_kind(auth.uid()) = 'seller') or private.is_external_agent(auth.uid()))
+      and (opp.status = 'brouillon' or opp.owner_side = 'partenaire')
+  )
+);
+
+create policy vehicle_photo_objects_delete_parent_editable on storage.objects for delete to authenticated using (
+  bucket_id = 'vehicle-photos' and exists (
+    select 1 from public.vehicle_opportunities opp
+    where opp.id::text = (storage.foldername(objects.name))[1]
+      and opp.partenaire_id = auth.uid()
+      and ((private.has_role(auth.uid(),'partenaire') and private.get_partner_kind(auth.uid()) = 'seller') or private.is_external_agent(auth.uid()))
+      and (opp.status = 'brouillon' or opp.owner_side = 'partenaire')
+  )
+);
+
+-- =====================================================================
 -- 9) Safety-net grants for tables already created above (belt-and-braces
 --    alongside the ALTER DEFAULT PRIVILEGES in section 0 — see its comment).
 -- =====================================================================

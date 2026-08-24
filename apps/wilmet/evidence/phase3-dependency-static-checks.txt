@@ -1,0 +1,80 @@
+V2P Phase 3, section 4 — code & dependency checks
+Run by: Claude, locally, 2026-08-24. No live app/database access needed.
+
+=====================================================================
+npm audit
+=====================================================================
+1 high-severity finding, no fix available from the maintainer:
+
+  xlsx  *
+  Severity: high
+  Prototype Pollution in sheetJS - GHSA-4r6h-8v6p-xvw6
+  SheetJS Regular Expression Denial of Service (ReDoS) - GHSA-5pgg-2g8v-p4x9
+  No fix available
+
+Where it's used: src/lib/document-text.ts, imported dynamically in the
+browser (`await import("xlsx")`) to extract text from uploaded
+spreadsheet files (.xlsx/.xlsm/.xls/.csv/.ods) as part of the OCR
+document-scan feature (src/components/ocr/OcrPrefillDialog.tsx). A
+maliciously crafted spreadsheet uploaded through this feature could
+freeze or corrupt the browser tab of whoever uploads it.
+
+Blast radius assessment: contained to the browser (this runs
+client-side, not server-side), and requires the vulnerable file to be
+uploaded through this specific feature by someone with access to it.
+Not a server-side or cross-user exposure.
+
+DECISION (Salma, 2026-08-24): accept this risk for now and document it.
+Revisit if the xlsx maintainers ship a fix, or if replacing the library
+becomes worthwhile for other reasons. If ever addressed, it's an app
+code change (swap the parsing library) and should go through Lovable.
+
+=====================================================================
+semgrep (installed via pip for this run; not previously in the repo)
+=====================================================================
+1074 community rules run across 221 tracked files. Result: 10 findings,
+all the same rule, all severity INFO:
+
+  javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring
+
+Locations: admin-refdata.functions.ts:8, admin.functions.ts:8,
+dashboards.functions.ts:7, demand-opportunities.functions.ts:7,
+matching.functions.ts:7, public-catalog.functions.ts:14,
+reference-data.functions.ts:61, sale-listings.functions.ts:8,
+staff.functions.ts:7, users-admin.functions.ts:7.
+
+Reviewed by hand: every instance is the same pattern —
+  function fail(where: string, error: unknown): never {
+    console.error(`[admin.functions:${where}]`, error);
+    throw new Error(GENERIC);
+  }
+`where` is always a hardcoded string literal supplied by the developer
+at each call site (a debug tag like "assertAdmin" or "listUsers"), never
+user-controlled input. semgrep's generic rule can't distinguish this
+from genuine untrusted-input format-string injection.
+
+TRIAGE: false positive, all 10. No action needed. Dismissed.
+
+=====================================================================
+gitleaks
+=====================================================================
+Not run locally — no lightweight install path available (compiled Go
+binary, not a pip/npm package) and installing it wasn't judged worth
+the extra tooling footprint given the manual, pattern-matched secret
+scan already run in Phase 2 (evidence/phase2-secret-scan.txt) covered
+the same high-risk secret patterns and came back clean. Deferred to CI
+(pipeline/security/secret-scan.sh already notes this same fallback) —
+gitleaks should run there once CI is wired up in Phase 4.
+
+=====================================================================
+CONCLUSION
+=====================================================================
+One accepted-risk dependency finding (xlsx, documented above with
+Salma's sign-off), ten dismissed false positives, one check deferred
+to CI. No fixes required from this pass. Server-side input validation
+findings are tracked separately — see the two Lovable prompts drafted
+for once credits return (input validation audit; HTTP security
+headers), since neither was safe to reduce to a fixed to-do list
+without Lovable's own careful read of the code (a quick grep pass here
+produced at least one false negative — validation logic delegated to
+a separate schema module wasn't caught by the same-file pattern match).
