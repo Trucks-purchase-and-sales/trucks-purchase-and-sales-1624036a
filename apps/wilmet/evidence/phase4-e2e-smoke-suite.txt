@@ -92,3 +92,45 @@ Net: 4 of 6 tests fully green; 1 blocked on a real, newly-found app bug
 target (Finding #3, same root cause as the unresolved deployment
 issue). The suite itself, and the local-target testing approach, are
 now proven to work end-to-end.
+
+Addendum — investigating "wire this into CI for real, on every PR":
+
+pr-build.yml already references PLAYWRIGHT_BASE_URL=http://127.0.0.1:4173
+(Vite's default preview port) but only ever runs `npm run test:list`
+(a syntax/import check, no server started) rather than a real run.
+Investigated making it real by starting the built app first.
+
+Finding #4 (real, upstream dependency bug — not fixed here): `bun run
+build` succeeds, and Nitro itself suggests `npx vite preview` to serve
+it, but that preview server crashes on the first request with
+`SyntaxError: The requested module '@tanstack/router-core' does not
+provide an export named '_getRenderedMatches'`, thrown from
+@tanstack/start-plugin-core's preview-server-plugin. Confirmed this
+isn't a local/npm-install artifact: bun.lock pins
+@tanstack/router-core to 1.171.15 for every dependent package
+including start-plugin-core@1.171.20, the installed copy matches that
+pin exactly, and `_getRenderedMatches` genuinely does not exist
+anywhere in that installed package. This is an incompatibility between
+these two exact pinned TanStack Start versions, reproducible by
+anyone on this lockfile — not fixed here since upgrading TanStack
+Start packages is a real dependency change with broader blast radius
+than this task, and is exactly the kind of app-dependency change that
+should go through the same review path as other app-code changes.
+
+Given that, real (non-list) Playwright execution can't currently run
+against a locally *built* copy of the app. The working alternative
+already proven in this file — running against `vite dev` (not
+`preview`) — has its own constraint worth flagging before wiring it
+into automatic PR checks: this repo already has a deliberate pattern
+(staging-security-e2e.yml, playwright-staging-e2e.yml) of gating any
+staging-credentialed run behind manual workflow_dispatch, never
+automatic on every `pull_request`. The current public-smoke suite is
+read-only and doesn't strictly need real credentials to render its
+public-shell assertions (per the ADR-003 fail-safe design), which
+would make a credential-free automatic run safe in principle — but
+that specific claim (does the app degrade cleanly with zero Supabase
+config for these exact 6 assertions) was not re-verified live this
+session: an attempt to test it hit a Windows-specific tooling problem
+(two concurrent `vite dev` instances against the same working tree
+both try to regenerate src/routeTree.gen.ts and collide), not an
+app-behavior answer either way. Left open for a follow-up session.
