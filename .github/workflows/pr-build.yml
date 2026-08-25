@@ -108,9 +108,8 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
-          (cd .. && bun run dev -- --port 4173 --host 127.0.0.1) &
+          (cd .. && bun run dev -- --port 4173 --host 127.0.0.1) > /tmp/dev-server.log 2>&1 &
           DEV_PID=$!
-          trap 'kill "$DEV_PID" 2>/dev/null || true' EXIT
 
           ready=""
           for i in $(seq 1 30); do
@@ -122,10 +121,29 @@ jobs:
           done
           if [ -z "$ready" ]; then
             echo "dev server did not become ready in time"
+            cat /tmp/dev-server.log || true
+            kill "$DEV_PID" 2>/dev/null || true
             exit 1
           fi
 
+          # Capture the real exit code explicitly: bun's own child-process
+          # supervisor prints a loud "error: script dev exited with code
+          # 143" line (and non-zero-ish job status) once the dev server
+          # below is killed for cleanup, which otherwise clobbers this
+          # step's exit code even when every test passed.
+          set +e
           npm test
+          TEST_EXIT=$?
+          set -e
+
+          if [ "$TEST_EXIT" -ne 0 ]; then
+            echo "----- dev server log -----"
+            cat /tmp/dev-server.log || true
+          fi
+
+          kill "$DEV_PID" 2>/dev/null || true
+          wait "$DEV_PID" 2>/dev/null || true
+          exit "$TEST_EXIT"
 
       - name: Upload Playwright report on failure
         if: failure()
