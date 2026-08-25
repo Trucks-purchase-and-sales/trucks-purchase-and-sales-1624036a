@@ -51,3 +51,31 @@ present.
 Not yet run locally (per Salma's instruction to verify through GitHub
 Actions instead of this machine) -- lint-clean and discovery-validated
 only; first real execution happens in this PR's CI run.
+
+Update (2026-08-25) -- real finding, not a test bug: the first two CI
+runs got past every selector issue and still hung, because
+ref_vehicle_categories and ref_vehicle_types were completely empty in
+the disposable staging project. Confirmed directly with a read-only
+REST query (both returned `[]`). This blocks more than the test: the
+SearchableCombobox never passes `allowCustom` for these two fields, so
+there's no free-text fallback either -- with an empty category/type
+list, the buyer request wizard is genuinely unusable end-to-end on
+this project, for a real visitor exactly as much as for this test.
+
+Root cause: apps/wilmet/staging-schema.sql's own closing comment
+already said "seed a little synthetic reference data (ref_* tables)"
+as a TODO from Phase 2 (ADR-005) -- it was never actually done. Every
+earlier test that touched vehicle_opportunities sidestepped this by
+saving drafts with every field left blank, so nothing before this ever
+actually opened one of these comboboxes and needed real rows behind
+it.
+
+Fixed: seeded two rows each into ref_vehicle_categories
+(camion/utilitaire) and ref_vehicle_types (porteur/tracteur) directly
+in the live disposable project, and added the same two INSERT
+statements (with `on conflict (slug) do nothing`) to
+staging-schema.sql's new section 10, so a from-scratch rebuild of the
+staging project reproduces this instead of silently missing it again.
+Deliberately minimal -- just enough for the two fields this test
+actually needs, not all 11 ref_* tables; extend later if a future test
+needs brand/model or the other reference lists.
