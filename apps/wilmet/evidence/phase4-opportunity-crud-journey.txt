@@ -1,0 +1,46 @@
+V2P Phase 4 -- first CRUD coverage: create a vehicle opportunity draft
+Written by: Claude, 2026-08-25.
+
+Adds e2e/tests/opportunity-crud-journey.pw.ts -- the plan's "create the
+primary record" critical smoke journey (section 11) and the first of
+its "create/edit/delete each core entity" CRUD coverage, for
+vehicle_opportunities, the core business entity (a seller proposing a
+vehicle to Wilmet).
+
+Scope for this first pass: CREATE + READ only. A throwaway seller
+identity (provisioned the same way as partner-auth-journey.pw.ts) logs
+in through the real form, opens /opportunities/new, and clicks
+"Enregistrer en brouillon" (save draft) with every field left blank --
+confirmed by reading opportunities.new.tsx's saveDraft()/persist()
+that this performs no client-side validation and just upserts whatever
+partial state exists, unlike the full submitAll() path. Then verifies
+the created draft appears on /dashboard (default status filter is
+"all", so drafts are included) with a "Brouillon" status badge, and
+that opening it navigates to /opportunities/$id.
+
+Deliberately left for a follow-up, not this PR: EDIT (changing a field
+on an existing draft and confirming persistence) and DELETE. Both
+need more exploration of opportunities.$id.tsx's exact UI (which
+fields are editable where, what the delete/withdraw affordance looks
+like and which status transitions block it) that wasn't done yet --
+scoping this PR to what was already understood well kept it small and
+verifiable rather than guessing at unfamiliar UI.
+
+Extracted a shared e2e/tests/helpers/login.ts (logInAsPartner) used by
+both this file and partner-auth-journey.pw.ts, replacing that file's
+local duplicate of the same login steps.
+
+Cleanup: vehicle_opportunities rows do not cascade-delete with their
+owning auth user (confirmed by reading
+tests/staging/security.staging.ts's own afterAll, which explicitly
+deletes created opportunity rows before deleting test users) -- this
+suite's afterAll does the same, deleting by partenaire_id before
+deleting the identity.
+
+Not yet run: this was written and lint/discovery-validated locally
+(bunx eslint clean, `playwright test --list` finds it correctly
+alongside the other two spec files, 10 tests across 3 files total) but
+NOT executed live from this machine, per Salma's instruction to stop
+running the app locally and verify through GitHub Actions instead
+(see phase4-ci-wiring.txt). First real execution will be the CI run
+on this PR.

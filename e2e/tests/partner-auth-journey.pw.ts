@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, test } from "@playwright/test";
+import { logInAsPartner } from "./helpers/login";
 
 // Requires a service-role key because it provisions a throwaway partner
 // identity through the real Supabase Auth admin API (mirrors
@@ -72,23 +73,15 @@ test.describe("Wilmet partner auth journey", () => {
     await service.auth.admin.deleteUser(userId);
   });
 
-  async function logIn(page: import("@playwright/test").Page) {
-    await page.goto("/auth", { waitUntil: "domcontentloaded" });
-    await page.locator('input[type="email"]').fill(email);
-    await page.locator('input[type="password"]').fill(password);
-    await page.getByRole("button", { name: "Se connecter" }).click();
-    await expect(page).toHaveURL(/\/dashboard/);
-  }
-
   test("a partner can log in through the real form and reach their dashboard", async ({ page }) => {
-    await logIn(page);
+    await logInAsPartner(page, email, password);
     await expect(page.getByRole("heading", { name: "Mes opportunités" })).toBeVisible();
   });
 
   test("a partner is denied the internal admin area and redirected to their own dashboard", async ({
     page,
   }) => {
-    await logIn(page);
+    await logInAsPartner(page, email, password);
 
     await page.goto("/admin", { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/\/dashboard/);
@@ -96,7 +89,7 @@ test.describe("Wilmet partner auth journey", () => {
   });
 
   test("logging out returns to the public auth boundary", async ({ page }) => {
-    await logIn(page);
+    await logInAsPartner(page, email, password);
 
     // The dashboard header has two dropdown-menu triggers (notification
     // bell, then profile menu) that both get aria-haspopup="menu" from
