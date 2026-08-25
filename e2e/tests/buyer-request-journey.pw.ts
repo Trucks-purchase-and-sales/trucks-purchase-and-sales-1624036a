@@ -37,6 +37,13 @@ test.describe("Wilmet buyer request journey", () => {
   }) => {
     await page.goto("/chercher-un-vehicule/", { waitUntil: "domcontentloaded" });
 
+    // The category/type comboboxes are clickable immediately, but their
+    // option lists come from an async reference-data fetch -- opening one
+    // before it resolves shows an empty "no results" list, not a missing
+    // element, so the earlier failure hung waiting for an option that was
+    // never going to appear rather than failing fast.
+    await expect(page.getByText("Chargement des référentiels…")).not.toBeVisible();
+
     // Step 1 (Véhicule recherché): only vehicle_category/vehicle_type are
     // required -- any valid option works, the test isn't asserting on the
     // specific vehicle searched for.
