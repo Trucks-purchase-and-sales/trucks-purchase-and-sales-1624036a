@@ -131,4 +131,16 @@ journey's rate-limit finding). Gave Salma the exact SQL to run once in
 her project's SQL editor instead, same one-time-manual-action pattern
 already used for the "Confirm email" Auth setting.
 
-Pushed pending that manual step + Salma's next CI run.
+Update (2026-08-25) -- second CI run, identical PGRST202 error, byte for
+byte. This is PostgREST's own schema cache, not the database catalog --
+a known Supabase gotcha: creating a function through the raw SQL editor
+doesn't always trigger PostgREST's automatic cache reload the way
+Supabase's dashboard-based schema tools do, so the function can exist
+in Postgres and still be invisible to the API layer. Gave Salma
+`NOTIFY pgrst, 'reload schema';` to run right after the function-
+creation SQL (safe to paste both together and re-run regardless of
+whether the first attempt actually landed, since `create or replace
+function` is idempotent) -- also mentioned the equivalent Dashboard
+button (Settings -> API -> "Reload schema cache") as a non-SQL
+alternative. Pushed nothing new for this update -- it's an operational
+step on her project, not a code change.
