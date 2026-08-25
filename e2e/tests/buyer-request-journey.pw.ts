@@ -85,13 +85,26 @@ test.describe("Wilmet buyer request journey", () => {
     await labeledInput(page, "Email").fill(email);
     await page.getByRole("checkbox").check();
 
-    const [response] = await Promise.all([
-      page.waitForResponse(
-        (res) => res.url().includes("/api/public/buyer-leads") && res.request().method() === "POST",
-        { timeout: 45_000 },
-      ),
-      page.getByRole("button", { name: "Envoyer ma demande" }).click(),
-    ]);
+    await page.getByRole("button", { name: "Envoyer ma demande" }).click();
+
+    // Diagnostics: react-hook-form's invalid-submit branch
+    // (chercher-un-vehicule.index.tsx's handleSubmit error callback) shows
+    // a toast naming the failing field and silently jumps back to its
+    // step -- with zero console or network signal, which is exactly why
+    // the earlier console/response listeners above never caught anything.
+    // Surface that directly instead of guessing which field is invalid.
+    await page.waitForTimeout(2000);
+    const toastText = await page
+      .getByRole("region", { name: /Notifications/i })
+      .textContent()
+      .catch(() => null);
+    console.log("[diagnostic] toast region text after submit click:", toastText);
+    console.log("[diagnostic] URL after submit click:", page.url());
+
+    const response = await page.waitForResponse(
+      (res) => res.url().includes("/api/public/buyer-leads") && res.request().method() === "POST",
+      { timeout: 30_000 },
+    );
     const body = (await response.json()) as { id?: string };
     createdLeadId = body.id;
 
