@@ -81,7 +81,10 @@ test.describe("Wilmet opportunity CRUD journey", () => {
     await expect(page.getByText("Brouillon enregistré")).toBeVisible();
 
     await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
-    const cards = page.locator('a[href^="/opportunities/"]');
+    // Exclude the header's own "Proposer un véhicule" button, which links
+    // to /opportunities/new and also matches a bare a[href^="/opportunities/"]
+    // selector -- the actual card grid links go to /opportunities/{id}.
+    const cards = page.locator('a[href^="/opportunities/"]:not([href="/opportunities/new"])');
     await expect(cards).toHaveCount(1);
     await expect(cards.first().getByText("Brouillon", { exact: true })).toBeVisible();
 
