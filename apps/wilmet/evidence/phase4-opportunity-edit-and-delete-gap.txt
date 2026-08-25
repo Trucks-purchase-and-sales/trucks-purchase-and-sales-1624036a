@@ -1,0 +1,54 @@
+V2P Phase 4 -- opportunity EDIT coverage added; DELETE is a real gap,
+not a test gap
+Written by: Claude, 2026-08-25.
+
+Continues phase4-opportunity-crud-journey.txt (create + read). Added a
+second test, "a seller can edit an existing draft and see the change
+reflected": creates a draft, opens it, follows the "Continuer le
+brouillon" link (drafts are edited by re-entering the wizard with
+?id=, not on the detail page itself -- confirmed by reading
+opportunities.$id.tsx), changes the Ville (city) field, saves, and
+confirms the new value shows on the dashboard card.
+
+Refactored both this file and partner-auth-journey.pw.ts to share a
+new e2e/tests/helpers/seller.ts (provisionSeller/cleanupSeller)
+instead of each duplicating the same identity-provisioning code.
+
+Isolation note: switched this file's two tests from a shared
+beforeAll identity to a fresh one per test (beforeEach/afterEach).
+Both tests create their own opportunity and assert an exact card
+count on the dashboard; sharing one seller across them would make
+that count depend on execution order between the two tests -- the
+same category of bug already found once this session in
+tests/staging/security.staging.ts (the photo-upload test unexpectedly
+inheriting state from an earlier test's mutations).
+
+Selector note: opportunities.new.tsx's shared Field/Label component
+has the same missing htmlFor/id association already documented for
+the auth form (phase4-e2e-smoke-suite.txt Finding #2) -- this is
+evidently a repeated pattern across the app's forms, not a one-off.
+getByLabel("Ville") does not resolve; the test locates the sibling
+<input> via the label text's DOM position instead
+(`getByText("Ville").locator("xpath=../../input")`), same style of
+workaround already used for the auth form's Email/Mot de passe fields.
+
+DELETE gap (real, not a missing test): there is no delete affordance
+anywhere in the app for a vehicle_opportunities draft. Confirmed by
+reading every exported function in src/lib/opportunities.functions.ts
+-- saveOpportunity, submitOpportunity, withdrawOpportunity,
+listMyInfoRequests, listMyOpportunities, getOpportunity,
+signPhotoUrls, createPhotoUploadUrl, addPhotoRecord, setMainPhoto,
+deletePhoto (photos only, not the opportunity itself), reorderPhotos,
+answerInfoRequest -- and by reading opportunities.$id.tsx's own UI,
+where the only draft-specific action is "Continuer le brouillon"; the
+"withdraw" button is explicitly gated to `canWithdraw && !isDraft`, so
+it never applies to a draft either. Yet inventory.md's live RLS audit
+confirms a real "DELETE own-drafts" policy exists on
+vehicle_opportunities. This is the same category of gap as the
+already-documented unused document-upload feature (inventory.md,
+opportunity_documents/ocr_scan_sources) -- a policy provisioned
+defensively with no app code path that ever calls it. Not fixed here
+(app code, Lovable's domain per standing doctrine); flagged for the
+Phase 0.5-style functional walkthrough or a future Lovable prompt,
+whichever comes first. No delete test was written since there is
+nothing in the UI to exercise.

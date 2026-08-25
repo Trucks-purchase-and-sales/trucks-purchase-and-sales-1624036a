@@ -1,7 +1,6 @@
-import { randomUUID } from "node:crypto";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, test } from "@playwright/test";
 import { logInAsPartner } from "./helpers/login";
+import { cleanupSeller, provisionSeller, type SellerIdentity } from "./helpers/seller";
 
 // Requires a service-role key to provision a throwaway seller identity, same
 // as partner-auth-journey.pw.ts. Skips cleanly without it.
@@ -14,67 +13,25 @@ test.describe("Wilmet opportunity CRUD journey", () => {
     "requires E2E_SUPABASE_URL and E2E_SUPABASE_SERVICE_ROLE_KEY",
   );
 
-  let service: SupabaseClient;
-  let userId: string;
-  let email: string;
-  let password: string;
+  // A fresh identity per test, not a shared one across the whole file: both
+  // tests here create their own opportunity and assert an exact card count,
+  // so sharing one seller across tests would make that count depend on
+  // execution order -- exactly the kind of cross-test coupling that caused
+  // a real bug earlier this session in tests/staging/security.staging.ts.
+  let seller: SellerIdentity;
 
-  test.beforeAll(async () => {
-    service = createClient(SUPABASE_URL as string, SERVICE_ROLE_KEY as string, {
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-    });
-
-    email = `e2e-pw-crud-${Date.now()}-${randomUUID().slice(0, 8)}@example.test`;
-    password = `Wilmet-PW-${randomUUID()}!Aa1`;
-
-    const created = await service.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { first_name: "E2E", last_name: "CrudJourney" },
-    });
-    if (created.error || !created.data.user) {
-      throw new Error(`provision test seller: ${created.error?.message}`);
-    }
-    userId = created.data.user.id;
-
-    const profile = await service.from("profiles").upsert(
-      {
-        id: userId,
-        first_name: "E2E",
-        last_name: "CrudJourney",
-        email,
-        is_active: true,
-        partner_kind: "seller",
-        city: "E2E staging",
-        country: "BE",
-      },
-      { onConflict: "id" },
-    );
-    if (profile.error) throw new Error(`upsert test seller profile: ${profile.error.message}`);
-
-    // handle_new_user auto-assigns a default role; clear it before setting
-    // the intended one (see partner-auth-journey.pw.ts for why).
-    const clearedRoles = await service.from("user_roles").delete().eq("user_id", userId);
-    if (clearedRoles.error) throw new Error(`clear default role: ${clearedRoles.error.message}`);
-
-    const role = await service.from("user_roles").insert({ user_id: userId, role: "partenaire" });
-    if (role.error) throw new Error(`assign partenaire role: ${role.error.message}`);
+  test.beforeEach(async () => {
+    seller = await provisionSeller(SUPABASE_URL as string, SERVICE_ROLE_KEY as string, "crud");
   });
 
-  test.afterAll(async () => {
-    if (!userId) return;
-    // vehicle_opportunities rows don't cascade-delete with their owning
-    // user (see tests/staging/security.staging.ts's afterAll) -- remove
-    // them explicitly before deleting the identity itself.
-    await service.from("vehicle_opportunities").delete().eq("partenaire_id", userId);
-    await service.auth.admin.deleteUser(userId);
+  test.afterEach(async () => {
+    if (seller) await cleanupSeller(seller);
   });
 
   test("a seller can create a vehicle opportunity draft and see it on their dashboard", async ({
     page,
   }) => {
-    await logInAsPartner(page, email, password);
+    await logInAsPartner(page, seller.email, seller.password);
 
     await page.goto("/opportunities/new", { waitUntil: "domcontentloaded" });
     await page.getByRole("button", { name: "Enregistrer en brouillon" }).click();
@@ -90,5 +47,37 @@ test.describe("Wilmet opportunity CRUD journey", () => {
 
     await cards.first().click();
     await expect(page).toHaveURL(/\/opportunities\/[^/]+$/);
+  });
+
+  test("a seller can edit an existing draft and see the change reflected", async ({ page }) => {
+    await logInAsPartner(page, seller.email, seller.password);
+
+    await page.goto("/opportunities/new", { waitUntil: "domcontentloaded" });
+    await page.getByRole("button", { name: "Enregistrer en brouillon" }).click();
+    await expect(page.getByText("Brouillon enregistré")).toBeVisible();
+
+    await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+    const cards = page.locator('a[href^="/opportunities/"]:not([href="/opportunities/new"])');
+    await expect(cards).toHaveCount(1);
+    await cards.first().click();
+    await expect(page).toHaveURL(/\/opportunities\/[^/]+$/);
+
+    // Drafts are edited by re-entering the same wizard with ?id=, not on
+    // the detail page itself (opportunities.$id.tsx only shows a
+    // "Continuer le brouillon" link back into it while status is brouillon).
+    await page.getByRole("link", { name: "Continuer le brouillon" }).click();
+    await expect(page).toHaveURL(/\/opportunities\/new\?id=/);
+
+    // The wizard's Field/Label pairing has the same missing htmlFor/id
+    // association as the auth form (see phase4-e2e-smoke-suite.txt Finding
+    // #2), so getByLabel can't resolve "Ville" -- locate its sibling
+    // <input> via the label text instead.
+    const cityInput = page.getByText("Ville", { exact: true }).locator("xpath=../../input");
+    await cityInput.fill("Anvers");
+    await page.getByRole("button", { name: "Enregistrer en brouillon" }).click();
+    await expect(page.getByText("Brouillon enregistré")).toBeVisible();
+
+    await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+    await expect(page.getByText("Anvers", { exact: true })).toBeVisible();
   });
 });
