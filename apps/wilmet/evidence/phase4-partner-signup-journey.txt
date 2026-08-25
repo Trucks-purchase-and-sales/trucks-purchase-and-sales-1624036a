@@ -1,0 +1,67 @@
+V2P Phase 4 -- partner self-service signup journey
+Written by: Claude, 2026-08-25.
+
+Adds e2e/tests/partner-signup-journey.pw.ts, the last unaddressed item
+from the plan's "sign up, log in, CRUD, role restrictions" list
+(section 11, item 2). partner-auth-journey.pw.ts's login test signs
+into an account created via the Supabase Auth admin API
+(email_confirm: true, bypassing confirmation); this is the first test
+to exercise the actual self-service SignupForm (src/routes/auth.tsx)
+a real visitor uses.
+
+Read the form directly rather than guessing required fields: unlike
+the buyer-request form and opportunity wizard (react-hook-form + zod),
+SignupForm uses plain useState with native HTML `required` attributes
+-- first_name, last_name, email, phone, city, country and password
+(min 15 characters, src/lib/password-policy.ts) are required;
+company_name and provider_type are not. country defaults to "France"
+already, so it's left untouched.
+
+This test imports labeledInput() from e2e/tests/helpers/form.ts. That
+helper was first written on phase4-buyer-request-journey, but Salma
+asked to leave that PR aside until the rest of Phase 4 is done rather
+than block on it, so this branch is based directly on main and carries
+its own copy of helpers/form.ts (byte-identical to the one on
+phase4-buyer-request-journey) instead of branching from that PR. This
+keeps the signup journey mergeable on its own. The two branches adding
+the same new file with identical content merges cleanly with no
+conflict once phase4-buyer-request-journey lands later.
+
+Same "Nom"/"Prénom" substring collision already fixed in
+buyer-request-journey.pw.ts applies here too: auth.tsx's own Field
+component (used for both the login and signup forms) is line-for-line
+the same "space-y-1.5" wrapper shape, so labeledInput(page, /^Nom/i)
+(anchored RegExp, not a bare string) was used from the start instead
+of rediscovering the same bug a third time.
+
+Assertion choice: the test expects the "Vérifiez votre boîte e-mail"
+(check-your-email) screen, not an immediate dashboard redirect. Read
+SignupForm's submit() directly -- it branches on `data.session`
+(immediate) vs `setSubmittedEmail` (confirmation required) depending
+entirely on this Supabase project's Auth settings. Every other
+identity-provisioning helper this session (provisionSeller,
+security.staging.ts's provisionIdentity) has explicitly passed
+email_confirm: true via the admin API to bypass this -- strong
+circumstantial evidence this disposable project requires confirmation
+by default, so a real self-service signup cannot reach an
+authenticated session in an automated test without real inbox access.
+This is the correct, deterministic stopping point for what an
+automated test can verify about this flow; completing it further would
+need a real (or fake-SMTP) mailbox integration, out of scope here.
+
+Confirmed the flow doesn't depend on the SUPABASE_SERVICE_ROLE_KEY gap
+found in phase4-buyer-request-journey.txt: submit() calls
+/api/public/signup-check first, but only blocks on a literal 429
+response -- any other outcome (including a 500 from that same missing-
+key issue) is silently ignored and the real supabase.auth.signUp()
+call proceeds regardless. Confirmed by reading the code, not assumed.
+
+Cleanup: signUp() via the anon key doesn't return anything
+admin-deletable directly. Looks up the id via the profiles row
+handle_new_user creates for every new auth.users insert (matched by
+email) and deletes via the admin API. Skips cleanly without
+E2E_SUPABASE_SERVICE_ROLE_KEY, same pattern as every other identity-
+creating test this session.
+
+Not yet run -- lint-clean and discovery-validated only. First real
+execution happens once this PR's CI runs.
