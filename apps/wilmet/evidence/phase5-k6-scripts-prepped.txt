@@ -1,0 +1,55 @@
+V2P Phase 5 -- prep the k6 baseline and ramp-test scripts
+Written by: Claude, 2026-08-25.
+
+Prep only, per Salma's explicit instruction: Phase 5 itself is paused
+(it fundamentally needs a working, database-backed staging target to
+mean anything, which conflicts with the current pause on all
+database-related work, and separately the live Wilmet app is stuck
+mid-incident anyway -- see week3.md's "Concurrent, unrelated incident"
+section). This just writes the two scripts EXECUTION-PLAN.md section
+12 calls for so they're ready the moment both things clear. Neither
+script has been run, and neither is wired into any CI workflow yet.
+
+pipeline/load/k6-baseline.js and pipeline/load/k6-load.js, not
+Appendix H's template verbatim: the appendix's generic version hits
+Supabase's REST API directly (`${BASE}/rest/v1/${PROBE_TABLE}`) with a
+raw anon key. Adapted instead to hit real app routes -- following the
+precedent already set by performance/public-read-smoke.js (Phase
+0.5/3) -- because that exercises the full stack a real visitor
+actually hits (SSR, which queries the database server-side) rather
+than just Postgres's own response time through a passthrough. Phase
+5's stated goal is catching "full-table fetches, missing indexes, no
+caching" at the APPLICATION level, which a raw REST probe wouldn't
+surface as reliably as hitting the real rendered routes would.
+
+Same K6_BASE_URL / K6_TARGET_LABEL safety-guard pattern as the
+existing performance script (and the same shape of guard used by
+Playwright's PLAYWRIGHT_BASE_URL/PLAYWRIGHT_TARGET_LABEL) -- refuses
+to run without an explicit target, rejects anything but a bare
+localhost/127.0.0.1 origin for "local" or a bare HTTPS origin for
+"wilmet-staging". Production targets remain unsupported by design.
+
+Routes probed, matching the existing smoke script: `/` (public shell)
+and `/chercher-un-vehicule/` (the buyer-request wizard's entry point --
+database-backed, since it fetches ref_vehicle_categories/
+ref_vehicle_types server-side on render; the same reference-data fetch
+whose empty-table gap was found and fixed during Phase 4). Kept to
+public, unauthenticated routes only for this initial prep, matching
+the existing smoke script's scope -- authenticated-route coverage
+(dashboard, opportunity list) would need test-user token provisioning
+for k6, a bigger lift left for whenever Phase 5 actually starts.
+
+Thresholds and load shape copied from EXECUTION-PLAN.md section 12
+verbatim: baseline 5 VUs / 2 minutes; ramp 10 -> 50 -> 150 (3x peak)
+-> 0 over 1m/2m/2m/1m; both thresholded at p95 < 500ms and error rate
+< 1%, per the plan's own acceptance criteria.
+
+Validated: `node --check` on both files (syntax only -- k6 itself
+isn't installed on this machine, consistent with every other tool in
+this project running via GitHub Actions rather than locally). Not run
+with `k6 inspect` or otherwise, and not wired into pr-build.yml or any
+other workflow -- that would need a live target to point at, which is
+exactly the paused piece. A no-traffic `k6 inspect --execution-
+requirements` CI step (matching the existing one for public-read-
+smoke.js) would be a reasonable, genuinely traffic-free follow-up once
+wanted, but wasn't added here to stay within "prep the scripts only."
