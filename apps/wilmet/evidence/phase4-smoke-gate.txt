@@ -85,9 +85,50 @@ project), but runs only `npx playwright test tests/smoke` instead of
 the full suite -- deliberately fast and narrow, matching "pre-publish
 gate" rather than duplicating the full per-PR regression run.
 
-Not yet run for real -- YAML syntax validated locally (js-yaml parse,
-clean for both files), test discovery validated locally (17 total /
-5 smoke-filtered, both correct), lint and prettier clean. First real
-execution happens once this PR's CI runs (the full-suite job in
-pr-build.yml) and once Salma manually triggers smoke.yml via
-workflow_dispatch for the first time.
+Update (2026-08-25) -- first real CI run. 15 passed, 1 flaky (unrelated
+-- opportunity-crud-journey.pw.ts's create test, same test file/failure
+shape as a flake seen earlier this session, passed on retry, not
+touched by this branch), 1 real failure: tests/smoke/buyer-request.pw.ts
+never reached /merci on either attempt.
+
+Root cause, from the dev-server log: `[rate-limit] rpc failed { code:
+'PGRST202', ... could not find the function public.rate_limit_check
+... }`. This only surfaced now because SUPABASE_SERVICE_ROLE_KEY was
+just added to this same step (this branch) -- before that, the app's
+admin client threw before ever reaching the RPC call. Read
+src/lib/rate-limit.server.ts: checkRateLimit() fails CLOSED by design
+on any RPC error ("public endpoints must not become unlimited when the
+abuse-control dependency is degraded") and the caller turns that into
+a 503 -- so the buyer-leads POST was returning an error response the
+whole time, the test's response.json() parsed it fine (no `id` field,
+createdLeadId stayed undefined), and the client correctly never
+navigated to /merci because the submission was genuinely rejected.
+Not a test bug, not a flake -- a real, previously-hidden gap in the
+disposable project's schema, from the same Phase 2 reconstruction that
+missed the ref_* table seed data.
+
+Traced the real definition: public.rate_limit_check exists verbatim in
+supabase/migrations/20260818010648_62312ff2-bc99-4b2a-9669-
+58d9454039eb.sql (this repo's real migration history) -- but
+private.rate_limit_check, the actual sliding-window implementation it
+delegates to, is NOT in this repo's migrations at all. Lovable must
+have applied it directly to the managed database without a
+corresponding checked-in migration. Reconstructed it from the
+documented contract (apps/wilmet/inventory.md: "Sliding-window rate
+limiter; hard-fails unless called as service_role") and the
+rate_limit_events table shape already in this file (bucket, key_hash,
+created_at) -- prune expired events for the bucket+key, count what's
+left, deny with a computed retry_after if at/over the limit, otherwise
+insert and allow. This is a reconstruction, not a verbatim copy, unlike
+the public wrapper above it in this file.
+
+Added both functions to staging-schema.sql (new section 10, before the
+existing END marker) so future reconstructions don't miss this too.
+Could not apply this to the live disposable project directly the way
+the ref_* seed data was handled earlier -- this sandbox has no
+outbound network access at all (confirmed while debugging the signup
+journey's rate-limit finding). Gave Salma the exact SQL to run once in
+her project's SQL editor instead, same one-time-manual-action pattern
+already used for the "Confirm email" Auth setting.
+
+Pushed pending that manual step + Salma's next CI run.
