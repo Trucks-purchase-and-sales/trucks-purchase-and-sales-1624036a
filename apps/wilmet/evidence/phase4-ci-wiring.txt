@@ -60,10 +60,34 @@ VITE_SUPABASE_URL) rather than silently passing -- intentional, so a
 missing secret is caught immediately rather than masked as a false
 green.
 
-Not yet done: watching an actual PR-triggered run of this new
-pr-build.yml step to confirm it goes green (or seeing what it reports
-if not) -- that requires the secrets to exist first and a real PR to
-run against. Once that happens, this evidence file and
-phase4-partner-auth-journey.txt should both be updated from
-"implemented, not yet staging-verified" to "staging-verified" (or, if
-it surfaces a real failure, that becomes a new tracked finding).
+Update (2026-08-25): Salma added the three secrets and ran it for
+real. First run surfaced two issues, both fixed on this branch before
+merge:
+
+1. A scripting bug, not a test bug: the step killed its own
+   backgrounded dev server for cleanup, and bun's child-process
+   supervisor prints a loud "error: script dev exited with code 143"
+   when that happens -- which was clobbering the step's real exit
+   code even though every test had genuinely passed (Playwright
+   reported "5 passed, 1 flaky, 0 failed" but the step still exited
+   1). Fixed by explicitly capturing `npm test`'s own exit code and
+   exiting with that, regardless of what the cleanup afterward does.
+
+2. Once that was fixed and the real per-test results were visible: the
+   new partner-auth-journey.pw.ts login and role-restriction tests
+   both passed cleanly on the very first try, with no OneDrive
+   interference at all -- confirming the local instability documented
+   in phase4-partner-auth-journey.txt was exactly that, environmental
+   noise, not a real app problem. The logout test failed for a real,
+   separate reason (a test selector ambiguity, fixed -- see that file's
+   2026-08-25 update). Two more failures were already-known, tracked
+   issues (the auth-form label/input accessibility gap, and the
+   HTTP-only HSTS gap) now made CI-visible for the first time; both
+   converted to intentionally-expected results (`test.fail()` for the
+   former, a protocol-conditional check for the latter) so the gate
+   reflects genuinely new regressions rather than permanently
+   reporting already-tracked, not-yet-fixed issues as build failures.
+
+Both evidence files' boundary is now staging-verified for what's
+covered so far (public shell, header baseline where HTTPS-testable,
+partner login/role-restriction/logout).

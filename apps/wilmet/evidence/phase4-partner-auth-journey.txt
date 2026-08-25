@@ -84,3 +84,17 @@ to get a clean, trustworthy pass/fail signal, then update this file's
 evidence boundary to "staging-verified" accordingly. This OneDrive
 interaction is worth keeping in mind for any future local Playwright
 work on this project from this same machine/folder.
+
+Update (2026-08-25) -- staging-verified: ran for real inside GitHub
+Actions (pr-build.yml, see phase4-ci-wiring.txt), no OneDrive involved.
+Result: the login test and the admin-denial/role-restriction test both
+passed cleanly on the first try (9.3s and 6.0s, no retry needed) --
+confirming the earlier local "redirects back to /auth" signal really
+was OneDrive-related noise, not a real bug, as suspected. The logout
+test failed for a genuine, different reason: the dashboard header has
+TWO dropdown-menu triggers (a notification bell, then the profile
+menu), both getting aria-haspopup="menu" from Radix, so the original
+`.first()` selector opened the bell instead of the profile menu and
+never found "Se déconnecter". Fixed by scoping to the profile
+trigger's distinguishing `rounded-full` class instead of position.
+This was a bug in the test's selector, not in the app.
