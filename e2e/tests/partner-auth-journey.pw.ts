@@ -98,7 +98,12 @@ test.describe("Wilmet partner auth journey", () => {
   test("logging out returns to the public auth boundary", async ({ page }) => {
     await logIn(page);
 
-    await page.locator('button[aria-haspopup="menu"]').first().click();
+    // The dashboard header has two dropdown-menu triggers (notification
+    // bell, then profile menu) that both get aria-haspopup="menu" from
+    // Radix, so a bare "first()" grabs the bell instead. The profile
+    // trigger is the only one styled with rounded-full (see
+    // ProfileMenu/NotificationBell in src/routes/_authenticated/route.tsx).
+    await page.locator('button.rounded-full[aria-haspopup="menu"]').click();
     await page.getByText("Se déconnecter", { exact: true }).click();
 
     await expect(page).toHaveURL(/\/auth/);

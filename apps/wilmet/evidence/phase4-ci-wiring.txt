@@ -1,0 +1,93 @@
+V2P Phase 4 — run the real e2e/ Playwright suite in GitHub Actions
+instead of locally
+Written by: Claude, 2026-08-25.
+
+Why: apps/wilmet/evidence/phase4-partner-auth-journey.txt documents a
+local-only blocker discovered while trying to get a clean live
+Playwright run on this machine -- the project's dev server, running
+from a OneDrive-synced folder, intermittently enters an infinite
+reload loop that breaks Playwright's navigation tracking. GitHub
+Actions runners have no OneDrive, so the same suite should run cleanly
+there. Salma asked to stop relying on the local run entirely and run
+everything on GitHub instead.
+
+What changed:
+
+1. .github/workflows/pr-build.yml's "Validate pinned Playwright
+   harness" step (previously just `npm run test:list`, a syntax/import
+   check with no server) now actually runs the suite for real on every
+   PR: it starts the app's own dev server (`bun run dev`, not `vite
+   preview` -- see phase4-e2e-smoke-suite.txt's Finding #4 for why
+   preview is broken) inside the runner on 127.0.0.1:4173, waits for it
+   to respond, then runs `npm test` (both public-smoke.pw.ts and
+   partner-auth-journey.pw.ts) with PLAYWRIGHT_TARGET_LABEL=local.
+   Uploads the Playwright HTML report and test-results as a CI artifact
+   on failure. Job timeout raised 10 -> 20 minutes to fit the added
+   Chromium install + real browser run.
+
+2. New dedicated workflow,
+   .github/workflows/disposable-staging-security-e2e.yml: a manually
+   triggered (workflow_dispatch, explicit confirm checkbox) job that
+   runs tests/staging/security.staging.ts -- the service-role Bun
+   suite fixed and validated 9/9 earlier this session -- against the
+   same disposable project. Kept separate from the automatic PR gate
+   because it takes ~2.5 minutes and directly mutates staging fixtures
+   (create/delete users, submit opportunities, upload/delete photos),
+   unlike the read-mostly Playwright suite.
+
+Both target Salma's personal, disposable Supabase project (see
+docs/v2p/decisions/ADR-005) -- the one created specifically for active
+probing/testing because Lovable's managed backend never exposes a
+service-role key. This is NOT the same project as the
+E2E_SUPABASE_URL/E2E_SUPABASE_ANON_KEY secrets already configured for
+staging-security-e2e.yml (the managed-provider suite in
+docs/security/staging-security-e2e.md, which targets Wilmet's actual
+Lovable-managed backend). To avoid any chance of the two getting
+cross-wired -- which would be bad, since one suite creates/deletes
+fake users and opportunities -- this work deliberately uses distinctly
+named secrets instead of reusing the existing E2E_SUPABASE_* names:
+
+  E2E_DISPOSABLE_SUPABASE_URL
+  E2E_DISPOSABLE_SUPABASE_ANON_KEY
+  E2E_DISPOSABLE_SUPABASE_SERVICE_ROLE_KEY
+
+These three need to be added as new repository secrets (same values
+already in this machine's gitignored .env.e2e.local -- the disposable
+project at cdoqubchwsvhjnyxgfez.supabase.co) before either workflow can
+do anything beyond failing its own precondition check. Until Salma adds
+them, pr-build.yml's Playwright step will fail loudly (empty
+VITE_SUPABASE_URL) rather than silently passing -- intentional, so a
+missing secret is caught immediately rather than masked as a false
+green.
+
+Update (2026-08-25): Salma added the three secrets and ran it for
+real. First run surfaced two issues, both fixed on this branch before
+merge:
+
+1. A scripting bug, not a test bug: the step killed its own
+   backgrounded dev server for cleanup, and bun's child-process
+   supervisor prints a loud "error: script dev exited with code 143"
+   when that happens -- which was clobbering the step's real exit
+   code even though every test had genuinely passed (Playwright
+   reported "5 passed, 1 flaky, 0 failed" but the step still exited
+   1). Fixed by explicitly capturing `npm test`'s own exit code and
+   exiting with that, regardless of what the cleanup afterward does.
+
+2. Once that was fixed and the real per-test results were visible: the
+   new partner-auth-journey.pw.ts login and role-restriction tests
+   both passed cleanly on the very first try, with no OneDrive
+   interference at all -- confirming the local instability documented
+   in phase4-partner-auth-journey.txt was exactly that, environmental
+   noise, not a real app problem. The logout test failed for a real,
+   separate reason (a test selector ambiguity, fixed -- see that file's
+   2026-08-25 update). Two more failures were already-known, tracked
+   issues (the auth-form label/input accessibility gap, and the
+   HTTP-only HSTS gap) now made CI-visible for the first time; both
+   converted to intentionally-expected results (`test.fail()` for the
+   former, a protocol-conditional check for the latter) so the gate
+   reflects genuinely new regressions rather than permanently
+   reporting already-tracked, not-yet-fixed issues as build failures.
+
+Both evidence files' boundary is now staging-verified for what's
+covered so far (public shell, header baseline where HTTPS-testable,
+partner login/role-restriction/logout).

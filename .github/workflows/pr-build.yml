@@ -39,7 +39,7 @@ jobs:
   build:
     name: Test and build application
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -88,14 +88,73 @@ jobs:
           cache: npm
           cache-dependency-path: e2e/package-lock.json
 
-      - name: Validate pinned Playwright harness
+      # Runs against Salma's personal, disposable Supabase project (see
+      # docs/v2p/decisions/ADR-005) -- never Lovable's managed backend --
+      # so a real browser session can exercise real login/role-restriction
+      # behavior on every PR with no risk to actual Wilmet data.
+      - name: Run Playwright E2E suite against a live dev server
         working-directory: e2e
         env:
+          VITE_SUPABASE_URL: ${{ secrets.E2E_DISPOSABLE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.E2E_DISPOSABLE_SUPABASE_ANON_KEY }}
+          SUPABASE_URL: ${{ secrets.E2E_DISPOSABLE_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.E2E_DISPOSABLE_SUPABASE_ANON_KEY }}
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
           PLAYWRIGHT_TARGET_LABEL: local
+          E2E_SUPABASE_URL: ${{ secrets.E2E_DISPOSABLE_SUPABASE_URL }}
+          E2E_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_DISPOSABLE_SUPABASE_SERVICE_ROLE_KEY }}
         run: |
+          set -euo pipefail
           npm ci
-          npm run test:list
+          npx playwright install --with-deps chromium
+
+          (cd .. && bun run dev -- --port 4173 --host 127.0.0.1) > /tmp/dev-server.log 2>&1 &
+          DEV_PID=$!
+
+          ready=""
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:4173/ > /dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ -z "$ready" ]; then
+            echo "dev server did not become ready in time"
+            cat /tmp/dev-server.log || true
+            kill "$DEV_PID" 2>/dev/null || true
+            exit 1
+          fi
+
+          # Capture the real exit code explicitly: bun's own child-process
+          # supervisor prints a loud "error: script dev exited with code
+          # 143" line (and non-zero-ish job status) once the dev server
+          # below is killed for cleanup, which otherwise clobbers this
+          # step's exit code even when every test passed.
+          set +e
+          npm test
+          TEST_EXIT=$?
+          set -e
+
+          if [ "$TEST_EXIT" -ne 0 ]; then
+            echo "----- dev server log -----"
+            cat /tmp/dev-server.log || true
+          fi
+
+          kill "$DEV_PID" 2>/dev/null || true
+          wait "$DEV_PID" 2>/dev/null || true
+          exit "$TEST_EXIT"
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Set up pinned k6 2.1.0
         uses: grafana/setup-k6-action@v1.2.1

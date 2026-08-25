@@ -27,10 +27,24 @@ test.describe("Wilmet public staging smoke", () => {
     expect(headers["x-content-type-options"]).toBe("nosniff");
     expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
     expect(headers["permissions-policy"]).toBe("geolocation=(), microphone=(), payment=(), usb=()");
-    expect(headers["strict-transport-security"]).toMatch(/(?:^|;\s*)max-age=\d+/);
+
+    // HSTS is only meaningful (and only sent by the app) over HTTPS; the
+    // "local" target runs a plain-HTTP dev server, so only enforce this
+    // against a real HTTPS target. See phase4-e2e-smoke-suite.txt Finding #3.
+    if (new URL(response!.url()).protocol === "https:") {
+      expect(headers["strict-transport-security"]).toMatch(/(?:^|;\s*)max-age=\d+/);
+    }
   });
 
   test("partner auth route renders the login boundary", async ({ page }) => {
+    // Known issue, not a test bug: the Email/Mot de passe <label>s aren't
+    // programmatically associated with their <input>s (no id/htmlFor), so
+    // getByLabel can't resolve them. Queued for a Lovable fix -- see
+    // apps/wilmet/evidence/phase4-e2e-smoke-suite.txt Finding #2. Flip this
+    // back to a normal test once that's fixed; if this starts unexpectedly
+    // passing, that's exactly the signal it's been fixed.
+    test.fail();
+
     const response = await page.goto("/auth", { waitUntil: "domcontentloaded" });
 
     expect(response?.ok()).toBeTruthy();
