@@ -91,3 +91,16 @@ merge:
 Both evidence files' boundary is now staging-verified for what's
 covered so far (public shell, header baseline where HTTPS-testable,
 partner login/role-restriction/logout).
+
+Update (2026-08-25) -- added SUPABASE_SERVICE_ROLE_KEY to the same
+step's env block (mapped to the E2E_DISPOSABLE_SUPABASE_SERVICE_ROLE_KEY
+secret already used elsewhere). Found missing while debugging
+buyer-request-journey.pw.ts: the app's own admin client
+(client.server.ts's createSupabaseAdminClient) needs this for several
+server-only features -- rate limiting, lead-assignment routing, AI/
+assistant settings -- and throws uncaught without it, which surfaced
+as an HTML 500 page instead of a JSON response on the buyer-leads
+submission endpoint specifically. This is a real gap that would affect
+any real deployment missing the variable, not just CI; see
+phase4-buyer-request-journey.txt's 2026-08-25 update for the full
+trace through the code to rate-limit.server.ts and buyer-leads.ts.

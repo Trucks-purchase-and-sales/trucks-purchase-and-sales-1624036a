@@ -109,3 +109,25 @@ real environment/selector issues by reasoning from error messages
 alone, but this one produced no error at all -- only a silent,
 correct rejection -- and would have taken many more blind guesses to
 find without seeing the toast text directly.
+
+Update (2026-08-25) -- third real finding, back to the environment,
+not the test: with "Nom" fixed, the request finally reached the
+server, but response.json() then failed with "Unexpected token '<',
+'<!doctype '... is not valid JSON" -- the endpoint returned an HTML
+error page. The dev server log named the exact cause: checkRateLimit()
+(src/lib/rate-limit.server.ts, called from
+src/routes/api/public/buyer-leads.ts before any real work happens)
+uses the app's own admin client (client.server.ts's
+createSupabaseAdminClient), which throws when SUPABASE_SERVICE_ROLE_KEY
+is unset -- a different variable from this suite's own
+E2E_SUPABASE_SERVICE_ROLE_KEY, and one pr-build.yml never set for the
+app itself. The throw is uncaught inside the POST handler, so TanStack
+Start's framework-level error handling renders its own HTML error page
+instead of the endpoint's normal JSON response.
+
+This is a real gap, not a test-only concern: any real visitor hitting
+this endpoint on a deployment missing that variable gets the same
+broken submission. Fixed by adding SUPABASE_SERVICE_ROLE_KEY (mapped
+to the same E2E_DISPOSABLE_SUPABASE_SERVICE_ROLE_KEY secret already
+used for test provisioning/cleanup) to pr-build.yml's env block for
+the step that starts the dev server, documented in phase4-ci-wiring.txt.

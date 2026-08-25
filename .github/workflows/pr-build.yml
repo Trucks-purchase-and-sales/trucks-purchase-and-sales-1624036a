@@ -99,6 +99,13 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.E2E_DISPOSABLE_SUPABASE_ANON_KEY }}
           SUPABASE_URL: ${{ secrets.E2E_DISPOSABLE_SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.E2E_DISPOSABLE_SUPABASE_ANON_KEY }}
+          # The app's own admin client (src/integrations/supabase/client.server.ts)
+          # needs this for several server-only features -- rate limiting
+          # (checkRateLimit), lead-assignment routing, AI/assistant
+          # settings. Without it those throw uncaught, which the buyer
+          # request submission path surfaced as an HTML 500 page instead
+          # of its normal JSON response. Same disposable project as above.
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_DISPOSABLE_SUPABASE_SERVICE_ROLE_KEY }}
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
           PLAYWRIGHT_TARGET_LABEL: local
           E2E_SUPABASE_URL: ${{ secrets.E2E_DISPOSABLE_SUPABASE_URL }}
