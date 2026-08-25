@@ -43,6 +43,19 @@ test.describe("Wilmet partner signup journey", () => {
     // 15-char minimum (src/lib/password-policy.ts).
     const password = `Wilmet-Signup-${randomUUID()}!Aa1`;
 
+    // Diagnostics only -- the real Supabase Auth signup call goes straight
+    // from the browser to Supabase, not through our own API, so a rate
+    // limit or config-driven error on that call is otherwise invisible.
+    page.on("response", (res) => {
+      if (res.url().includes("/auth/v1/signup")) {
+        console.log(`[diagnostic] Supabase signup response: ${res.status()}`);
+        res
+          .text()
+          .then((body) => console.log("[diagnostic] Supabase signup body:", body))
+          .catch(() => undefined);
+      }
+    });
+
     await page.goto("/auth?mode=signup&kind=seller", { waitUntil: "domcontentloaded" });
     await expect(page.getByText("Créer un compte partenaire", { exact: true })).toBeVisible();
 
@@ -60,6 +73,18 @@ test.describe("Wilmet partner signup journey", () => {
     await labeledInput(page, "Mot de passe").fill(password);
 
     await page.getByRole("button", { name: "Créer mon compte" }).click();
+
+    // Diagnostic: whatever is on screen a moment after submitting -- a toast
+    // (Sonner renders into [data-sonner-toaster]) means signUp() returned an
+    // error branch instead of the confirmation-pending branch; a different
+    // URL means it redirected instead (data.session was immediately truthy).
+    await page.waitForTimeout(2000);
+    const toastText = await page
+      .locator("[data-sonner-toaster]")
+      .textContent()
+      .catch(() => null);
+    console.log("[diagnostic] toast region text after submit click:", toastText);
+    console.log("[diagnostic] URL after submit click:", page.url());
 
     // This staging project requires email confirmation before a session
     // is issued (the same reason every other test's identity provisioning
