@@ -35,6 +35,27 @@ test.describe("Wilmet buyer request journey", () => {
   test("an anonymous visitor can submit a buyer request and reach the confirmation page", async ({
     page,
   }) => {
+    // Default 30s (playwright.config.ts) doesn't leave room for both the
+    // cold-start reference-data wait and a slower submission response in
+    // the same run -- give this specific test more headroom.
+    test.setTimeout(60_000);
+
+    // Diagnostics: the submission step has failed twice with no visible
+    // cause (the click registers but no matching response ever arrives,
+    // with no earlier assertion failure to explain why) -- surface
+    // whatever the browser itself is doing at that point instead of
+    // guessing further.
+    page.on("console", (msg) => console.log(`[browser:${msg.type()}]`, msg.text()));
+    page.on("pageerror", (err) => console.log("[pageerror]", err.message));
+    page.on("requestfailed", (req) =>
+      console.log("[requestfailed]", req.url(), req.failure()?.errorText),
+    );
+    page.on("response", (res) => {
+      if (res.url().includes("/api/") || res.status() >= 400) {
+        console.log("[response]", res.status(), res.url());
+      }
+    });
+
     await page.goto("/chercher-un-vehicule/", { waitUntil: "domcontentloaded" });
 
     // The category/type comboboxes are clickable immediately, but their
@@ -67,6 +88,7 @@ test.describe("Wilmet buyer request journey", () => {
     const [response] = await Promise.all([
       page.waitForResponse(
         (res) => res.url().includes("/api/public/buyer-leads") && res.request().method() === "POST",
+        { timeout: 45_000 },
       ),
       page.getByRole("button", { name: "Envoyer ma demande" }).click(),
     ]);
