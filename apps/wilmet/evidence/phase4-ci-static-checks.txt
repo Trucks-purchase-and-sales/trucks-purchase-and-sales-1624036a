@@ -1,0 +1,77 @@
+V2P Phase 4, section 11.4 -- wire typecheck, semgrep, and npm/bun audit
+into the automatic PR gate
+Written by: Claude, 2026-08-25.
+
+The plan's section 11.4 calls for "typecheck -> lint -> semgrep -> npm
+audit -> gitleaks -> build -> Playwright E2E" on every PR. Lint,
+gitleaks, build, and E2E were already wired into
+.github/workflows/pr-build.yml earlier this session
+(phase4-ci-wiring.txt); this closes the remaining three, which section
+8 explicitly deferred to Phase 4 ("wired into CI in Phase 4, runnable
+now") after being run manually once in Phase 3
+(phase3-dependency-static-checks.txt). Gitleaks already runs as its
+own parallel job rather than being sequenced inline -- left as-is,
+since GitHub still requires every job green for the PR check to pass,
+and restructuring a working pipeline wasn't worth the risk for this.
+
+Independent of the still-open phase4-buyer-request-journey and
+phase4-partner-signup-journey-standalone PRs -- this branch only
+touches .github/workflows/pr-build.yml, nothing in e2e/.
+
+1. Typecheck (bunx tsc --noEmit) -- BLOCKING, not warning-only. Ran it
+   locally first (`npx tsc --noEmit -p tsconfig.json`, this machine has
+   node/npx even without bun installed): zero errors against the
+   current codebase, including the tsconfig fix from
+   fix/typecheck-exclude-tests (merged, excludes *.test.ts/tsx already).
+   Since it's verified clean today, gating merges on it from day one is
+   strictly a safety net (catches a genuinely new type error someone
+   introduces), not a punishment for pre-existing debt -- unlike
+   semgrep and audit below, where the current noise level wasn't known
+   ahead of the first real run.
+
+2. Semgrep (p/typescript, p/react, p/owasp-top-ten rulesets) --
+   WARNING-ONLY for now. Couldn't establish a local baseline the way
+   typecheck's was verified: semgrep's Windows support is unreliable
+   and this machine has no bun to mirror the CI environment exactly, so
+   installing and running it locally wasn't a reliable signal. Phase
+   3's one manual run found 10 findings (all the same dismissed false
+   positive, format-string audit rule against hardcoded string
+   literals) but didn't record which ruleset produced them, and this is
+   a full first run against the whole current codebase with a
+   specific, named ruleset -- not assumed equivalent. Left non-blocking
+   until a real CI run establishes what it actually finds; tighten to
+   blocking in a follow-up once that's triaged, the same two-step
+   approach already used for typecheck.
+
+   Not version-pinned, unlike gitleaks (8.30.1), k6 (2.1.0), and bun
+   (1.3.14) elsewhere in this file: this only scans source text rather
+   than executing with elevated trust, so the supply-chain risk profile
+   is different, and there's no way to confirm a specific version
+   number exists on PyPI without network access from where this was
+   written. Matches how Phase 3's manual run installed it (also
+   unpinned).
+
+3. Dependency audit (bun audit) -- WARNING-ONLY, and will very likely
+   report something on every run for a while: Phase 3's npm audit found
+   one high-severity finding with no fix available (xlsx --
+   prototype pollution / ReDoS, browser-side only, accepted risk with
+   Salma's sign-off on 2026-08-24, see phase3-dependency-static-checks.txt).
+   A blocking gate here would fail every single PR indefinitely on a
+   finding that's already been triaged and accepted, which defeats the
+   purpose of a regression gate. Used `bun audit` rather than
+   `npm audit` (the plan's Appendix E template assumes npm/node at the
+   root) because this project's actual root package manager is bun
+   (bun.lock, packageManager: "bun@1.3.14" in package.json) -- reads
+   bun.lock directly with no extra install step, unlike npm audit which
+   would need its own package-lock.json the CI job doesn't otherwise
+   generate. Not able to verify bun 1.3.14 actually supports this
+   subcommand from this machine (bun itself isn't installed locally --
+   every bun command this whole session has only ever run inside GitHub
+   Actions, per the "stop running the site locally" decision earlier in
+   Phase 4); if it doesn't, the warning-only fallback means the step
+   logs whatever error bun produces without failing the build, and
+   that'll be fixed forward on this same branch once CI actually runs
+   it, same as every other real-environment surprise this phase.
+
+Not yet run for real -- YAML syntax validated locally (js-yaml parse,
+clean), pushed pending Salma's first CI run on this PR.
