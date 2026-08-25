@@ -117,7 +117,7 @@
     "login": {
       "forgotLink": "Mot de passe oublié ?",
       "submitLoading": "Connexion…",
-      "submit": "Se connecter",
+      "submit": "Se connect",
       "errorTitle": "Connexion impossible",
       "errorFallback": "Erreur inconnue",
       "successTitle": "Bienvenue"
