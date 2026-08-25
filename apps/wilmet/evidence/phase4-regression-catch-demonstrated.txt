@@ -1,0 +1,31 @@
+V2P Phase 4 -- regression-catch demonstrated
+Written by: Claude, 2026-08-25.
+
+Plan requirement (EXECUTION-PLAN.md section 11, item 5): "intentionally
+introduce a trivial regression on a throwaway branch and confirm CI/E2E
+catches it; then revert."
+
+Branch: demo/prove-ci-catches-regression (never merged into main --
+purely a demonstration that the pr-build.yml Playwright gate, added
+earlier this session, actually fails builds on a real UI regression,
+not just on syntax/lint issues).
+
+Regression introduced (commit fec33fe): a one-character typo in the
+login button's French label in src/i18n/locales/fr.json --
+"Se connecter" changed to "Se connect" -- simulating a realistic
+accidental translation edit. This label is asserted verbatim by
+e2e/tests/helpers/login.ts's logInAsPartner() (used by all three
+partner-auth-journey.pw.ts tests) via
+`page.getByRole("button", { name: "Se connecter" })`.
+
+Result (confirmed by Salma via the PR's Checks tab): the
+"Test and build application" job failed. This is the pr-build.yml
+Playwright step from phase4-ci-wiring.txt actually catching a real,
+deliberately introduced functional break -- not a hypothetical claim.
+
+Revert (commit f3f2553): restored "Se connecter" exactly, net zero
+diff against main. Re-running the same PR's checks after this commit
+is expected to go green again, completing the before/after pair.
+
+This branch was never merged -- it exists solely as this proof and can
+be deleted once the evidence above is considered sufficient.
