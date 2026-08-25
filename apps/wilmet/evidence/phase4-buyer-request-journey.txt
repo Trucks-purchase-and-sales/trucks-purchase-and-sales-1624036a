@@ -79,3 +79,33 @@ staging project reproduces this instead of silently missing it again.
 Deliberately minimal -- just enough for the two fields this test
 actually needs, not all 11 ref_* tables; extend later if a future test
 needs brand/model or the other reference lists.
+
+Update (2026-08-25) -- second real finding, this time a genuine bug in
+the test itself, not the app: after the reference-data fix, submission
+still hung with zero console/network activity captured by diagnostic
+listeners. Root cause found by additionally capturing the sonner toast
+region's text directly: "Merci de compléter les champs requis. Champ :
+Nom" -- the app's own client-side validation (react-hook-form's
+invalid-submit branch) was correctly rejecting the form, silently
+jumping back to the offending step with only a toast, no console
+message or network request at all (which is exactly why the earlier
+listeners caught nothing -- there was nothing to catch).
+
+The actual cause: labeledInput(page, "Nom") used Playwright's default
+case-insensitive SUBSTRING match, which also matches "Prénom" (it
+contains "nom"). Being first in the form, the Prénom field absorbed
+the "Nom" fill too -- overwriting "E2E" with "Playwright" -- while the
+real Nom field was left genuinely empty. Fixed by widening
+labeledInput()/selectFirstComboboxOption() in helpers/form.ts to
+accept a RegExp, and passing /^Nom/i (anchored, not a bare substring)
+for this one ambiguous label. Every other label used across both
+opportunity-crud-journey.pw.ts and this file was checked and has no
+equivalent collision.
+
+This is a good example of why the diagnostic-first approach (adding
+console/network/toast capture instead of guessing another fix blind)
+mattered: three earlier attempts across other tests this session fixed
+real environment/selector issues by reasoning from error messages
+alone, but this one produced no error at all -- only a silent,
+correct rejection -- and would have taken many more blind guesses to
+find without seeing the toast text directly.

@@ -35,34 +35,17 @@ test.describe("Wilmet buyer request journey", () => {
   test("an anonymous visitor can submit a buyer request and reach the confirmation page", async ({
     page,
   }) => {
-    // Default 30s (playwright.config.ts) doesn't leave room for both the
-    // cold-start reference-data wait and a slower submission response in
-    // the same run -- give this specific test more headroom.
+    // A full 4-step wizard interaction plus submission legitimately takes
+    // longer than the default 30s (playwright.config.ts) under a cold CI
+    // start -- other tests here run 10-20s just for a single page.
     test.setTimeout(60_000);
-
-    // Diagnostics: the submission step has failed twice with no visible
-    // cause (the click registers but no matching response ever arrives,
-    // with no earlier assertion failure to explain why) -- surface
-    // whatever the browser itself is doing at that point instead of
-    // guessing further.
-    page.on("console", (msg) => console.log(`[browser:${msg.type()}]`, msg.text()));
-    page.on("pageerror", (err) => console.log("[pageerror]", err.message));
-    page.on("requestfailed", (req) =>
-      console.log("[requestfailed]", req.url(), req.failure()?.errorText),
-    );
-    page.on("response", (res) => {
-      if (res.url().includes("/api/") || res.status() >= 400) {
-        console.log("[response]", res.status(), res.url());
-      }
-    });
 
     await page.goto("/chercher-un-vehicule/", { waitUntil: "domcontentloaded" });
 
     // The category/type comboboxes are clickable immediately, but their
     // option lists come from an async reference-data fetch -- opening one
     // before it resolves shows an empty "no results" list, not a missing
-    // element, so the earlier failure hung waiting for an option that was
-    // never going to appear rather than failing fast.
+    // element, so this waits for the fetch instead of racing it.
     await expect(page.getByText("Chargement des référentiels…")).not.toBeVisible();
 
     // Step 1 (Véhicule recherché): only vehicle_category/vehicle_type are
@@ -79,32 +62,24 @@ test.describe("Wilmet buyer request journey", () => {
 
     // Step 4 (Vos coordonnées): first_name, last_name, email and
     // gdpr_consent are the only other required fields in the whole schema.
+    // "Nom" must be anchored (not a plain substring) -- as a substring it
+    // also matches "Prénom" (contains "nom") and, being first in the form,
+    // silently absorbs this fill while leaving the real Nom field empty:
+    // a real bug caught only because the resulting validation toast was
+    // captured during earlier debugging, not by any error at the fill
+    // site itself.
     const email = `e2e-buyer-${Date.now()}@example.test`;
     await labeledInput(page, "Prénom").fill("E2E");
-    await labeledInput(page, "Nom").fill("Playwright");
+    await labeledInput(page, /^Nom/i).fill("Playwright");
     await labeledInput(page, "Email").fill(email);
     await page.getByRole("checkbox").check();
 
-    await page.getByRole("button", { name: "Envoyer ma demande" }).click();
-
-    // Diagnostics: react-hook-form's invalid-submit branch
-    // (chercher-un-vehicule.index.tsx's handleSubmit error callback) shows
-    // a toast naming the failing field and silently jumps back to its
-    // step -- with zero console or network signal, which is exactly why
-    // the earlier console/response listeners above never caught anything.
-    // Surface that directly instead of guessing which field is invalid.
-    await page.waitForTimeout(2000);
-    const toastText = await page
-      .getByRole("region", { name: /Notifications/i })
-      .textContent()
-      .catch(() => null);
-    console.log("[diagnostic] toast region text after submit click:", toastText);
-    console.log("[diagnostic] URL after submit click:", page.url());
-
-    const response = await page.waitForResponse(
-      (res) => res.url().includes("/api/public/buyer-leads") && res.request().method() === "POST",
-      { timeout: 30_000 },
-    );
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (res) => res.url().includes("/api/public/buyer-leads") && res.request().method() === "POST",
+      ),
+      page.getByRole("button", { name: "Envoyer ma demande" }).click(),
+    ]);
     const body = (await response.json()) as { id?: string };
     createdLeadId = body.id;
 
