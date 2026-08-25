@@ -1,0 +1,93 @@
+V2P Phase 4, section 11.3-11.4 -- the dedicated smoke gate
+Written by: Claude, 2026-08-25.
+
+The plan asks for two distinct things this closes: "Define the 5
+critical smoke journeys in tests/smoke/" (11.3) and "Add smoke.yml
+(Appendix F) to run the smoke journeys as a fast pre-publish gate"
+(11.4) -- separate from the general e2e/ regression suite already
+wired into pr-build.yml on every PR.
+
+Directory layout adapted, not copied literally: the plan's generic
+appendix tree assumes tests/e2e/ + tests/smoke/ as siblings at the
+repo root. This repo already deviated from that early in Phase 4 by
+using its own isolated e2e/ harness (own package.json/lockfile/
+playwright.config.ts) instead -- so the smoke journeys live at
+e2e/tests/smoke/, a subfolder of the existing harness, not a second
+top-level Playwright install. playwright.config.ts's testMatch
+("**/*.pw.ts") is already recursive, so these 5 files automatically
+join the regular e2e/ suite too (confirmed: `npx playwright test
+--list` finds 17 tests in 9 files including them) -- and
+`npx playwright test tests/smoke` filters to just the 5 (confirmed:
+lists exactly those 5). No config changes were needed for either.
+
+The 5 journeys chosen, matching the plan's own example list (login,
+load dashboard, create the primary record, the money/critical path,
+logout):
+
+1. login.pw.ts -- a partner logs in through the real form and reaches
+   /dashboard. Deliberately minimal (logInAsPartner() already asserts
+   the redirect) -- this is purely "does the auth form still work,"
+   not "does the destination page render correctly."
+
+2. dashboard-loads.pw.ts -- after login, the dashboard renders its
+   real heading ("Mes opportunités") and primary action ("Proposer un
+   véhicule"). Kept as its own journey, distinct from login.pw.ts,
+   because a redirect landing on the right URL doesn't prove the page
+   itself rendered -- this would catch a client-side crash that login
+   alone wouldn't. Note: the header nav and the page body both have a
+   "Proposer un véhicule" link with the same accessible name, so this
+   uses .first() rather than asserting a specific one.
+
+3. create-opportunity.pw.ts -- the primary record for Wilmet's seller
+   side. Trimmed from opportunity-crud-journey.pw.ts's fuller
+   create+edit coverage (that file stays the full regression version;
+   this is the fast smoke subset of the same journey).
+
+4. buyer-request.pw.ts -- the money/critical path. For a lead-
+   generation marketplace, an anonymous visitor's buyer request IS the
+   revenue path: it's how a visitor becomes a qualified lead Wilmet
+   gets paid to route. Ported near-verbatim from the still-open
+   phase4-buyer-request-journey branch's already-proven-correct
+   version (reference-data wait, anchored /^Nom/i regex to avoid the
+   Prénom substring collision, waitForResponse on the actual POST) --
+   not re-derived from scratch, since that branch already paid the
+   cost of finding those bugs. That branch stays open/parked per
+   Salma's request; this is an independent copy using only what's
+   already on main (helpers/form.ts, merged via the signup PR).
+
+5. logout.pw.ts -- ported from partner-auth-journey.pw.ts's existing
+   logout test (profile-menu selector disambiguated from the
+   notification bell via the rounded-full class, same as that file).
+
+Consequence caught before merging, not after: once tests/smoke/
+lands, pr-build.yml's existing "Run Playwright E2E suite" step (full
+suite, no path filter) would pick up buyer-request.pw.ts too --
+which needs SUPABASE_SERVICE_ROLE_KEY for the app's own admin client
+(rate limiting on /api/public/buyer-leads), a variable pr-build.yml
+doesn't currently set (that fix only exists on the still-open
+phase4-buyer-request-journey branch). Without adding it here too,
+merging this branch would have made every future PR's full suite fail
+on this specific test. Added the same env mapping
+(E2E_DISPOSABLE_SUPABASE_SERVICE_ROLE_KEY) to pr-build.yml's existing
+Playwright step on this branch, so it's fixed before the regression
+lands rather than discovered after. When phase4-buyer-request-journey
+eventually merges, its own identical addition of this same line will
+merge without conflict (same reasoning already used for
+helpers/form.ts landing on two branches independently).
+
+smoke.yml: workflow_dispatch only (no push-to-tag trigger, unlike
+Appendix F's template) -- this repo has no release-tagging convention
+yet, so a tag-based trigger would be dead weight; can add one later if
+a real release process gets built. Reuses the same dev-server-boot
+recipe and exit-code-capture pattern as pr-build.yml's Playwright step
+(both call the same `bun run dev` on the same disposable Supabase
+project), but runs only `npx playwright test tests/smoke` instead of
+the full suite -- deliberately fast and narrow, matching "pre-publish
+gate" rather than duplicating the full per-PR regression run.
+
+Not yet run for real -- YAML syntax validated locally (js-yaml parse,
+clean for both files), test discovery validated locally (17 total /
+5 smoke-filtered, both correct), lint and prettier clean. First real
+execution happens once this PR's CI runs (the full-suite job in
+pr-build.yml) and once Salma manually triggers smoke.yml via
+workflow_dispatch for the first time.
