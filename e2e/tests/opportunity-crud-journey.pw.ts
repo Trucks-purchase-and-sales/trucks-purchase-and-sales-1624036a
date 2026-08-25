@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { labeledInput } from "./helpers/form";
 import { logInAsPartner } from "./helpers/login";
 import { cleanupSeller, provisionSeller, type SellerIdentity } from "./helpers/seller";
 
@@ -68,18 +69,7 @@ test.describe("Wilmet opportunity CRUD journey", () => {
     await page.getByRole("link", { name: "Continuer le brouillon" }).click();
     await expect(page).toHaveURL(/\/opportunities\/new\?id=/);
 
-    // The wizard's Field/Label pairing has the same missing htmlFor/id
-    // association as the auth form (see phase4-e2e-smoke-suite.txt Finding
-    // #2), so getByLabel can't resolve "Ville" -- locate its sibling
-    // <input> via the label text instead. City is a required field, so its
-    // label renders as "Ville*" (a trailing asterisk in a child <span>),
-    // which broke an exact-text match entirely (zero matches, not a wrong
-    // one) -- use substring matching instead.
-    const cityInput = page
-      .locator("label")
-      .filter({ hasText: "Ville" })
-      .locator("xpath=../../input");
-    await cityInput.fill("Anvers");
+    await labeledInput(page, "Ville").fill("Anvers");
     await page.getByRole("button", { name: "Enregistrer en brouillon" }).click();
     await expect(page.getByText("Brouillon enregistré")).toBeVisible();
 

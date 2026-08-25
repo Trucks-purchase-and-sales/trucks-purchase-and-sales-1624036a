@@ -1,0 +1,53 @@
+V2P Phase 4 -- buyer request journey (anonymous submission)
+Written by: Claude, 2026-08-25.
+
+Adds e2e/tests/buyer-request-journey.pw.ts, extending the existing
+public-smoke.pw.ts coverage (which only reached the wizard's first
+step) all the way through a real submission -- the buyer side's "money
+critical path", matching the plan's example critical smoke journeys.
+
+Scope: an anonymous visitor (no login -- buyer_leads allows a public
+anon INSERT by design, confirmed in inventory.md's live RLS audit)
+fills the minimum required fields across all 4 wizard steps and
+submits. Read buyerLeadSchema (src/lib/buyer-leads.schema.ts)
+directly rather than guessing: only vehicle_category, vehicle_type
+(step 1) and first_name, last_name, email, gdpr_consent (step 4) are
+actually required: everything on steps 2 and 3 is optional, so the
+test advances through them without filling anything. Confirmed
+per-step validation only checks that step's own fields
+(chercher-un-vehicule.index.tsx's `next()` calls
+`form.trigger(stepFields[step])`), so this minimal-fill approach is
+exactly what the app itself allows, not a workaround.
+
+Vehicle category/type are the SearchableCombobox component (search-as-
+you-type popover, components/pickers/SearchableCombobox.tsx), not a
+plain <select> -- added selectFirstComboboxOption() to a new shared
+e2e/tests/helpers/form.ts (also holds labeledInput(), extracted from
+opportunity-crud-journey.pw.ts's own Field/Label workaround, now
+reused here). The test picks whichever option is listed first since
+it isn't asserting on a specific vehicle type.
+
+Confirmed a fourth instance of the same missing htmlFor/id association
+already flagged in phase4-e2e-smoke-suite.txt Finding #2 (auth form)
+and phase4-opportunity-edit-and-delete-gap.txt (opportunity wizard) --
+this form's own Field component (chercher-un-vehicule.index.tsx, a
+separate implementation from the wizard's) has the identical gap. Four
+independent implementations sharing the same bug strongly suggests
+this is a systemic convention issue across the app's forms, not an
+isolated mistake -- worth raising as one Lovable prompt covering the
+pattern generally rather than four separate one-off fixes, whenever
+that queued prompt is written.
+
+Submission itself needs no service-role key (anonymous insert), but
+cleanup does -- an anonymous submitter has no session to look up or
+delete their own row afterward, and buyer_leads has no self-service
+delete path anyway. The test captures the created row's id directly
+from the POST /api/public/buyer-leads response body (via
+page.waitForResponse()) and deletes it by id in afterEach, so it still
+skips cleanly without E2E_SUPABASE_SERVICE_ROLE_KEY rather than
+leaving rows behind in the disposable project when that secret is
+present.
+
+Not yet run locally (per Salma's instruction to verify through GitHub
+Actions instead of this machine) -- lint-clean and discovery-validated
+only; first real execution happens in this PR's CI run.
