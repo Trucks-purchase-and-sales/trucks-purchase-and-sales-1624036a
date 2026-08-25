@@ -38,14 +38,17 @@ test.describe("Wilmet partner signup journey", () => {
     }
   });
 
-  test("a new seller can sign up and reach the email-confirmation screen", async ({ page }) => {
+  test("a new seller can sign up and land on their dashboard", async ({ page }) => {
     email = `e2e-signup-${Date.now()}-${randomUUID().slice(0, 8)}@example.test`;
     // 15-char minimum (src/lib/password-policy.ts).
     const password = `Wilmet-Signup-${randomUUID()}!Aa1`;
 
     // Diagnostics only -- the real Supabase Auth signup call goes straight
     // from the browser to Supabase, not through our own API, so a rate
-    // limit or config-driven error on that call is otherwise invisible.
+    // limit or config-driven error on that call is otherwise invisible. Kept
+    // permanently: this is exactly what surfaced over_email_send_rate_limit
+    // (Supabase's own built-in mailer quota, not an app or test bug) the
+    // first time this test ran for real.
     page.on("response", (res) => {
       if (res.url().includes("/auth/v1/signup")) {
         console.log(`[diagnostic] Supabase signup response: ${res.status()}`);
@@ -74,24 +77,12 @@ test.describe("Wilmet partner signup journey", () => {
 
     await page.getByRole("button", { name: "Créer mon compte" }).click();
 
-    // Diagnostic: whatever is on screen a moment after submitting -- a toast
-    // (Sonner renders into [data-sonner-toaster]) means signUp() returned an
-    // error branch instead of the confirmation-pending branch; a different
-    // URL means it redirected instead (data.session was immediately truthy).
-    await page.waitForTimeout(2000);
-    const toastText = await page
-      .locator("[data-sonner-toaster]")
-      .textContent()
-      .catch(() => null);
-    console.log("[diagnostic] toast region text after submit click:", toastText);
-    console.log("[diagnostic] URL after submit click:", page.url());
-
-    // This staging project requires email confirmation before a session
-    // is issued (the same reason every other test's identity provisioning
-    // uses the admin API with email_confirm: true instead of real
-    // signup), so the real signup flow's own success state -- not a
-    // dashboard redirect -- is the correct assertion here.
-    await expect(page.getByText("Vérifiez votre boîte e-mail", { exact: true })).toBeVisible();
-    await expect(page.getByText(email, { exact: true })).toBeVisible();
+    // With "Confirm email" off on this disposable project, signUp() returns
+    // a session immediately -- submit() calls onAuthenticated(), which
+    // resolves the role home and redirects. A brand-new seller has no
+    // user_roles row yet, so resolveRoleHome() falls through to its default,
+    // "/dashboard" (src/hooks/useRoleHome.ts) -- same destination as
+    // partner-auth-journey.pw.ts's login test.
+    await expect(page).toHaveURL(/\/dashboard/);
   });
 });
