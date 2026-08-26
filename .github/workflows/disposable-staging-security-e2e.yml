@@ -17,7 +17,7 @@ jobs:
     name: Service-role real-JWT disposable staging verification
     if: ${{ inputs.confirm_staging_mutations }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     # Targets Salma's personal, disposable Supabase project (see
     # docs/v2p/decisions/ADR-005) -- never Lovable's managed backend. See
@@ -55,6 +55,19 @@ jobs:
 
       - name: Run disposable-staging service-role security suite
         run: bun test tests/staging/security.staging.ts --timeout 200000
+
+      # Three suites added 2026-08-27 -- written earlier but never wired
+      # into any workflow (confirmed via a full grep of .github/workflows/
+      # before adding them here). Same env-var contract as the suite
+      # above, same disposable project, no new secrets needed.
+      - name: Run TM-011 workflow-children real-JWT suite (F-013)
+        run: bun test tests/staging/workflow-children.staging.ts --timeout 200000
+
+      - name: Run TM-011 photo-handoff real-JWT suite (F-016)
+        run: bun test tests/staging/photo-handoff.staging.ts --timeout 200000
+
+      - name: Run workflow-transaction atomicity suite (F-022)
+        run: bun test tests/staging/workflow-transactions.staging.ts --timeout 200000
 
       - name: Retain verification evidence
         if: always()

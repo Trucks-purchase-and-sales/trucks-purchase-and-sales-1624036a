@@ -1,0 +1,80 @@
+V2P -- wiring up 3 orphaned real-JWT staging test suites (F-013, F-016, F-022)
+Written by: Claude, 2026-08-27.
+
+Context: while auditing what's left across all phases, found that
+tests/staging/workflow-children.staging.ts, workflow-transactions.staging.ts,
+and photo-handoff.staging.ts all exist, are fully written (real-auth-user
+provisioning, thorough afterAll cleanup, evidence-JSON output), and are
+explicitly cited BY NAME as the real-JWT regression evidence for F-013,
+F-016, and F-022 in findings-register.csv -- but a full grep of
+.github/workflows/ turned up zero references to any of the three.
+Written, never wired, never run. Confirmed via a dedicated Explore-agent
+survey of all 5 tests/staging/*.staging.ts files before touching
+anything.
+
+What each file actually covers, confirmed by reading them directly:
+- workflow-children.staging.ts: opportunity_status_history,
+  information_requests, and opportunity_activities RLS -- including
+  the exact F-013 scenario (an internal "call" activity invisible to
+  the seller, visible to scoped staff; a seller's own "note" activity
+  visible only to them).
+- photo-handoff.staging.ts: the vehicle_photos/vehicle_opportunities
+  ownership-freeze half of F-016 (seller upload/mutate blocked once
+  submitted, unblocked again after a service-role hand-back). Does
+  NOT touch sale_listings or its photo-ownership trigger -- that half
+  of F-016 remains untested by any file, noted honestly rather than
+  implied covered.
+- workflow-transactions.staging.ts: atomicity of 5 RPCs
+  (admin_handover_to_partner, answer_information_request,
+  admin_request_information, reorder_vehicle_photos,
+  set_main_vehicle_photo) -- directly F-022's scope (info-request
+  answer, handover, photo reorder, photo main-select). Does not cover
+  photo delete atomicity.
+
+Schema gap found and fixed before wiring anything up: all 5 RPCs
+workflow-transactions.staging.ts calls did not exist in
+apps/wilmet/staging-schema.sql at all -- confirmed by grep before
+assuming the test would just work. Same class of gap as sections 10
+(empty reference tables) and 11 (missing rate_limit_check) already
+documented there, both discovered the same way (a real test run hit
+a wall, not proactive review). This time caught proactively by
+grepping first. Added as staging-schema.sql section 12, copied
+verbatim (case-lowered to match the file's own style) from the real,
+tracked migrations that define these functions in production
+(supabase/migrations/20260819006000_workflow_mutation_transactions.sql,
+20260819006100_main_photo_transaction.sql), with the grants reflecting
+the FINAL state after 20260819006200_transaction_rpc_authenticated_
+execute_only.sql rather than replaying the incremental history.
+Verified every enum value and table these functions reference
+(app_role.platform_admin, info_request_status.answered,
+opportunity_owner_side.partenaire, opportunity_status.envoyee/
+en_cours_analyse, information_requests, vehicle_opportunities,
+vehicle_photos) already exists in the reconstructed schema before
+adding the functions, so this addition should not introduce a NEW
+gap the same way it just closed one.
+
+Wiring: extended .github/workflows/disposable-staging-security-e2e.yml
+(the existing, already-safe, already-working workflow for
+tests/staging/security.staging.ts) with three more bun test steps,
+rather than creating three near-duplicate workflow files. All three
+orphaned suites use the exact same env-var contract as the existing
+one (E2E_SUPABASE_URL/ANON_KEY/SERVICE_ROLE_KEY mapped from the
+already-confirmed-working E2E_DISPOSABLE_SUPABASE_* secrets,
+E2E_ALLOW_STAGING_MUTATIONS=true, E2E_TARGET_LABEL=wilmet-staging) --
+no new secrets needed. Timeout raised 15 -> 30 minutes to give four
+sequential mutating suites (each provisioning and tearing down 3-5
+real auth users) enough room; the artifact upload step already
+globs test-results/*.json so it picks up all four suites' evidence
+files without any change needed there.
+
+Not yet run. First real execution, and whether F-013/F-016/F-022 (and
+the vehicle_opportunities slice of F-018) can actually be marked
+closed with retest evidence, happens once Salma triggers this
+workflow.
+
+Known, deliberately out of scope for this pass: F-018 (B0-001) is only
+~25% covered even after this -- these suites only ever touch
+vehicle_opportunities, never buyer_leads, demand_opportunities, or
+sale_listings, so B0-001's other 3 core-pipeline tables remain
+genuinely unverified by any real-JWT suite. Not fabricating broader
+coverage than what was actually found and wired.

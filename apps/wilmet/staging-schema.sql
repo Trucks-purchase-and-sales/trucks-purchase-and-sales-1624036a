@@ -1765,6 +1765,275 @@ $$;
 revoke all on function public.rate_limit_check(text, text, integer, integer) from public;
 grant execute on function public.rate_limit_check(text, text, integer, integer) to service_role;
 
+-- 12) Workflow-transaction RPCs — verbatim from supabase/migrations/
+--     20260819006000_workflow_mutation_transactions.sql,
+--     20260819006100_main_photo_transaction.sql (grants below already
+--     reflect the final state after 20260819006200_transaction_rpc_
+--     authenticated_execute_only.sql, not the incremental history).
+--     Discovered missing 2026-08-27 when preparing to run
+--     tests/staging/workflow-transactions.staging.ts against this
+--     project — same class of reconstruction gap as section 10/11.
+create or replace function public.answer_information_request(
+  p_request_id uuid,
+  p_response text default null
+)
+returns void
+language plpgsql
+security invoker
+set search_path to 'public', 'pg_temp'
+as $$
+declare
+  v_opportunity_id uuid;
+  v_rows integer;
+begin
+  if auth.uid() is null then
+    raise exception 'authentication required';
+  end if;
+
+  update public.information_requests
+     set status = 'answered'::public.info_request_status,
+         response = nullif(btrim(p_response), '')
+   where id = p_request_id
+   returning vehicle_opportunity_id into v_opportunity_id;
+
+  get diagnostics v_rows = row_count;
+  if v_rows <> 1 or v_opportunity_id is null then
+    raise exception 'information request not found or not writable';
+  end if;
+
+  update public.vehicle_opportunities
+     set status = 'envoyee'::public.opportunity_status
+   where id = v_opportunity_id
+     and partenaire_id = auth.uid();
+
+  get diagnostics v_rows = row_count;
+  if v_rows <> 1 then
+    raise exception 'parent opportunity not writable';
+  end if;
+end;
+$$;
+
+create or replace function public.admin_request_information(
+  p_opportunity_id uuid,
+  p_message text
+)
+returns uuid
+language plpgsql
+security invoker
+set search_path to 'public', 'pg_temp'
+as $$
+declare
+  v_request_id uuid;
+  v_rows integer;
+begin
+  if auth.uid() is null then
+    raise exception 'authentication required';
+  end if;
+  if nullif(btrim(p_message), '') is null then
+    raise exception 'message required';
+  end if;
+  if not exists (
+    select 1
+    from public.user_roles
+    where user_id = auth.uid()
+      and role in ('admin'::public.app_role, 'platform_admin'::public.app_role)
+  ) then
+    raise exception 'admin role required';
+  end if;
+
+  insert into public.information_requests (
+    vehicle_opportunity_id,
+    admin_id,
+    message
+  ) values (
+    p_opportunity_id,
+    auth.uid(),
+    btrim(p_message)
+  )
+  returning id into v_request_id;
+
+  update public.vehicle_opportunities
+     set status = 'en_cours_analyse'::public.opportunity_status
+   where id = p_opportunity_id;
+
+  get diagnostics v_rows = row_count;
+  if v_rows <> 1 then
+    raise exception 'parent opportunity not writable';
+  end if;
+
+  return v_request_id;
+end;
+$$;
+
+create or replace function public.admin_handover_to_partner(
+  p_opportunity_id uuid,
+  p_message text
+)
+returns uuid
+language plpgsql
+security invoker
+set search_path to 'public', 'pg_temp'
+as $$
+declare
+  v_request_id uuid;
+  v_rows integer;
+begin
+  if auth.uid() is null then
+    raise exception 'authentication required';
+  end if;
+  if nullif(btrim(p_message), '') is null then
+    raise exception 'message required';
+  end if;
+  if not exists (
+    select 1
+    from public.user_roles
+    where user_id = auth.uid()
+      and role in ('admin'::public.app_role, 'platform_admin'::public.app_role)
+  ) then
+    raise exception 'admin role required';
+  end if;
+
+  update public.vehicle_opportunities
+     set owner_side = 'partenaire'::public.opportunity_owner_side,
+         status = 'en_cours_analyse'::public.opportunity_status,
+         handover_message = btrim(p_message)
+   where id = p_opportunity_id;
+
+  get diagnostics v_rows = row_count;
+  if v_rows <> 1 then
+    raise exception 'parent opportunity not writable';
+  end if;
+
+  insert into public.information_requests (
+    vehicle_opportunity_id,
+    admin_id,
+    message
+  ) values (
+    p_opportunity_id,
+    auth.uid(),
+    btrim(p_message)
+  )
+  returning id into v_request_id;
+
+  return v_request_id;
+end;
+$$;
+
+create or replace function public.reorder_vehicle_photos(p_orders jsonb)
+returns void
+language plpgsql
+security invoker
+set search_path to 'public', 'pg_temp'
+as $$
+declare
+  v_order record;
+  v_rows integer;
+begin
+  if auth.uid() is null then
+    raise exception 'authentication required';
+  end if;
+  if p_orders is null or jsonb_typeof(p_orders) <> 'array' then
+    raise exception 'orders must be a JSON array';
+  end if;
+  if jsonb_array_length(p_orders) = 0 then
+    return;
+  end if;
+  if jsonb_array_length(p_orders) > 50 then
+    raise exception 'too many photo orders';
+  end if;
+  if exists (
+    select parsed.id
+    from jsonb_to_recordset(p_orders) as parsed(id uuid, sort_order integer)
+    group by parsed.id
+    having count(*) > 1
+  ) then
+    raise exception 'duplicate photo id';
+  end if;
+
+  for v_order in
+    select parsed.id, parsed.sort_order
+    from jsonb_to_recordset(p_orders) as parsed(id uuid, sort_order integer)
+  loop
+    if v_order.id is null or v_order.sort_order is null or v_order.sort_order < 0 then
+      raise exception 'invalid photo order';
+    end if;
+
+    update public.vehicle_photos
+       set sort_order = v_order.sort_order
+     where id = v_order.id;
+
+    get diagnostics v_rows = row_count;
+    if v_rows <> 1 then
+      raise exception 'photo not found or not writable: %', v_order.id;
+    end if;
+  end loop;
+end;
+$$;
+
+create or replace function public.set_main_vehicle_photo(
+  p_opportunity_id uuid,
+  p_photo_id uuid
+)
+returns void
+language plpgsql
+security invoker
+set search_path to 'public', 'pg_temp'
+as $$
+declare
+  v_rows integer;
+begin
+  if auth.uid() is null then
+    raise exception 'authentication required';
+  end if;
+
+  perform 1
+  from public.vehicle_photos
+  where id = p_photo_id
+    and vehicle_opportunity_id = p_opportunity_id
+  for update;
+
+  get diagnostics v_rows = row_count;
+  if v_rows <> 1 then
+    raise exception 'photo not found or not writable';
+  end if;
+
+  update public.vehicle_photos
+     set is_main_photo = false
+   where vehicle_opportunity_id = p_opportunity_id
+     and is_main_photo = true;
+
+  update public.vehicle_photos
+     set is_main_photo = true
+   where id = p_photo_id
+     and vehicle_opportunity_id = p_opportunity_id;
+
+  get diagnostics v_rows = row_count;
+  if v_rows <> 1 then
+    raise exception 'main photo update failed';
+  end if;
+end;
+$$;
+
+revoke all on function public.answer_information_request(uuid, text) from public;
+revoke all on function public.answer_information_request(uuid, text) from anon;
+grant execute on function public.answer_information_request(uuid, text) to authenticated;
+
+revoke all on function public.admin_request_information(uuid, text) from public;
+revoke all on function public.admin_request_information(uuid, text) from anon;
+grant execute on function public.admin_request_information(uuid, text) to authenticated;
+
+revoke all on function public.admin_handover_to_partner(uuid, text) from public;
+revoke all on function public.admin_handover_to_partner(uuid, text) from anon;
+grant execute on function public.admin_handover_to_partner(uuid, text) to authenticated;
+
+revoke all on function public.reorder_vehicle_photos(jsonb) from public;
+revoke all on function public.reorder_vehicle_photos(jsonb) from anon;
+grant execute on function public.reorder_vehicle_photos(jsonb) to authenticated;
+
+revoke all on function public.set_main_vehicle_photo(uuid, uuid) from public;
+revoke all on function public.set_main_vehicle_photo(uuid, uuid) from anon;
+grant execute on function public.set_main_vehicle_photo(uuid, uuid) to authenticated;
+
 -- =====================================================================
 -- END — after running this, create a few auth test users per role
 -- before running pipeline/security/rls-probe.mjs.
