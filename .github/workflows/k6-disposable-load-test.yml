@@ -116,6 +116,25 @@ jobs:
           cat /tmp/dev-server.log || true
           kill "$(cat /tmp/dev-server.pid)" 2>/dev/null || true
 
+      # Decoupled from the app/dev-server entirely: hits PostgREST directly
+      # with the same filter/order clauses reference-data.functions.ts uses,
+      # so a real index gap would show up here even on routes where the app
+      # layer never reaches the database under a plain HTTP client (see
+      # pipeline/load/k6-db-read.js's own header comment for why this exists).
+      - name: Run direct database-read check
+        env:
+          K6_SUPABASE_URL: ${{ secrets.E2E_DISPOSABLE_SUPABASE_URL }}
+          K6_SUPABASE_ANON_KEY: ${{ secrets.E2E_DISPOSABLE_SUPABASE_ANON_KEY }}
+          K6_DB_TARGET_LABEL: disposable
+        run: |
+          set +e
+          k6 run \
+            --out json=test-results/k6/db-read-raw.json \
+            pipeline/load/k6-db-read.js \
+            2>&1 | tee test-results/k6/db-read-summary.txt
+          echo "DBREAD_EXIT=${PIPESTATUS[0]}" >> "$GITHUB_ENV"
+          set -e
+
       - name: Retain performance evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -134,5 +153,9 @@ jobs:
           fi
           if [ "${{ inputs.profile }}" = "baseline-then-ramp" ] && [ "${RAMP_EXIT:-1}" -ne 0 ]; then
             echo "::error::ramp k6 run failed (exit ${RAMP_EXIT:-unset})"
+            exit 1
+          fi
+          if [ "${DBREAD_EXIT:-1}" -ne 0 ]; then
+            echo "::error::direct DB-read k6 run failed (exit ${DBREAD_EXIT:-unset})"
             exit 1
           fi

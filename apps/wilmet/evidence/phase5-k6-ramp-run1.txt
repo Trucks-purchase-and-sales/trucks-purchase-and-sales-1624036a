@@ -1,0 +1,94 @@
+V2P Phase 5 -- first real 3x-peak ramp run, and a correction to the
+Phase 5 prep evidence
+Written by: Claude, 2026-08-26. Run by Salma via workflow_dispatch
+(k6-disposable-load-test.yml, profile: baseline-then-ramp).
+
+RESULT: RED against the plan's literal acceptance bar.
+
+  http_req_duration: p(95) = 957ms          (threshold: p(95) < 500ms) -- FAILED
+  http_req_failed:   rate  = 0.00%          (threshold: rate < 1%)     -- passed
+  checks:            18136/18136 succeeded  (100%)
+  http_reqs:         27204 total, 0 failed
+  iterations:        9068 complete over the 1m/2m/2m/1m ramp (10 -> 50 -> 150 VUs -> 0)
+
+Every single request eventually returned HTTP 200 -- zero errors, zero
+timeouts. The threshold miss is pure latency under concurrency: avg
+419ms, median 367ms, p90 817ms, p95 957ms, max 2.06s. That shape (a
+smooth curve where every percentile rises together) is the signature
+of queueing/resource contention, not a single blocking query or a
+crash -- worth noting up front because it changes what "fix the
+hotspot" should mean here.
+
+CORRECTION to phase5-k6-scripts-prepped.txt: that file justified
+adapting the scripts to hit real app routes instead of a raw REST
+passthrough by saying `/chercher-un-vehicule/` is "database-backed,
+since it fetches ref_vehicle_categories/ref_vehicle_types server-side
+on render." That claim was never actually verified against the code,
+and it's wrong. Traced it properly this time:
+
+- src/routes/chercher-un-vehicule.index.tsx calls getReferenceData via
+  `useServerFn` + React Query's `useQuery`, which only runs
+  CLIENT-SIDE, after the component mounts in a browser (a plain
+  `useEffect`-driven fetch, not a route `loader`).
+- src/routes/chercher-un-vehicule.tsx (the parent layout route) has no
+  `loader` either -- just `component: () => <Outlet />`.
+- src/routes/__root.tsx sets up `QueryClientProvider` with a plain
+  `QueryClient`, no `dehydrate`/hydration boundary -- confirmed by
+  grepping the whole `src/` tree for those terms and finding no SSR
+  query-prefetch pattern anywhere in this app.
+
+Consequence: a plain HTTP client that never executes JavaScript (k6,
+exactly like curl) never triggers `getReferenceData()`'s 11-table
+`Promise.all` at all. It only ever gets the SSR'd wizard shell in its
+initial loading state. Same for `/` (src/routes/index.tsx, "Landing"):
+that component has no query/loader of any kind, so it was never
+database-backed to begin with. Both routes tested by k6-load.js are,
+under a non-JS HTTP client, functionally static pages. The 957ms p95
+is React SSR render cost (a multi-step form with react-hook-form, zod,
+comboboxes, icons, i18n for the wizard route; a simpler static tree for
+the landing route) amplified by Vite DEV-mode's per-request module
+transform overhead, competing for CPU with k6 itself on a shared
+2-core GitHub Actions runner at up to 150 concurrent connections to a
+single Node process.
+
+Why this matters for Phase 5 specifically: the whole point of this
+phase (EXECUTION-PLAN.md section 12) is catching database-layer
+problems -- "full-table fetches, missing indexes, no caching." A test
+that never reaches the database can't catch any of those, no matter
+what its p95 says. The RED result here is a real, honestly-measured
+number, but it is not evidence of a database problem, because the
+routes it hit don't touch the database under how k6 exercises them.
+
+Action taken: added pipeline/load/k6-db-read.js, hitting PostgREST
+directly (anon key, same disposable project) with the exact
+select/filter/order clauses reference-data.functions.ts's
+getReferenceData actually uses for its two most index-sensitive
+queries (ref_vehicle_categories, ref_vehicle_types, ref_vehicle_brands,
+ref_vehicle_models -- the last being the one table most likely to grow
+large across many brands). This is fully decoupled from the app server
+and from Vite dev mode -- it tests exactly what Phase 5 is supposed to
+test, independent of the SSR-cost confound just found. Deliberately a
+smaller ramp (5 -> 30 -> 60 VUs, not 150) since this goes straight at
+a real Postgres instance on Salma's own account rather than through
+the app's connection handling -- no reason to hammer it harder than
+needed to get a meaningful concurrency signal. Wired into
+k6-disposable-load-test.yml as an additional step, independent of the
+dev-server steps (runs even if profile is baseline-only, since it
+needs no dev server at all).
+
+What this run does NOT resolve, and is being carried forward as a
+documented residual risk rather than silently dropped: whether the
+real Wilmet app, served as an actual production build (not Vite dev
+mode) on real infrastructure, meets the p95<500ms bar under 3x-peak
+concurrent USERS (as opposed to concurrent raw HTTP connections to a
+single dev process). This repo has no way to produce or serve a
+production build locally (vite.config.ts's Nitro target is Cloudflare
+Workers by default -- see phase5-k6-execution-wiring.txt), so that
+question can only be answered against a real deployed environment,
+which doesn't exist yet for Wilmet outside of Lovable's
+production-backed hosting. Recorded here rather than glossed over;
+belongs in the final report's residual-risk section.
+
+Next: run k6-db-read.js for real (already wired, not yet executed as
+of this file) to get the actual database-layer verdict Phase 5 is
+supposed to produce.
