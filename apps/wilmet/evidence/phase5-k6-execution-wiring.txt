@@ -1,0 +1,69 @@
+V2P Phase 5 -- wire the k6 baseline and ramp scripts to an actual, safe
+execution target
+Written by: Claude, 2026-08-26.
+
+Context: pipeline/load/k6-baseline.js and k6-load.js (EXECUTION-PLAN.md
+section 12) were written and merged in Phase 5 prep
+(evidence/phase5-k6-scripts-prepped.txt) but never wired to anything or
+run for real. week3.md's "Concurrent, unrelated incident" section
+recorded Phase 5 as paused, reasoning that it "fundamentally needs a
+working, database-backed staging target," which conflicted with the
+live Wilmet app being stuck mid-incident (ADR-006).
+
+That reasoning no longer holds once you look at what Phase 4 already
+proved: pr-build.yml's Playwright step starts `bun run dev` inside the
+CI job itself, pointed at Salma's disposable Supabase project via
+E2E_DISPOSABLE_SUPABASE_* secrets, and hits http://127.0.0.1:4173 --
+never the live app, never Lovable, never blocked by the production
+incident. The same k6 scripts already support exactly this ("local"
+K6_TARGET_LABEL, restricted to localhost/127.0.0.1 by their own guard).
+The Lovable incident was never actually a hard blocker for Phase 5 --
+it only looked like one because the existing manual workflows
+(k6-staging-performance.yml, playwright-staging-e2e.yml) assume a
+hosted "wilmet-staging" URL that this project doesn't have. Wilmet has
+no separate staging deployment of the frontend -- only a disposable
+Supabase *database* project. The app itself is only ever hosted by
+Lovable, and that hosting is production-backed by definition. So
+"wilmet-staging" mode in those workflows has no safe URL to ever
+actually supply; "local" mode (dev server + disposable DB, started
+fresh inside the CI job) is the only target this project can safely
+run a real load test against, and it was already sitting there,
+proven by Playwright's own CI step.
+
+New workflow: .github/workflows/k6-disposable-load-test.yml
+(workflow_dispatch only -- a load test is not something to run on
+every PR; it's an on-demand check). Reuses the exact same secrets and
+dev-server-startup shape as pr-build.yml's Playwright step (same
+E2E_DISPOSABLE_SUPABASE_* secrets, same readiness-polling loop, same
+explicit-exit-code capture to avoid the kill-the-dev-server-clobbers-
+the-real-exit-code bug already fixed once in Phase 4). Runs
+k6-baseline.js first, then optionally k6-load.js (the 3x-peak ramp),
+gated by a `profile` input so a quick baseline-only sanity check
+doesn't have to pay for the full ~6-minute ramp every time.
+
+One real, honest caveat, not glossed over: this targets `bun run dev`
+(Vite dev-mode SSR), not a production build. Checked whether a
+production-mode local server was possible instead -- it isn't,
+cleanly, in this repo: vite.config.ts's tanstackStart config builds
+via Nitro targeting Cloudflare Workers by default (its own comment:
+"nitro (build-only using cloudflare as a default target)"), so
+`vite build` doesn't produce a plain Node server `vite preview` (or
+anything else locally runnable without wrangler) can correctly serve
+for a TanStack Start app's SSR routes. `bun run dev` is the only
+locally-runnable option in this repo today, which is exactly why
+Playwright already uses it too. Dev-mode numbers will run somewhat
+pessimistic versus a real production deploy (on-the-fly module
+transforms, no build-time optimizations) -- results should be read
+with that in mind: a dev-mode latency failure is a signal to
+investigate, not automatically proof of a real production regression,
+but a dev-mode PASS is still meaningful (thresholds met even under
+worse-than-production conditions), and a large, consistent miss (e.g.
+errors, not just borderline latency) is still a real finding worth
+chasing regardless of dev/prod mode, since dev mode doesn't change
+query plans, missing indexes, or N+1 patterns -- the exact class of
+bug Phase 5 exists to catch.
+
+Not yet run -- this PR only wires the workflow. First execution and
+its results (before/after evidence, thresholds met or fixes applied)
+follow in a separate step once this merges, per the plan's own
+`evidence/phase5-k6-{before,after}.txt` naming.
