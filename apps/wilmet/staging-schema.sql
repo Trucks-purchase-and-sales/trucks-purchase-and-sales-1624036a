@@ -1658,7 +1658,30 @@ grant all on all sequences in schema public to anon, authenticated, service_role
 grant execute on all functions in schema public to anon, authenticated, service_role;
 
 -- =====================================================================
--- 10) Rate-limit RPC — public.rate_limit_events (section 3) existed in
+-- 10) Minimal reference data seed. Discovered empty in Phase 4 when a
+--     Playwright test tried to actually open the buyer request wizard's
+--     vehicle-category/type comboboxes: both were served real (correct)
+--     but empty option lists, since nothing before this ever completed
+--     this file's own "seed a little synthetic reference data" TODO.
+--     Earlier phases never hit this because they saved opportunities with
+--     every field left blank, never actually opening a combobox with
+--     required, list-only (no free-text fallback) options. Minimal on
+--     purpose -- just enough for the two fields buyerLeadSchema actually
+--     requires; extend with the other ref_* tables (ref_vehicle_brands,
+--     ref_body_types, etc.) if a future test needs them.
+-- =====================================================================
+insert into public.ref_vehicle_categories (slug, label_fr, label_en, sort_order, is_active) values
+  ('camion', 'Camion', 'Truck', 10, true),
+  ('utilitaire', 'Utilitaire', 'Van', 20, true)
+on conflict (slug) do nothing;
+
+insert into public.ref_vehicle_types (slug, label_fr, label_en, sort_order, is_active) values
+  ('porteur', 'Porteur', 'Rigid truck', 10, true),
+  ('tracteur', 'Tracteur', 'Tractor unit', 20, true)
+on conflict (slug) do nothing;
+
+-- =====================================================================
+-- 11) Rate-limit RPC — public.rate_limit_events (section 3) existed in
 --     this reconstruction from the start, but the function that actually
 --     reads/writes it was missed. Discovered 2026-08-25 via
 --     tests/smoke/buyer-request.pw.ts: PGRST202 "could not find the
@@ -1743,7 +1766,6 @@ revoke all on function public.rate_limit_check(text, text, integer, integer) fro
 grant execute on function public.rate_limit_check(text, text, integer, integer) to service_role;
 
 -- =====================================================================
--- END — after running this, seed a little synthetic reference data
--- (ref_* tables) and create a few auth test users per role before
--- running pipeline/security/rls-probe.mjs.
+-- END — after running this, create a few auth test users per role
+-- before running pipeline/security/rls-probe.mjs.
 -- =====================================================================
