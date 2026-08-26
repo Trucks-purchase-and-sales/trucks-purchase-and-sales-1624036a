@@ -1,0 +1,42 @@
+V2P Phase 5 -- direct database-read check, first real run
+Written by: Claude, 2026-08-26. Run by Salma via workflow_dispatch
+(k6-disposable-load-test.yml, profile: baseline-only -- the DB-read
+step runs regardless of profile).
+
+RESULT: PASS. This is the actual Phase 5 acceptance evidence -- see
+phase5-k6-ramp-run1.txt for why the app-route ramp test couldn't
+provide it (neither route it hits touches the database under a plain
+HTTP client).
+
+  http_req_duration: p(95) = 168.01ms       (threshold: p(95) < 500ms) -- PASSED
+  http_req_failed:   rate  = 0.00%          (threshold: rate < 1%)     -- PASSED
+  checks:            12236/12236 succeeded  (100%)
+  http_reqs:         12236 total, 0 failed
+  load shape:        30s -> 5 VUs, 1m -> 30 VUs, 1m -> 60 VUs, 30s ramp down
+
+All four queries (ref_vehicle_categories, ref_vehicle_types,
+ref_vehicle_brands, ref_vehicle_models -- the exact select/filter/order
+clauses reference-data.functions.ts's getReferenceData uses) held
+p95 well under threshold even at 60 concurrent connections direct to
+PostgREST, with zero failures. No missing-index or full-table-scan
+signal in this data: latency stayed flat and tight (min 108.96ms, p95
+168.01ms, max 731.66ms as a single outlier) rather than climbing with
+concurrency the way the app-route ramp's numbers did -- consistent
+with small, well-indexed reference tables under is_active-filtered,
+sorted reads.
+
+PHASE 5 VERDICT: the database layer -- what this phase exists to
+verify -- meets the plan's acceptance bar (EXECUTION-PLAN.md section
+12: "k6 at 3x peak meets p95 < 500ms and error rate < 1%") with this
+evidence. No fix was needed; nothing to diagnose further at the query
+level for these tables.
+
+Residual risk carried forward, not resolved by this evidence and not
+silently dropped (see phase5-k6-ramp-run1.txt for the full reasoning):
+whether the deployed Wilmet APPLICATION (server rendering, not just the
+database) meets this bar under real concurrent users. This repo has no
+way to build/serve a production build locally (Nitro's Cloudflare
+Workers target), so that specific question can only be answered
+against a real deployed environment. Recorded for the final report's
+residual-risk section, not treated as blocking Phase 5's own
+database-focused acceptance criterion.
