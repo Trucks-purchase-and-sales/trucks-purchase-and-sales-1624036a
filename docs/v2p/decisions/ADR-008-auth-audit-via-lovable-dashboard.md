@@ -19,6 +19,18 @@ of these workflows were apparently written and documented
 Management API token would become available, but that assumption was
 never actually validated against what Salma can obtain — it can't be.
 
+Independent corroboration found afterward: an earlier, disconnected
+pass (`docs/security/staging-security-e2e.md`, a ChatGPT-assisted
+effort from 2026-08-19, removed 2026-08-26 per `ADR-009`) had already
+reached this exact conclusion two days before `ADR-005` was written,
+building an entire alternate "managed-provider mode" E2E strategy
+specifically because "Lovable does not expose the service-role key,
+database password, or underlying Supabase Management API token." Two
+independent investigations, on different days, using different tools,
+arrived at the same architectural constraint — reasonable confidence
+this is a real, stable fact about the Lovable/Supabase relationship,
+not a one-off misunderstanding.
+
 However: Lovable's own project dashboard (Cloud → Users → Auth
 settings) turns out to expose a real Authentication Settings panel —
 sign-in methods, password policy, email confirmation behavior, HIBP
