@@ -1,0 +1,30 @@
+V2P Phase 5 -- first real k6 baseline run
+Written by: Claude, 2026-08-26. Run by Salma via workflow_dispatch
+(k6-disposable-load-test.yml, profile: baseline-only), against the dev
+server started inside that CI job, pointed at the disposable Supabase
+project (see phase5-k6-execution-wiring.txt for why this target is
+safe and why it's dev-mode rather than a production build).
+
+Script: pipeline/load/k6-baseline.js -- 5 VUs, 2 minutes, hitting `/`
+(public shell) and `/chercher-un-vehicule/` (buyer-request wizard
+entry, server-side fetches ref_vehicle_categories/ref_vehicle_types on
+render) once per iteration with a 1s sleep between iterations.
+
+RESULT: PASS, both thresholds met with wide margin.
+
+  http_req_duration: p(95) = 78.5ms          (threshold: p(95) < 500ms)
+  http_req_failed:   rate  = 0.00%           (threshold: rate < 1%)
+  checks:            1050/1050 succeeded     (100%)
+  http_reqs:         1575 total, 0 failed
+  iterations:        525 complete, 0 interrupted
+
+Full raw console output retained in the run's uploaded artifact
+(k6-disposable-<run_id>/baseline-summary.txt, baseline-raw.json).
+
+Interpretation: this is a low-concurrency sanity check, not the
+plan's actual acceptance bar (EXECUTION-PLAN.md section 12 requires
+the 3x-peak RAMP test, not the baseline, to meet these thresholds).
+Its purpose was to confirm the newly-wired workflow and target work
+correctly end-to-end before spending the ~6 minutes on the full ramp.
+Confirmed: proceeding to the ramp test (k6-load.js, profile
+baseline-then-ramp) next.
