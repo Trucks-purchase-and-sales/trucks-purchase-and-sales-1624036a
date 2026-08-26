@@ -1,0 +1,68 @@
+V2P Phase 4 -- demand opportunity creation (staff-side)
+Written by: Claude, 2026-08-26.
+
+The plan's "create/edit/delete each core entity" list still had zero
+coverage for sale_listings and demand_opportunities -- both entirely
+staff-facing (admin.*), unlike vehicle_opportunities (seller-facing)
+and buyer_leads (public-facing), both already covered.
+
+Investigated how either entity actually gets created before writing
+anything, since neither has a "new" form: grepped
+admin.sale-listings.index.tsx and admin.demand-opportunities.index.tsx
+for any create button/dialog -- both are pure read-only list views.
+Traced the real creation paths instead:
+
+- sale_listings: SaleListingPanel.tsx, embedded in an opportunity's
+  admin detail page, gated on opp.status in ["achetee", "livree"] --
+  the END of a multi-stage purchase workflow. Creating one for a test
+  means either seeding an opportunity directly at that status
+  (bypassing the real workflow entirely) or walking the whole purchase
+  pipeline through the UI first. Left for a follow-up given the size
+  of that precondition relative to this test.
+- demand_opportunities: adminConvertBuyerLead
+  (demand-opportunities.functions.ts) -- a single-click "Convertir en
+  opportunité" button on a buyer_lead's admin detail page, no
+  prerequisite chain beyond the buyer_lead itself existing. Far more
+  tractable, so this is what got covered first.
+
+New helpers:
+- e2e/tests/helpers/staff.ts (provisionStaff/cleanupStaff) -- mirrors
+  seller.ts's provisionSeller, but assigns role "admin" instead of
+  "partenaire". Needed because adminConvertBuyerLead calls
+  assertStaff(), which only accepts admin/platform_admin/
+  company_management/sales_manager -- not the broader "internal"
+  list (also sales_agent/external_agent) that read-only staff actions
+  accept elsewhere in this codebase.
+- e2e/tests/helpers/login.ts -- extracted the shared fill/submit/
+  cookie-dismiss logic out of logInAsPartner into a private logIn()
+  taking an expected post-login URL pattern, and added logInAsStaff
+  (asserts /admin instead of /dashboard, matching useRoleHome.ts's
+  `roles.has("admin") -> "/admin"`). logInAsPartner's own behavior and
+  signature are unchanged.
+
+Test setup seeds the buyer_lead directly via the service client
+(insert first_name/last_name/email -- the only NOT NULL columns
+without a usable default, per staging-schema.sql) rather than
+resubmitting through the public wizard -- that flow is already fully
+covered by buyer-request-journey.pw.ts; this test is specifically
+about the staff-side conversion action, not the public intake form.
+
+Assertion choice: not the "Opportunité créée" toast Sonner shows on
+success -- it auto-dismisses and would race the navigation to the new
+demand's own page. Used the status badge instead ("Qualifiée"),
+deterministic because adminConvertBuyerLead always inserts new demands
+with status: "qualifiee". Didn't assert on the new record's
+reference_number (displayed as the page's own <h1>) because the
+disposable project's reconstructed schema deliberately omits the
+reference-number generation trigger (staging-schema.sql section 0's
+own note: "OMITS ~13 business-logic triggers... because none of them
+affect access control"), so it would render null/blank here -- not a
+reliable thing to assert text against.
+
+Cleanup: demand_opportunities.buyer_lead_id would block deleting the
+buyer_lead afterward via FK otherwise, so the child row is deleted
+first, then the lead, then the staff identity.
+
+Not yet run for real -- lint/format clean, test discovery confirmed
+(19 tests across 11 files, up from 18/10). First real execution
+happens once this PR's CI runs.
