@@ -11,7 +11,7 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "test": "bun test",
-    "test:staging-security": "bun test tests/staging/security.staging.ts --timeout 60000",
+    "test:staging-security": "bun test ./tests/staging/security.staging.ts --timeout 60000",
     "check:staging-security": "bun build tests/staging/security.staging.ts --target=bun --outdir=/tmp/wilmet-staging-e2e-check",
     "check": "bun test && bun run build",
     "lint": "eslint .",
