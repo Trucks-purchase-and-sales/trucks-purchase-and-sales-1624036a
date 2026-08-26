@@ -1,0 +1,61 @@
+name: Production Uptime Check
+
+# Phase 6 (EXECUTION-PLAN.md section 13, item 2): "know about failures
+# before the client does." Read-only GET against the live Lovable app --
+# this is the plan's own sanctioned exception to "never target
+# production" (EXECUTION-PLAN.md section 6: "production -- read-only
+# inspection only"), matching the precedent already set by
+# supabase-auth-audit.yml and database-baseline-capture.yml.
+#
+# Checks two things, not just HTTP status: this app's known live
+# incident (ADR-001, ADR-006) renders as a full-page client-side crash
+# ("Un problème est survenu") that can still return HTTP 200 from the
+# server -- a status-only check would report healthy through an actual
+# outage. Checking for the crash string too means this check starts RED
+# right now (the incident is real and unresolved as of 2026-08-26), which
+# is the correct, honest result -- not a bug in the check.
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PRODUCTION_URL: https://wilmet-proposeur-connect.lovable.app
+
+jobs:
+  uptime-check:
+    name: Ping production and check for the known crash signature
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Fetch the production homepage
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o /tmp/body.html -w "%{http_code}" "${PRODUCTION_URL}/")
+          echo "HTTP status: ${status}"
+          echo "status=${status}" >> "$GITHUB_OUTPUT"
+        id: fetch
+
+      - name: Verify status is 200
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.fetch.outputs.status }}" != "200" ]; then
+            echo "::error::Production returned HTTP ${{ steps.fetch.outputs.status }}, expected 200"
+            exit 1
+          fi
+
+      - name: Verify the known crash signature is absent
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -q "Un problème est survenu" /tmp/body.html; then
+            echo "::error::Production is showing the known crash fallback (ADR-006) -- the app is down for real users"
+            exit 1
+          fi
+          echo "No known crash signature found."

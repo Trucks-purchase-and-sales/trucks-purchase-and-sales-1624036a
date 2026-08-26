@@ -97,17 +97,26 @@ monitoring's usefulness, the pre-publish checklist's meaning, this
 document's own promotion-path description) should be read with that
 caveat until it's resolved.
 
-## Open items (Phase 6, blocked on information only I can't determine)
+## Resolved and remaining items
 
-- **Uptime/health check wiring:** needs the confirmed 🟥 production
-  URL (asked Salma directly — not guessed, per this project's own
-  rule against fabricating URLs). Once known, a scheduled GitHub
-  Actions workflow pinging it (matching the read-only-inspection
-  precedent above) is straightforward to add.
-- **Backup/restore verification:** needs 🟥 production's Supabase plan
-  tier confirmed (free tier has no point-in-time recovery or scheduled
-  backups to actually restore-test; Pro+ does). Asked Salma to check
-  Settings → Billing on the production project.
+- **Uptime/health check:** confirmed production URL is
+  `https://wilmet-proposeur-connect.lovable.app` (a `.lovable.app`
+  address, not a connected custom domain). Wired as
+  `.github/workflows/uptime-check.yml`, scheduled every 30 minutes plus
+  on-demand — checks both HTTP status and the absence of the known
+  crash fallback text, so it correctly reports red while the ADR-006
+  incident remains open rather than a false healthy on a 200 that's
+  actually a crashed page.
+- **Backup/restore verification:** checked directly with Salma —
+  Lovable exposes **no** Supabase account details at all (no billing
+  page, no plan tier, nothing visible). This isn't a missing answer,
+  it's the actual structural situation: see `ADR-007` for the full
+  reasoning and decision. Short version: the only recovery mechanism
+  that exists is Lovable's own in-place point-in-time-restore panel
+  (per ADR-005), which is too destructive to actually test against
+  real production data as a routine verification step. Documented as
+  an unverified-but-present backup mechanism (residual risk), not
+  silently marked done.
 - **Error monitoring (Sentry or equivalent):** requires adding an SDK
   to the app's own source, which is Lovable's domain per Rule 5 —
   deliberately deferred (Salma's decision, 2026-08-26) rather than
