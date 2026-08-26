@@ -93,7 +93,25 @@ exception," per ADR-002.
    fixed.
 2. ~~Decide whether to reconcile the external commits through Lovable~~ —
    moot for now; see ADR-002. Revisit once credits are restored.
-3. Confirm Supabase staging/prod project refs (§7.1 gate) — still needed
-   before Phase 0.5/Phase 1 can start.
+3. ~~Confirm Supabase staging/prod project refs (§7.1 gate)~~ —
+   **resolved**: 🟥 production is `srjnljpjwzhtbdnhksux` (`supabase/
+config.toml`, the repo's own linked CLI project); 🟦 staging is
+   Salma's disposable personal project (ADR-005).
 4. Next time Lovable is prompted for any reason, confirm the resulting
-   commit lands on GitHub `main` to close out the deferred round-trip leg.
+   commit lands on GitHub `main` to close out the deferred round-trip
+   leg — still genuinely unconfirmed; the ADR-006 investigation
+   prompts didn't produce a landed Lovable-authored code commit, the
+   eventual fix was this repo's own nudge commit instead.
+
+## Note on a separate, earlier recovery pass (2026-08-18/19)
+
+Before this V2P engagement, Salma ran a separate ChatGPT-assisted pass
+that (among other things) reconciled a migration-ledger drift (5
+already-applied migrations missing from `schema_migrations`, fixed as
+history-only inserts) and captured a CI/build baseline snapshot at
+commit `c21165c...` (PR #17, 40 tests passing) —
+`docs/engineering/github-baseline.md`, since consolidated into
+`findings-register.csv` F-021 and removed per `ADR-009`. This predates
+and is independent of this document's own Phase 0 recovery narrative
+above; noted here for continuity since the source file no longer
+exists in the working tree (see its git history for the original).
