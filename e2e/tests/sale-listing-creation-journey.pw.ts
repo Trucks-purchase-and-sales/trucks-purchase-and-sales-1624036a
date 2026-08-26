@@ -17,7 +17,7 @@ import { cleanupStaff, provisionStaff, type StaffIdentity } from "./helpers/staf
 const SUPABASE_URL = process.env.E2E_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.E2E_SUPABASE_SERVICE_ROLE_KEY;
 
-test.describe("Wilmet sale listing creation journey", () => {
+test.describe("Wilmet sale listing CRUD journey", () => {
   test.skip(
     !SUPABASE_URL || !SERVICE_ROLE_KEY,
     "requires E2E_SUPABASE_URL and E2E_SUPABASE_SERVICE_ROLE_KEY",
@@ -82,5 +82,37 @@ test.describe("Wilmet sale listing creation journey", () => {
     await page.getByRole("button", { name: "Créer l'offre" }).click();
 
     await expect(page.getByRole("link", { name: "Ouvrir l'offre de vente" })).toBeVisible();
+  });
+
+  test("staff can edit an existing sale listing and see the change persist", async ({ page }) => {
+    // Seeded directly rather than via the transform dialog already covered
+    // above -- this test is about the edit surface on
+    // admin.sale-listings.$id.tsx, not creation.
+    const listing = await seller.service
+      .from("sale_listings")
+      .insert({
+        vehicle_opportunity_id: opportunityId,
+        title: "Volvo FH16 2020",
+        city: "Paris",
+        sale_price_excl_tax: 18000,
+      })
+      .select("id")
+      .single();
+    if (listing.error || !listing.data) {
+      throw new Error(`seed test sale_listing: ${listing.error?.message}`);
+    }
+    const listingId = listing.data.id as string;
+
+    await logInAsStaff(page, staff.email, staff.password);
+    await page.goto(`/admin/sale-listings/${listingId}`, { waitUntil: "domcontentloaded" });
+
+    await labeledInput(page, "Ville").fill("Lyon");
+    await page.getByRole("button", { name: "Enregistrer" }).click();
+    await expect(page.getByText("Offre enregistrée", { exact: true })).toBeVisible();
+
+    // Reload rather than trust the toast alone -- proves the edit actually
+    // persisted server-side, not just an optimistic UI update.
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(labeledInput(page, "Ville")).toHaveValue("Lyon");
   });
 });

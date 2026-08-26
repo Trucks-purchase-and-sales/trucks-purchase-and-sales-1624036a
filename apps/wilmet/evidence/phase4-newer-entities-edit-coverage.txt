@@ -1,0 +1,58 @@
+V2P Phase 4 -- edit coverage for demand_opportunities and sale_listings
+Written by: Claude, 2026-08-26.
+
+Closes the gap flagged when Phase 4's acceptance criteria were
+otherwise fully met: create was covered for both newer entities, edit
+was not. Added as a second test in each entity's existing file rather
+than new files, matching this codebase's own established pattern of
+bundling an entity's full CRUD coverage into one file (see
+opportunity-crud-journey.pw.ts). Renamed both describe blocks from
+"... creation/conversion journey" to "... CRUD journey" to match --
+the only non-additive change in this PR.
+
+sale_listings edit: admin.sale-listings.$id.tsx has a real free-text
+edit surface (title, city, description, notes inputs + an
+"Enregistrer" save button, src lines ~290-390). Seeded a sale_listing
+directly (vehicle_opportunity_id, title, city, sale_price_excl_tax --
+the two NOT NULL columns plus enough for the form's populating
+useEffect to have real values) rather than going through the transform
+dialog already covered by the first test in this file. Filled Ville,
+saved, asserted the "Offre enregistrée" toast, then reloaded the page
+and re-read the same input's value -- proving the edit persisted
+server-side, not just an optimistic UI update. (Confirmed the exact
+toast string from fr.json directly rather than guessing --
+admin.saleListings.detail.savedToast = "Offre enregistrée", distinct
+from two other unrelated "savedToast" keys elsewhere in the same
+file for different features.)
+
+demand_opportunities edit: admin.demand-opportunities.$id.tsx has NO
+free-text fields at all (checked before assuming one would exist the
+same way sale_listings does) -- its only edit action is a status
+transition, marking the demand "Gagnée" (won) or "Perdue" (lost) with
+a reason. That status transition IS the edit surface for this entity,
+so the test seeds a demand directly at status "qualifiee" (not
+terminal, per isTerminal's own list: gagnee/perdue/archivee) and marks
+it won. Asserted two things: the status text becomes visible, and the
+won/lost action buttons disappear afterward (isTerminal flips true) --
+the second check is the more reliable signal, since the badge text can
+transiently still show the old status while the query invalidation is
+in flight.
+
+Both entities' beforeEach/afterEach were already shared across both
+tests in each file (opportunity/buyer_lead precondition + cleanup) --
+no new setup needed, the edit tests just seed one additional row each
+inside the test body itself, cleaned up by the existing afterEach
+(which already deletes by parent id, not by a specific row list).
+
+Not yet run for real -- lint/format clean, test discovery confirmed
+(22 tests across 12 files, up from 20/12 -- same file count since both
+new tests landed in already-existing files). First real execution
+happens once this PR's CI runs.
+
+With this, every core entity from the plan's "create/edit/delete each
+core entity" instruction (vehicle_opportunities, buyer_leads,
+demand_opportunities, sale_listings) has both create and edit
+coverage. Delete remains untested everywhere -- a real, cross-entity
+app gap (no delete UI found for any of them despite RLS permitting
+admin delete on several), not a testing gap, and stays out of scope
+for a direct GitHub fix per doctrine.
