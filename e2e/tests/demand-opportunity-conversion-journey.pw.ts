@@ -22,7 +22,7 @@ import { cleanupStaff, provisionStaff, type StaffIdentity } from "./helpers/staf
 const SUPABASE_URL = process.env.E2E_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.E2E_SUPABASE_SERVICE_ROLE_KEY;
 
-test.describe("Wilmet demand opportunity conversion journey", () => {
+test.describe("Wilmet demand opportunity CRUD journey", () => {
   test.skip(
     !SUPABASE_URL || !SERVICE_ROLE_KEY,
     "requires E2E_SUPABASE_URL and E2E_SUPABASE_SERVICE_ROLE_KEY",
@@ -69,5 +69,33 @@ test.describe("Wilmet demand opportunity conversion journey", () => {
     // deterministic instead: adminConvertBuyerLead always inserts new
     // demands as "qualifiee" (src/lib/demand-opportunities.functions.ts).
     await expect(page.getByText("Qualifiée", { exact: true })).toBeVisible();
+  });
+
+  test("staff can mark a demand opportunity as won", async ({ page }) => {
+    // Seeded directly rather than via the convert button already covered
+    // above -- this test is about the status-transition edit surface on
+    // admin.demand-opportunities.$id.tsx, which has no free-text fields
+    // to edit (unlike sale_listings) -- marking won/lost IS the edit
+    // action for this entity.
+    const demand = await staff.service
+      .from("demand_opportunities")
+      .insert({ buyer_lead_id: leadId, status: "qualifiee" })
+      .select("id")
+      .single();
+    if (demand.error || !demand.data) {
+      throw new Error(`seed test demand_opportunity: ${demand.error?.message}`);
+    }
+    const demandId = demand.data.id as string;
+
+    await logInAsStaff(page, staff.email, staff.password);
+    await page.goto(`/admin/demand-opportunities/${demandId}`, { waitUntil: "domcontentloaded" });
+
+    await page.getByRole("button", { name: "Gagnée", exact: true }).click();
+    await expect(page.getByText("Gagnée", { exact: true })).toBeVisible();
+    // isTerminal (admin.demand-opportunities.$id.tsx) hides the won/lost
+    // buttons once closed -- a stronger signal the transition actually
+    // took than the badge text alone, which briefly shows the old status
+    // during the query invalidation.
+    await expect(page.getByRole("button", { name: "Gagnée", exact: true })).not.toBeVisible();
   });
 });
