@@ -1,0 +1,111 @@
+V2P Phase 6 -- manual hosted Auth configuration review via Lovable's
+dashboard (Cloud -> Users -> Auth settings)
+Written by: Claude, 2026-08-26, transcribed from three screenshots
+Salma provided of Lovable's Authentication Settings and Email Settings
+panels. See ADR-008 for why this replaces the automated
+supabase-auth-audit.yml workflow (blocked -- no Management API access).
+
+Checked against the exact criteria docs/security/hosted-auth-policy.md
+already specifies (written before this review, not adjusted to fit it).
+
+=====================================================================
+Blocking hosted configuration controls (per hosted-auth-policy.md)
+=====================================================================
+
+password_min_length >= 15
+  OBSERVED: 8 ("Minimum password length (minimum 6, recommended 8+)")
+  RESULT: FAIL. This is the one real, confirmed gap from this review --
+  see F-010 in findings-register.csv. The app's own client-side rule
+  (src/lib/password-policy.ts, >=15 chars) is not backed by the hosted
+  identity provider, so a caller hitting Supabase Auth's signup/
+  password-change endpoints directly (bypassing the app's UI) can set
+  a password as short as 8 characters. HIBP checking (see below) still
+  screens out known-breached passwords, but an unbreached 8-character
+  password would be accepted, contrary to this project's own documented
+  policy intent.
+
+mailer_autoconfirm = false
+  OBSERVED: "Auto-confirm email" toggle OFF.
+  RESULT: PASS.
+
+mailer_allow_unverified_email_sign_ins = false
+  OBSERVED: not visible in the screenshots taken (Email Settings panel
+  scrolled to "Email OTP length" / "Advanced" collapsed section).
+  RESULT: NOT YET CHECKED -- needs a follow-up screenshot with
+  "Advanced" expanded.
+
+refresh_token_rotation_enabled = true
+  OBSERVED: not visible -- likely under a separate Sessions/Tokens
+  panel not captured in these screenshots.
+  RESULT: NOT YET CHECKED.
+
+security_update_password_require_reauthentication = true
+  OBSERVED: "Require re-authentication for password changes" toggle ON.
+  RESULT: PASS.
+
+security_captcha_enabled = true
+  OBSERVED: not visible -- likely under a "Bot and Abuse Protection"
+  section not captured.
+  RESULT: NOT YET CHECKED.
+
+security_manual_linking_enabled = false
+  OBSERVED: not visible in these screenshots.
+  RESULT: NOT YET CHECKED.
+
+external_anonymous_users_enabled = false
+  OBSERVED: the first screenshot's "Sign in methods" list (Email,
+  Phone, Google, Apple, Microsoft, SAML SSO) was cut off before
+  reaching an "Anonymous sign-ins" entry, if one exists further down.
+  RESULT: NOT YET CHECKED.
+
+=====================================================================
+Advisory configuration (per hosted-auth-policy.md, not release-blocking)
+=====================================================================
+
+Compromised-password/HIBP protection
+  OBSERVED: "Password HIBP check" toggle ON ("Reject known or easy to
+  guess passwords using Have I Been Pwned database").
+  RESULT: enabled -- good defense-in-depth, does not offset the
+  min-length gap above (HIBP only rejects known-breached passwords,
+  not merely short ones).
+
+Secure email-change behavior
+  OBSERVED: "Secure email change" toggle ON ("Require confirmation on
+  both old and new email addresses").
+  RESULT: enabled.
+
+Required password character composition
+  OBSERVED: "No required characters (default)".
+  RESULT: consistent with this project's own documented intent
+  (hosted-auth-policy.md: "does not require arbitrary uppercase/
+  lowercase/digit/symbol composition") -- not a gap, a deliberate
+  choice, but only sound in combination with an adequate minimum
+  length, which is currently not met (see above).
+
+TOTP MFA capability, site URL/redirect allowlist, JWT/session
+settings, Auth rate-limit values, CAPTCHA provider, email/phone
+provider state
+  NOT YET CHECKED -- not visible in the screenshots taken so far.
+
+Other observed, informational (not in hosted-auth-policy.md's list but
+worth recording since they were visible)
+  Email OTP expiration: 3600 seconds (1 hour).
+  Email OTP length: 8 digits.
+  Phone/Google/Apple/Microsoft/SAML SSO sign-in: all disabled (email
+  is the only enabled sign-in method) -- reduces attack surface, not a
+  gap.
+
+=====================================================================
+CONCLUSION
+=====================================================================
+First real evidence for D8 (auth hardening) exists for this project,
+where none did before. One confirmed, real, actionable finding: hosted
+minimum password length (8) does not meet this project's own >=15
+policy -- logged as F-010, severity High (per hosted-auth-policy.md's
+own framing of password_min_length as a release-blocking control).
+Two blocking-list items confirmed passing. Five blocking-list items
+and most advisory items are not yet checked -- genuinely unknown, not
+assumed passing. A follow-up pass with additional screenshots
+(Advanced section expanded, Sessions/Tokens panel, Bot/Abuse
+Protection panel, remainder of Sign in methods list) would close the
+remaining gaps in this evidence.

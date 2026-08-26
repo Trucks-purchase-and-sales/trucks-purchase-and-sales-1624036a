@@ -118,15 +118,43 @@ resumes.
   a residual risk for the final report, not a task blocked on more
   information.
 
+## The auth audit, attempted and re-routed (2026-08-26, same day)
+
+Salma triggered `supabase-auth-audit.yml` for real. It failed
+immediately: `Missing SUPABASE_ACCESS_TOKEN`. Checked directly with
+her why — generating that token needs a supabase.com login, and
+Lovable is the only access she has to this project. Same structural
+constraint as the backup/restore question (ADR-007); documented the
+same way in **ADR-008**.
+
+Unlike the backup question, though, there was a real substitute:
+Lovable's own dashboard turns out to expose an Authentication Settings
+panel (Cloud → Users → Auth settings). Salma screenshotted it, and it
+produced actual evidence — closer to the plan's _original_ intended
+method for this item (§10.2: "Supabase dashboard, capture
+screenshots") than the automated Management-API workflow this project
+later built on top of that.
+
+**Real finding surfaced: F-010** — hosted minimum password length is
+**8**, not the **≥15** this project's own `hosted-auth-policy.md`
+already specified as release-blocking. This means a caller hitting
+Supabase Auth directly (bypassing the app's client-side 15-char rule)
+could currently set an 8-character password. Unlike most findings this
+phase, this one is directly fixable by Salma herself, immediately, in
+the same settings panel — no Lovable prompt or credits needed. Two
+other blocking criteria confirmed passing (auto-confirm off,
+reauthentication required for password changes); four remain unchecked
+pending further screenshots (CAPTCHA, anonymous sign-ins, unverified-
+email sign-in, refresh-token rotation) — tracked honestly as unknown,
+not assumed passing. Full detail:
+`evidence/phase6-hosted-auth-manual-review.txt`.
+
 ## Still open before Phase 6 can be called fully closed
 
-- **Run `.github/workflows/supabase-auth-audit.yml` for real.** It
-  exists, is documented (`docs/security/hosted-auth-policy.md`), is
-  read-only against production with no confirmation gate needed — it
-  has simply never been executed in this repo, so there's no D8
-  auth-hardening evidence on file yet. This is the one remaining
-  mechanical step; everything else this phase needed a decision or a
-  document for is done.
+- Fix F-010 (password minimum length) — Salma's to do, directly
+  actionable.
+- Finish the manual auth review's remaining 4 unchecked blocking
+  criteria with a follow-up round of screenshots.
 
 ## Acceptance against the plan's own criteria (EXECUTION-PLAN.md §13)
 
