@@ -149,12 +149,28 @@ email sign-in, refresh-token rotation) — tracked honestly as unknown,
 not assumed passing. Full detail:
 `evidence/phase6-hosted-auth-manual-review.txt`.
 
+## Auth review completed the same day
+
+Salma fixed F-010 immediately (min password length 8 → 15) and sent a
+second round of screenshots covering the remaining blocking criteria.
+Result: `external_anonymous_users_enabled` confirmed off (another
+PASS), and the last four criteria (unverified-email sign-in,
+refresh-token rotation, CAPTCHA, manual linking) confirmed **not
+exposed anywhere in Lovable's dashboard** — logged as **F-011**, a
+structural verification gap (same category as ADR-007/ADR-008), not a
+pending task. Zero confirmed failures remain from this review. Full
+detail: `evidence/phase6-hosted-auth-manual-review.txt`.
+
 ## Still open before Phase 6 can be called fully closed
 
-- Fix F-010 (password minimum length) — Salma's to do, directly
-  actionable.
-- Finish the manual auth review's remaining 4 unchecked blocking
-  criteria with a follow-up round of screenshots.
+- **F-005** (missing X-Frame-Options) — blocked on Lovable app-code
+  access, carried from Phase 3.
+- **F-009 / ADR-006** (the live crash) — parked per Salma's decision.
+- **F-011** (4 unexposed auth criteria) — no fix available through
+  current access; not actionable, only revisitable if access changes.
+- **The pre-publish checklist itself is unsigned** — a real decision
+  (accepting the checklist with F-005 and F-009 still open), not a
+  formality, deliberately left for Salma to make explicitly.
 
 ## Acceptance against the plan's own criteria (EXECUTION-PLAN.md §13)
 
