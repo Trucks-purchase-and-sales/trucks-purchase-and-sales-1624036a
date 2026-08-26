@@ -1,0 +1,54 @@
+V2P Phase 4 -- sale listing creation (staff-side), the follow-up flagged
+in phase4-demand-opportunity-conversion.txt
+Written by: Claude, 2026-08-26.
+
+Closes the last core entity with zero coverage. sale_listings has no
+"new" form either (admin.sale-listings.index.tsx is a read-only list,
+same as demand_opportunities was) -- it's only created via
+SaleListingPanel.tsx, embedded in an opportunity's own admin detail
+page and gated on opp.status being "achetee" or "livree", the tail
+end of a multi-stage purchase workflow
+(brouillon -> envoyee -> en_cours_analyse -> ... -> achetee -> ...).
+
+Deliberately did NOT walk that whole pipeline through the UI to reach
+the precondition -- that would be testing the purchase workflow state
+machine, a separate and much larger surface, not sale-listing creation
+itself. Seeded a vehicle_opportunity directly at status: "achetee" via
+the service client instead (partenaire_id, brand/model/year for the
+panel's defaultTitle, purchase_price_excl_tax for its margin display),
+same pattern as every other precondition seeded directly this session.
+
+Confirmed this doesn't trip tg_opp_partner_column_guard (staging-
+schema.sql): read the trigger body -- it branches on auth.uid()-based
+role checks (is_internal / is_seller_partner), and a service-role
+insert has no auth.uid() at all, so neither branch's restrictions
+apply. Same reasoning already relied on for every seller/staff
+identity provisioned via the admin API this session.
+
+Reused provisionSeller (for partenaire_id -- an opportunity needs a
+real owning user) and provisionStaff (to actually perform the
+transform action) rather than adding a third helper -- both already
+exist and cover exactly what's needed here.
+
+Assertion: not the "Offre de vente créée" toast (same auto-dismiss/
+navigation-race concern as demand-opportunity-conversion.txt), and not
+the new listing's own detail page content either, since this test
+doesn't navigate there. Instead asserts the panel's own state flip --
+"Transformer en offre de vente" disappears, "Ouvrir l'offre de vente"
+appears -- which is exactly SaleListingPanel.tsx's own success
+condition (listing becomes truthy once getSaleListingByOpportunity's
+query is invalidated and refetches) and needs no navigation or
+toast-timing assumptions.
+
+Only the price field needed filling (labeledInput(page, "Prix de
+vente") -- required, empty by default); title is prefilled from
+brand/model/year and already valid.
+
+Cleanup: sale_listings.vehicle_opportunity_id would block deleting the
+opportunity via FK otherwise, so the listing is deleted first (if
+created), then the seller identity (cleanupSeller already handles
+deleting the seller's own vehicle_opportunities rows), then staff.
+
+Not yet run for real -- lint/format clean, test discovery confirmed
+(20 tests across 12 files, up from 19/11). First real execution
+happens once this PR's CI runs.
