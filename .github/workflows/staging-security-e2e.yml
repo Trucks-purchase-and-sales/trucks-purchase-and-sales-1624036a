@@ -49,7 +49,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run Lovable-managed real-JWT staging security suite
-        run: bun test tests/staging/managed-security.staging.ts --timeout 60000
+        run: bun test ./tests/staging/managed-security.staging.ts --timeout 60000
 
       - name: Retain verification evidence
         if: always()
