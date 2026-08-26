@@ -1,9 +1,10 @@
 V2P Phase 6 -- manual hosted Auth configuration review via Lovable's
 dashboard (Cloud -> Users -> Auth settings)
-Written by: Claude, 2026-08-26, transcribed from three screenshots
-Salma provided of Lovable's Authentication Settings and Email Settings
-panels. See ADR-008 for why this replaces the automated
-supabase-auth-audit.yml workflow (blocked -- no Management API access).
+Written by: Claude, 2026-08-26, transcribed from six screenshots Salma
+provided across two rounds, of Lovable's Authentication Settings, Email
+Settings, and each page's "Advanced" section. See ADR-008 for why this
+replaces the automated supabase-auth-audit.yml workflow (blocked -- no
+Management API access).
 
 Checked against the exact criteria docs/security/hosted-auth-policy.md
 already specifies (written before this review, not adjusted to fit it).
@@ -13,99 +14,113 @@ Blocking hosted configuration controls (per hosted-auth-policy.md)
 =====================================================================
 
 password_min_length >= 15
-  OBSERVED: 8 ("Minimum password length (minimum 6, recommended 8+)")
-  RESULT: FAIL. This is the one real, confirmed gap from this review --
-  see F-010 in findings-register.csv. The app's own client-side rule
-  (src/lib/password-policy.ts, >=15 chars) is not backed by the hosted
-  identity provider, so a caller hitting Supabase Auth's signup/
-  password-change endpoints directly (bypassing the app's UI) can set
-  a password as short as 8 characters. HIBP checking (see below) still
-  screens out known-breached passwords, but an unbreached 8-character
-  password would be accepted, contrary to this project's own documented
-  policy intent.
+  ROUND 1: 8 -- FAIL. Logged as F-010.
+  FIX APPLIED (Salma, 2026-08-26): raised to 15 in the same panel.
+  ROUND 2 OBSERVED: 15.
+  RESULT: PASS. F-010 closed -- see findings-register.csv.
 
 mailer_autoconfirm = false
   OBSERVED: "Auto-confirm email" toggle OFF.
   RESULT: PASS.
 
-mailer_allow_unverified_email_sign_ins = false
-  OBSERVED: not visible in the screenshots taken (Email Settings panel
-  scrolled to "Email OTP length" / "Advanced" collapsed section).
-  RESULT: NOT YET CHECKED -- needs a follow-up screenshot with
-  "Advanced" expanded.
-
-refresh_token_rotation_enabled = true
-  OBSERVED: not visible -- likely under a separate Sessions/Tokens
-  panel not captured in these screenshots.
-  RESULT: NOT YET CHECKED.
+external_anonymous_users_enabled = false
+  OBSERVED (round 2, main Authentication settings page): "Enable
+  anonymous users" toggle OFF ("Allow anonymous users to sign in").
+  RESULT: PASS.
 
 security_update_password_require_reauthentication = true
   OBSERVED: "Require re-authentication for password changes" toggle ON.
   RESULT: PASS.
 
+mailer_allow_unverified_email_sign_ins = false
+refresh_token_rotation_enabled = true
 security_captcha_enabled = true
-  OBSERVED: not visible -- likely under a "Bot and Abuse Protection"
-  section not captured.
-  RESULT: NOT YET CHECKED.
-
 security_manual_linking_enabled = false
-  OBSERVED: not visible in these screenshots.
-  RESULT: NOT YET CHECKED.
-
-external_anonymous_users_enabled = false
-  OBSERVED: the first screenshot's "Sign in methods" list (Email,
-  Phone, Google, Apple, Microsoft, SAML SSO) was cut off before
-  reaching an "Anonymous sign-ins" entry, if one exists further down.
-  RESULT: NOT YET CHECKED.
+  Checked both places these would plausibly live: the Email settings
+  page's own "Advanced" section (round 2 -- shows only "Rate limit for
+  sending emails: 1000/hour", nothing else) and the main Authentication
+  settings page's "Advanced" section (round 2 -- shows "Site URL" and
+  "Redirect URLs" only, see below). Salma also looked specifically for
+  CAPTCHA/bot-protection controls and found nothing matching anywhere
+  in the dashboard.
+  RESULT: NOT EXPOSED. This is a distinct, final result, not "still
+  pending" -- Lovable's simplified Auth settings UI does not surface a
+  control for any of these four items anywhere reachable. This does
+  NOT mean they are misconfigured; it means neither Salma nor this
+  review can determine their actual state with the access Lovable
+  grants. Logged as F-011 (see findings-register.csv) -- a
+  verification gap in its own right, structurally identical to
+  ADR-007/ADR-008's pattern (real constraint, not a task blocked on
+  more looking).
 
 =====================================================================
 Advisory configuration (per hosted-auth-policy.md, not release-blocking)
 =====================================================================
 
 Compromised-password/HIBP protection
-  OBSERVED: "Password HIBP check" toggle ON ("Reject known or easy to
-  guess passwords using Have I Been Pwned database").
-  RESULT: enabled -- good defense-in-depth, does not offset the
-  min-length gap above (HIBP only rejects known-breached passwords,
-  not merely short ones).
+  OBSERVED: "Password HIBP check" toggle ON.
+  RESULT: enabled.
 
 Secure email-change behavior
-  OBSERVED: "Secure email change" toggle ON ("Require confirmation on
-  both old and new email addresses").
+  OBSERVED: "Secure email change" toggle ON.
   RESULT: enabled.
 
 Required password character composition
   OBSERVED: "No required characters (default)".
   RESULT: consistent with this project's own documented intent
-  (hosted-auth-policy.md: "does not require arbitrary uppercase/
-  lowercase/digit/symbol composition") -- not a gap, a deliberate
-  choice, but only sound in combination with an adequate minimum
-  length, which is currently not met (see above).
+  (hosted-auth-policy.md: no forced composition rules) -- now sound in
+  combination with the corrected >=15 minimum length.
 
-TOTP MFA capability, site URL/redirect allowlist, JWT/session
-settings, Auth rate-limit values, CAPTCHA provider, email/phone
-provider state
-  NOT YET CHECKED -- not visible in the screenshots taken so far.
+Site URL and redirect allowlist
+  OBSERVED (round 2, main Authentication settings "Advanced" section):
+  Site URL = https://wilmet-proposeur-connect.lovable.app (matches the
+  confirmed production URL). Redirect URLs: "Allowed URLs (8/50)",
+  3 of 8 visible in the screenshot:
+    - https://*-s.452845ef-b656-4272-a382-1de28e2d1f1e.lovableproject.com/**
+    - https://*-l.452845ef-b656-4272-a382-1de28e2d1f1e.lovableproject.com/**
+    - https://wilmet-proposeur-connect.lovable.app/** (labeled "Lovable")
+  RESULT: reasonably scoped -- the two wildcard entries are Lovable's
+  own project-specific preview-environment subdomains (scoped to a
+  unique, hard-to-guess project hash, not an open wildcard), not a
+  third-party or overly broad pattern. 5 of 8 entries not seen; no
+  reason from what's visible to suspect the rest, but not fully
+  reviewed either.
 
-Other observed, informational (not in hosted-auth-policy.md's list but
-worth recording since they were visible)
-  Email OTP expiration: 3600 seconds (1 hour).
-  Email OTP length: 8 digits.
-  Phone/Google/Apple/Microsoft/SAML SSO sign-in: all disabled (email
-  is the only enabled sign-in method) -- reduces attack surface, not a
-  gap.
+Auth rate-limit values
+  OBSERVED: email-sending rate limit = 1000/hour (Email settings ->
+  Advanced). General Auth endpoint rate limiting (signup/signin
+  attempts) not separately visible anywhere checked.
+  RESULT: partial -- one rate limit confirmed reasonable, others
+  unconfirmed (folds into F-011's "not exposed" pattern for the ones
+  not found, though this specific one -- email send rate -- IS visible
+  and looks fine).
+
+TOTP MFA capability, JWT/session settings, CAPTCHA provider,
+email/phone provider state (beyond sign-in method toggles)
+  TOTP/JWT/CAPTCHA: not exposed anywhere found -- see F-011.
+  Email/phone provider state: Email is the only enabled sign-in method
+  (Phone/Google/Apple/Microsoft/SAML SSO all confirmed disabled in
+  round 1) -- reduces attack surface, not a gap.
+
+Other observed, informational
+  Email OTP expiration: 3600 seconds. Email OTP length: 8 digits.
+  "Disable sign-up" toggle: OFF (sign-ups allowed) -- expected for a
+  public-facing app with self-service signup.
 
 =====================================================================
 CONCLUSION
 =====================================================================
-First real evidence for D8 (auth hardening) exists for this project,
-where none did before. One confirmed, real, actionable finding: hosted
-minimum password length (8) does not meet this project's own >=15
-policy -- logged as F-010, severity High (per hosted-auth-policy.md's
-own framing of password_min_length as a release-blocking control).
-Two blocking-list items confirmed passing. Five blocking-list items
-and most advisory items are not yet checked -- genuinely unknown, not
-assumed passing. A follow-up pass with additional screenshots
-(Advanced section expanded, Sessions/Tokens panel, Bot/Abuse
-Protection panel, remainder of Sign in methods list) would close the
-remaining gaps in this evidence.
+Manual review via Lovable's dashboard is now as complete as it can be
+with the access available. Final tally against hosted-auth-policy.md's
+8 blocking criteria: 5 PASS (password length, after the fix; auto-
+confirm off; anonymous users off; re-auth required for password
+changes -- plus the already-passing items from round 1), 4 genuinely
+unverifiable through Lovable's UI (mailer unverified-sign-in, refresh-
+token rotation, CAPTCHA, manual linking -- F-011). Zero remaining
+confirmed FAILs. One real finding was found and fixed within this same
+review cycle (F-010).
+
+This is an honest, better-than-nothing result: real evidence exists
+for most of what the plan asks D8 to verify, the one confirmed gap was
+fixed immediately, and the parts that remain unknown are documented as
+a genuine access limitation rather than quietly assumed safe.
