@@ -20,6 +20,11 @@ import { captureRefFromUrl } from "@/lib/referral";
 
 import "@/i18n";
 
+// Deliberate no-op comment (2026-08-26): forces a real source diff so
+// Lovable's build pipeline can't dedupe against the stale cached
+// artifact that was serving missing-env-var errors in production. See
+// docs/v2p/sync-status.md for the incident. Safe to remove once a
+// fresh build with correct VITE_SUPABASE_* values is confirmed live.
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -60,7 +65,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => { router.invalidate(); reset(); }}
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Réessayer
@@ -98,9 +106,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Wilmet Opportunités — Proposez vos véhicules à Wilmet" },
-      { name: "twitter:description", content: "Proposez camions, utilitaires, tracteurs, semi-remorques et véhicules spécialisés à Wilmet en quelques minutes depuis votre téléphone." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d196e87d-3035-4c0f-af00-49bbcd4b82d8/id-preview-dc2b020b--826a4c2b-5667-4a10-93bb-fff26e51b724.lovable.app-1783581680574.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d196e87d-3035-4c0f-af00-49bbcd4b82d8/id-preview-dc2b020b--826a4c2b-5667-4a10-93bb-fff26e51b724.lovable.app-1783581680574.png" },
+      {
+        name: "twitter:description",
+        content:
+          "Proposez camions, utilitaires, tracteurs, semi-remorques et véhicules spécialisés à Wilmet en quelques minutes depuis votre téléphone.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d196e87d-3035-4c0f-af00-49bbcd4b82d8/id-preview-dc2b020b--826a4c2b-5667-4a10-93bb-fff26e51b724.lovable.app-1783581680574.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d196e87d-3035-4c0f-af00-49bbcd4b82d8/id-preview-dc2b020b--826a4c2b-5667-4a10-93bb-fff26e51b724.lovable.app-1783581680574.png",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -122,7 +142,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="fr">
-      <head><HeadContent /></head>
+      <head>
+        <HeadContent />
+      </head>
       <body>
         {children}
         <Scripts />
@@ -135,22 +157,28 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
 
-  useEffect(() => startAuthBootstrap({
-    client: supabase,
-    onRelevantEvent: (event) => {
-      router.invalidate();
-      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
-    },
-    onError: (error) => {
-      // Authentication remains fail-closed on protected routes, but an auth
-      // bootstrap/configuration failure must not take down the public shell.
-      console.error("[root/auth] auth bootstrap failed; public shell remains anonymous", error);
-    },
-  }), [router, queryClient]);
+  useEffect(
+    () =>
+      startAuthBootstrap({
+        client: supabase,
+        onRelevantEvent: (event) => {
+          router.invalidate();
+          if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+        },
+        onError: (error) => {
+          // Authentication remains fail-closed on protected routes, but an auth
+          // bootstrap/configuration failure must not take down the public shell.
+          console.error("[root/auth] auth bootstrap failed; public shell remains anonymous", error);
+        },
+      }),
+    [router, queryClient],
+  );
 
   // Affiliate capture: any page can carry ?ref=CODE, so listen on every navigation.
   const pathname = useRouterState({ select: (s) => s.location.pathname + s.location.searchStr });
-  useEffect(() => { captureRefFromUrl(); }, [pathname]);
+  useEffect(() => {
+    captureRefFromUrl();
+  }, [pathname]);
 
   return (
     <QueryClientProvider client={queryClient}>

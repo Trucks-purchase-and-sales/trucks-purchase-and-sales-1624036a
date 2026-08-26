@@ -56,6 +56,12 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # Blocking: verified clean (zero errors) against the current codebase
+      # before wiring this in, so unlike the checks below it's safe to gate
+      # merges on from day one rather than starting as a warning-only step.
+      - name: Typecheck
+        run: bunx tsc --noEmit
+
       - name: Lint changed TypeScript files
         if: github.event_name == 'pull_request'
         env:
@@ -74,6 +80,34 @@ jobs:
 
           printf 'Linting changed file: %s\n' "${changed_files[@]}"
           bunx eslint --max-warnings 0 "${changed_files[@]}"
+
+      - name: Set up Python for Semgrep
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Not version-pinned, matching how this was first run manually in
+      # Phase 3 (apps/wilmet/evidence/phase3-dependency-static-checks.txt) --
+      # unlike gitleaks/k6/bun above, this only scans source text rather than
+      # executing with elevated trust, so the lower supply-chain risk doesn't
+      # justify guessing at a pinned version with no way to verify it exists.
+      #
+      # Warning-only for now: that Phase 3 run found 10 findings, all the
+      # same dismissed false positive, but never against this exact ruleset
+      # (p/typescript p/react p/owasp-top-ten) or the full current codebase.
+      # Let the first real run establish the baseline before deciding
+      # whether to make this blocking.
+      - name: Static analysis (Semgrep)
+        run: |
+          pip install semgrep
+          semgrep scan --config p/typescript --config p/react --config p/owasp-top-ten \
+            --metrics=off || echo "::warning::Semgrep findings -- see log above"
+
+      # Warning-only: Phase 3's manual npm audit found one accepted-risk
+      # high-severity finding with no fix available (xlsx -- see the same
+      # evidence file), which would otherwise fail every single PR forever.
+      - name: Dependency audit
+        run: bun audit || echo "::warning::bun audit findings -- see log above"
 
       - name: Unit tests
         run: bun test
@@ -102,9 +136,10 @@ jobs:
           # The app's own admin client (src/integrations/supabase/client.server.ts)
           # needs this for several server-only features -- rate limiting
           # (checkRateLimit), lead-assignment routing, AI/assistant
-          # settings. Without it those throw uncaught, which the buyer
-          # request submission path surfaced as an HTML 500 page instead
-          # of its normal JSON response. Same disposable project as above.
+          # settings. Without it those throw uncaught, which both the
+          # buyer request submission path and tests/smoke/buyer-request.pw.ts
+          # surface as an HTML 500 page instead of a normal JSON response.
+          # Same disposable project as above.
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_DISPOSABLE_SUPABASE_SERVICE_ROLE_KEY }}
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
           PLAYWRIGHT_TARGET_LABEL: local

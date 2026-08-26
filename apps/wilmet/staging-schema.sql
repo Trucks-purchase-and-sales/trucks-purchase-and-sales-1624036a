@@ -1681,6 +1681,91 @@ insert into public.ref_vehicle_types (slug, label_fr, label_en, sort_order, is_a
 on conflict (slug) do nothing;
 
 -- =====================================================================
--- END — create a few auth test users per role before running
--- pipeline/security/rls-probe.mjs.
+-- 11) Rate-limit RPC — public.rate_limit_events (section 3) existed in
+--     this reconstruction from the start, but the function that actually
+--     reads/writes it was missed. Discovered 2026-08-25 via
+--     tests/smoke/buyer-request.pw.ts: PGRST202 "could not find the
+--     function public.rate_limit_check" once SUPABASE_SERVICE_ROLE_KEY
+--     was wired into CI and the app's admin client could finally reach
+--     it. src/lib/rate-limit.server.ts fails CLOSED on any RPC error by
+--     design ("public endpoints must not become unlimited when the
+--     abuse-control dependency is degraded"), so the missing function
+--     was silently turning every public submission into a 503 rather
+--     than throwing loudly -- see phase4-smoke-gate.txt for the trace.
+--
+--     public.rate_limit_check's body below is copied verbatim from
+--     supabase/migrations/20260818010648_62312ff2-bc99-4b2a-9669-
+--     58d9454039eb.sql (the hardened, final version -- the earlier
+--     20260818005540 migration's thin wrapper was superseded by it).
+--     private.rate_limit_check is NOT in this repo's migration history
+--     at all -- Lovable must have applied it directly without a
+--     corresponding checked-in migration -- so this is a reconstruction
+--     from the documented contract (apps/wilmet/inventory.md: "sliding-
+--     window rate limiter") and the already-reconstructed
+--     rate_limit_events table shape, not a verbatim copy like the
+--     public wrapper above it.
+-- =====================================================================
+create or replace function private.rate_limit_check(
+  _bucket text, _key_hash text, _window_seconds integer, _max_events integer
+)
+returns table(allowed boolean, current_count integer, retry_after_seconds integer)
+language plpgsql
+volatile
+as $$
+declare
+  v_count integer;
+  v_oldest timestamptz;
+begin
+  delete from public.rate_limit_events
+    where bucket = _bucket and key_hash = _key_hash
+      and created_at < now() - make_interval(secs => _window_seconds);
+
+  select count(*), min(created_at) into v_count, v_oldest
+    from public.rate_limit_events
+    where bucket = _bucket and key_hash = _key_hash;
+
+  if v_count >= _max_events then
+    return query select
+      false,
+      v_count,
+      greatest(
+        0,
+        ceil(extract(epoch from (v_oldest + make_interval(secs => _window_seconds) - now())))::integer
+      );
+    return;
+  end if;
+
+  insert into public.rate_limit_events (bucket, key_hash) values (_bucket, _key_hash);
+
+  return query select true, v_count + 1, 0;
+end;
+$$;
+
+create or replace function public.rate_limit_check(
+  _bucket text, _key_hash text, _window_seconds integer, _max_events integer
+)
+returns table(allowed boolean, current_count integer, retry_after_seconds integer)
+language plpgsql
+volatile
+security definer
+set search_path = public
+as $$
+begin
+  if coalesce(current_setting('request.jwt.claim.role', true),
+              (current_setting('request.jwt.claims', true)::jsonb ->> 'role'),
+              current_user) <> 'service_role' then
+    raise exception 'rate_limit_check is restricted to server-side callers'
+      using errcode = '42501';
+  end if;
+
+  return query select * from private.rate_limit_check(_bucket, _key_hash, _window_seconds, _max_events);
+end;
+$$;
+
+revoke all on function public.rate_limit_check(text, text, integer, integer) from public;
+grant execute on function public.rate_limit_check(text, text, integer, integer) to service_role;
+
+-- =====================================================================
+-- END — after running this, create a few auth test users per role
+-- before running pipeline/security/rls-probe.mjs.
 -- =====================================================================

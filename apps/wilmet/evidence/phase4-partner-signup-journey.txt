@@ -1,0 +1,89 @@
+V2P Phase 4 -- partner self-service signup journey
+Written by: Claude, 2026-08-25.
+
+Adds e2e/tests/partner-signup-journey.pw.ts, the last unaddressed item
+from the plan's "sign up, log in, CRUD, role restrictions" list
+(section 11, item 2). partner-auth-journey.pw.ts's login test signs
+into an account created via the Supabase Auth admin API
+(email_confirm: true, bypassing confirmation); this is the first test
+to exercise the actual self-service SignupForm (src/routes/auth.tsx)
+a real visitor uses.
+
+Read the form directly rather than guessing required fields: unlike
+the buyer-request form and opportunity wizard (react-hook-form + zod),
+SignupForm uses plain useState with native HTML `required` attributes
+-- first_name, last_name, email, phone, city, country and password
+(min 15 characters, src/lib/password-policy.ts) are required;
+company_name and provider_type are not. country defaults to "France"
+already, so it's left untouched.
+
+This test imports labeledInput() from e2e/tests/helpers/form.ts. That
+helper was first written on phase4-buyer-request-journey, but Salma
+asked to leave that PR aside until the rest of Phase 4 is done rather
+than block on it, so this branch is based directly on main and carries
+its own copy of helpers/form.ts (byte-identical to the one on
+phase4-buyer-request-journey) instead of branching from that PR. This
+keeps the signup journey mergeable on its own. The two branches adding
+the same new file with identical content merges cleanly with no
+conflict once phase4-buyer-request-journey lands later.
+
+Same "Nom"/"Prénom" substring collision already fixed in
+buyer-request-journey.pw.ts applies here too: auth.tsx's own Field
+component (used for both the login and signup forms) is line-for-line
+the same "space-y-1.5" wrapper shape, so labeledInput(page, /^Nom/i)
+(anchored RegExp, not a bare string) was used from the start instead
+of rediscovering the same bug a third time.
+
+Confirmed the flow doesn't depend on the SUPABASE_SERVICE_ROLE_KEY gap
+found in phase4-buyer-request-journey.txt: submit() calls
+/api/public/signup-check first, but only blocks on a literal 429
+response -- any other outcome (including a 500 from that same missing-
+key issue) is silently ignored and the real supabase.auth.signUp()
+call proceeds regardless. Confirmed by reading the code, not assumed.
+
+Cleanup: signUp() via the anon key doesn't return anything
+admin-deletable directly. Looks up the id via the profiles row
+handle_new_user creates for every new auth.users insert (matched by
+email) and deletes via the admin API. Skips cleanly without
+E2E_SUPABASE_SERVICE_ROLE_KEY, same pattern as every other identity-
+creating test this session.
+
+Update (2026-08-25) -- first real CI run failed on the original
+assertion (expected "Vérifiez votre boîte e-mail", timed out). Could
+not reproduce or probe locally: this sandbox has no outbound network
+access at all (DNS resolution for the Supabase host fails outright),
+so a direct signUp() call from here wasn't possible either -- another
+reason this project's tests only ever run for real on GitHub Actions.
+Added a response listener logging the raw /auth/v1/signup response
+instead, pushed, and had Salma re-run the CI check. That surfaced the
+real cause directly: `{"code":"over_email_send_rate_limit","message":
+"email rate limit exceeded"}` -- a 429 from Supabase itself. Not an
+app bug, not a test bug, not the SUPABASE_SERVICE_ROLE_KEY gap (that
+error appears in the same log but is unrelated noise from
+signup-check, which doesn't block this flow as established above).
+Supabase's built-in email sender (used automatically until a project
+configures its own SMTP) enforces a strict, low, project-wide send
+quota specifically to push real usage toward custom SMTP -- every CI
+run of this test (identical logic, brand-new email each time) sends
+one real confirmation email through that same quota, which earlier
+runs this session had already exhausted.
+
+This also retroactively corrects the assertion-choice reasoning above:
+the "circumstantial evidence this disposable project requires
+confirmation by default" was wrong. Fix: Salma disabled "Confirm
+email" in the disposable project's Auth settings (Authentication ->
+Sign In / Providers -> Email), a one-time config change on her own
+project outside the app's codebase. With that off, signUp() no longer
+sends any email at all -- sidesteps the quota entirely rather than
+working around it -- and returns a session immediately. Rewrote the
+test's final assertion accordingly: submit() calls onAuthenticated(),
+which resolves the role home and redirects; a brand-new seller has no
+user_roles row yet, so resolveRoleHome() (src/hooks/useRoleHome.ts)
+falls through to its default, "/dashboard" -- same destination as
+partner-auth-journey.pw.ts's login test. Test renamed to match ("a new
+seller can sign up and land on their dashboard"). The response
+listener that found this was kept in permanently rather than removed,
+since it's exactly the kind of signal (a real Supabase-side error on a
+call that bypasses our own API entirely) that's otherwise invisible.
+
+Not yet confirmed green -- pushed pending Salma's next CI run.
