@@ -1,0 +1,146 @@
+V2P Phase 4, section 11.3-11.4 -- the dedicated smoke gate
+Written by: Claude, 2026-08-25.
+
+The plan asks for two distinct things this closes: "Define the 5
+critical smoke journeys in tests/smoke/" (11.3) and "Add smoke.yml
+(Appendix F) to run the smoke journeys as a fast pre-publish gate"
+(11.4) -- separate from the general e2e/ regression suite already
+wired into pr-build.yml on every PR.
+
+Directory layout adapted, not copied literally: the plan's generic
+appendix tree assumes tests/e2e/ + tests/smoke/ as siblings at the
+repo root. This repo already deviated from that early in Phase 4 by
+using its own isolated e2e/ harness (own package.json/lockfile/
+playwright.config.ts) instead -- so the smoke journeys live at
+e2e/tests/smoke/, a subfolder of the existing harness, not a second
+top-level Playwright install. playwright.config.ts's testMatch
+("**/*.pw.ts") is already recursive, so these 5 files automatically
+join the regular e2e/ suite too (confirmed: `npx playwright test
+--list` finds 17 tests in 9 files including them) -- and
+`npx playwright test tests/smoke` filters to just the 5 (confirmed:
+lists exactly those 5). No config changes were needed for either.
+
+The 5 journeys chosen, matching the plan's own example list (login,
+load dashboard, create the primary record, the money/critical path,
+logout):
+
+1. login.pw.ts -- a partner logs in through the real form and reaches
+   /dashboard. Deliberately minimal (logInAsPartner() already asserts
+   the redirect) -- this is purely "does the auth form still work,"
+   not "does the destination page render correctly."
+
+2. dashboard-loads.pw.ts -- after login, the dashboard renders its
+   real heading ("Mes opportunités") and primary action ("Proposer un
+   véhicule"). Kept as its own journey, distinct from login.pw.ts,
+   because a redirect landing on the right URL doesn't prove the page
+   itself rendered -- this would catch a client-side crash that login
+   alone wouldn't. Note: the header nav and the page body both have a
+   "Proposer un véhicule" link with the same accessible name, so this
+   uses .first() rather than asserting a specific one.
+
+3. create-opportunity.pw.ts -- the primary record for Wilmet's seller
+   side. Trimmed from opportunity-crud-journey.pw.ts's fuller
+   create+edit coverage (that file stays the full regression version;
+   this is the fast smoke subset of the same journey).
+
+4. buyer-request.pw.ts -- the money/critical path. For a lead-
+   generation marketplace, an anonymous visitor's buyer request IS the
+   revenue path: it's how a visitor becomes a qualified lead Wilmet
+   gets paid to route. Ported near-verbatim from the still-open
+   phase4-buyer-request-journey branch's already-proven-correct
+   version (reference-data wait, anchored /^Nom/i regex to avoid the
+   Prénom substring collision, waitForResponse on the actual POST) --
+   not re-derived from scratch, since that branch already paid the
+   cost of finding those bugs. That branch stays open/parked per
+   Salma's request; this is an independent copy using only what's
+   already on main (helpers/form.ts, merged via the signup PR).
+
+5. logout.pw.ts -- ported from partner-auth-journey.pw.ts's existing
+   logout test (profile-menu selector disambiguated from the
+   notification bell via the rounded-full class, same as that file).
+
+Consequence caught before merging, not after: once tests/smoke/
+lands, pr-build.yml's existing "Run Playwright E2E suite" step (full
+suite, no path filter) would pick up buyer-request.pw.ts too --
+which needs SUPABASE_SERVICE_ROLE_KEY for the app's own admin client
+(rate limiting on /api/public/buyer-leads), a variable pr-build.yml
+doesn't currently set (that fix only exists on the still-open
+phase4-buyer-request-journey branch). Without adding it here too,
+merging this branch would have made every future PR's full suite fail
+on this specific test. Added the same env mapping
+(E2E_DISPOSABLE_SUPABASE_SERVICE_ROLE_KEY) to pr-build.yml's existing
+Playwright step on this branch, so it's fixed before the regression
+lands rather than discovered after. When phase4-buyer-request-journey
+eventually merges, its own identical addition of this same line will
+merge without conflict (same reasoning already used for
+helpers/form.ts landing on two branches independently).
+
+smoke.yml: workflow_dispatch only (no push-to-tag trigger, unlike
+Appendix F's template) -- this repo has no release-tagging convention
+yet, so a tag-based trigger would be dead weight; can add one later if
+a real release process gets built. Reuses the same dev-server-boot
+recipe and exit-code-capture pattern as pr-build.yml's Playwright step
+(both call the same `bun run dev` on the same disposable Supabase
+project), but runs only `npx playwright test tests/smoke` instead of
+the full suite -- deliberately fast and narrow, matching "pre-publish
+gate" rather than duplicating the full per-PR regression run.
+
+Update (2026-08-25) -- first real CI run. 15 passed, 1 flaky (unrelated
+-- opportunity-crud-journey.pw.ts's create test, same test file/failure
+shape as a flake seen earlier this session, passed on retry, not
+touched by this branch), 1 real failure: tests/smoke/buyer-request.pw.ts
+never reached /merci on either attempt.
+
+Root cause, from the dev-server log: `[rate-limit] rpc failed { code:
+'PGRST202', ... could not find the function public.rate_limit_check
+... }`. This only surfaced now because SUPABASE_SERVICE_ROLE_KEY was
+just added to this same step (this branch) -- before that, the app's
+admin client threw before ever reaching the RPC call. Read
+src/lib/rate-limit.server.ts: checkRateLimit() fails CLOSED by design
+on any RPC error ("public endpoints must not become unlimited when the
+abuse-control dependency is degraded") and the caller turns that into
+a 503 -- so the buyer-leads POST was returning an error response the
+whole time, the test's response.json() parsed it fine (no `id` field,
+createdLeadId stayed undefined), and the client correctly never
+navigated to /merci because the submission was genuinely rejected.
+Not a test bug, not a flake -- a real, previously-hidden gap in the
+disposable project's schema, from the same Phase 2 reconstruction that
+missed the ref_* table seed data.
+
+Traced the real definition: public.rate_limit_check exists verbatim in
+supabase/migrations/20260818010648_62312ff2-bc99-4b2a-9669-
+58d9454039eb.sql (this repo's real migration history) -- but
+private.rate_limit_check, the actual sliding-window implementation it
+delegates to, is NOT in this repo's migrations at all. Lovable must
+have applied it directly to the managed database without a
+corresponding checked-in migration. Reconstructed it from the
+documented contract (apps/wilmet/inventory.md: "Sliding-window rate
+limiter; hard-fails unless called as service_role") and the
+rate_limit_events table shape already in this file (bucket, key_hash,
+created_at) -- prune expired events for the bucket+key, count what's
+left, deny with a computed retry_after if at/over the limit, otherwise
+insert and allow. This is a reconstruction, not a verbatim copy, unlike
+the public wrapper above it in this file.
+
+Added both functions to staging-schema.sql (new section 10, before the
+existing END marker) so future reconstructions don't miss this too.
+Could not apply this to the live disposable project directly the way
+the ref_* seed data was handled earlier -- this sandbox has no
+outbound network access at all (confirmed while debugging the signup
+journey's rate-limit finding). Gave Salma the exact SQL to run once in
+her project's SQL editor instead, same one-time-manual-action pattern
+already used for the "Confirm email" Auth setting.
+
+Update (2026-08-25) -- second CI run, identical PGRST202 error, byte for
+byte. This is PostgREST's own schema cache, not the database catalog --
+a known Supabase gotcha: creating a function through the raw SQL editor
+doesn't always trigger PostgREST's automatic cache reload the way
+Supabase's dashboard-based schema tools do, so the function can exist
+in Postgres and still be invisible to the API layer. Gave Salma
+`NOTIFY pgrst, 'reload schema';` to run right after the function-
+creation SQL (safe to paste both together and re-run regardless of
+whether the first attempt actually landed, since `create or replace
+function` is idempotent) -- also mentioned the equivalent Dashboard
+button (Settings -> API -> "Reload schema cache") as a non-SQL
+alternative. Pushed nothing new for this update -- it's an operational
+step on her project, not a code change.

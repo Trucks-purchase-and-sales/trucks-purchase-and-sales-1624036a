@@ -1,0 +1,105 @@
+name: V2P Smoke (pre-publish)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Run the 5 critical smoke journeys
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Bun 1.3.14
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Set up Node 22 for browser-test tooling
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      # A fast, deliberately narrow subset of pr-build.yml's full Playwright
+      # step -- the 5 journeys in tests/smoke that must never break (login,
+      # load dashboard, create the primary record, the money/critical path,
+      # logout), meant to be run on demand before a release rather than on
+      # every PR. Same disposable Supabase project as pr-build.yml (see
+      # docs/v2p/decisions/ADR-005) -- never Lovable's managed backend.
+      - name: Run the 5 critical smoke journeys against a live dev server
+        working-directory: e2e
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.E2E_DISPOSABLE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.E2E_DISPOSABLE_SUPABASE_ANON_KEY }}
+          SUPABASE_URL: ${{ secrets.E2E_DISPOSABLE_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.E2E_DISPOSABLE_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_DISPOSABLE_SUPABASE_SERVICE_ROLE_KEY }}
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
+          PLAYWRIGHT_TARGET_LABEL: local
+          E2E_SUPABASE_URL: ${{ secrets.E2E_DISPOSABLE_SUPABASE_URL }}
+          E2E_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_DISPOSABLE_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          npm ci
+          npx playwright install --with-deps chromium
+
+          (cd .. && bun run dev -- --port 4173 --host 127.0.0.1) > /tmp/dev-server.log 2>&1 &
+          DEV_PID=$!
+
+          ready=""
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:4173/ > /dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ -z "$ready" ]; then
+            echo "dev server did not become ready in time"
+            cat /tmp/dev-server.log || true
+            kill "$DEV_PID" 2>/dev/null || true
+            exit 1
+          fi
+
+          # Same exit-code-capture pattern as pr-build.yml: bun's own
+          # child-process supervisor prints a loud "error: script dev
+          # exited with code 143" once the dev server is killed for
+          # cleanup, which otherwise clobbers this step's exit code even
+          # when every smoke test passed.
+          set +e
+          npx playwright test tests/smoke
+          TEST_EXIT=$?
+          set -e
+
+          if [ "$TEST_EXIT" -ne 0 ]; then
+            echo "----- dev server log -----"
+            cat /tmp/dev-server.log || true
+          fi
+
+          kill "$DEV_PID" 2>/dev/null || true
+          wait "$DEV_PID" 2>/dev/null || true
+          exit "$TEST_EXIT"
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-report-${{ github.run_id }}
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          if-no-files-found: warn
+          retention-days: 14
