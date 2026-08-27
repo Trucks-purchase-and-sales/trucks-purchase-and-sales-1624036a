@@ -1,0 +1,42 @@
+V2P -- photo-handoff.staging.ts: a flawed assertion, not a security gap
+Written by: Claude, 2026-08-27.
+
+After the previous round of fixes (staging-schema.sql sections 12/13,
+cleanup ordering), a full re-run got further: security.staging.ts and
+workflow-children.staging.ts both went fully green for the first time.
+photo-handoff.staging.ts then failed 4/5 on "Wilmet reclaim blocks
+seller Storage API deletion".
+
+Investigated the actual storage.objects RLS policies live on the
+disposable project (Salma ran a direct read-only query) rather than
+assuming a schema gap: all 4 expected policies exist, exactly matching
+staging-schema.sql section 8b, with the correct freeze condition
+(`status = 'brouillon' OR owner_side = 'partenaire'`) on the DELETE
+policy. No rogue extra policy, no missing one.
+
+Root cause: the test's assertion, not the security boundary. The test
+called `sellerA.client.storage.from(BUCKET).remove([path])` after a
+service-role reclaim (owner_side -> wilmet, status -> envoyee) and
+asserted the call would return an error. It doesn't: a storage.objects
+DELETE policy enforces via its USING clause alone (there's no WITH
+CHECK on a DELETE to violate), so an RLS-filtered bulk remove reports a
+normal zero-rows-affected success to the caller, not a client-visible
+error -- the exact same "0 rows, HTTP 200" shape already documented
+elsewhere in this project's own Phase 2 RLS probe (anon reads return
+an empty array, not a 403). Confirmed the test already had the
+actually-reliable check immediately after: an independent service-role
+`.list()` call proving the object still physically exists. The test
+just never reached it, because the flawed error-based assertion threw
+first.
+
+Fix: removed the assertion on `remove.error`; the call still executes
+(so the RLS-filtered delete attempt genuinely happens), but the test
+now relies entirely on the pre-existing, already-correct service-role
+existence check as its real proof, matching this project's own
+established convention of verifying via an independent read rather
+than a client-reported success/failure flag (e.g. Phase 4's sale-
+listing edit test: "reload rather than trust the toast alone").
+
+This is a test-code fix, not a schema or RLS-policy change -- the
+storage.objects DELETE policy was already correct and needed no
+change. Not yet re-run.

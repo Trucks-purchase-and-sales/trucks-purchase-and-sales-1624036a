@@ -296,8 +296,16 @@ test("Wilmet reclaim blocks seller Storage API deletion", async () => {
     fail(reclaim.error, "service reclaim");
 
     const path = `${oppId}/tm011/${runId}-handback.png`;
-    const remove = await sellerA.client.storage.from(BUCKET).remove([path]);
-    rejected(remove.error, "seller Storage removal after reclaim");
+    // Not asserting on remove.error here: a storage.objects DELETE policy
+    // enforces via its USING clause alone (no WITH CHECK to violate), so
+    // Postgres/PostgREST report an RLS-filtered bulk remove as a normal
+    // zero-rows-affected success, not a client-visible error -- the same
+    // "0 rows, no error" shape already relied on elsewhere in this
+    // project's own RLS probes (anon reads return HTTP 200 with an empty
+    // array, not 403). The real proof the boundary held is the
+    // independent service-role read immediately below, not this call's
+    // own success/failure flag.
+    await sellerA.client.storage.from(BUCKET).remove([path]);
 
     const objectCheck = await service.storage.from(BUCKET).list(`${oppId}/tm011`, {
       search: `${runId}-handback.png`,
