@@ -1,0 +1,51 @@
+V2P Phase 7 -- made the k6 load-test scripts config-driven
+Written by: Claude, 2026-08-27.
+
+First concrete Phase 7 step: EXECUTION-PLAN.md section 14, item 1
+("No Wilmet values hard-coded in pipeline/... verify by grepping
+pipeline/ for 'wilmet' -- there should be zero matches").
+
+Audited the whole pipeline/ directory first rather than assuming scope:
+pipeline/security/{rls-audit.sql, rls-probe.mjs, secret-scan.sh,
+headers-check.mjs} and pipeline/functional/wiring-scan.mjs were
+already fully generic (env-var-driven from the start, per the plan's
+own Appendix A-D/R templates). Only the three k6 scripts
+(pipeline/load/k6-baseline.js, k6-load.js, k6-db-read.js) -- all
+written during this project's own Phase 5, not from the original
+appendix templates -- had Wilmet specifics baked in: hardcoded routes
+(/, /chercher-un-vehicule/), hardcoded reference-table queries, a
+target-label literally named "wilmet-staging", and a
+"Wilmet-k6-baseline/1.0" User-Agent string.
+
+Changes:
+- K6_TARGET_LABEL's "wilmet-staging" value renamed to "staging"
+  (generic) in the two app-route scripts; k6-db-read.js's
+  K6_DB_TARGET_LABEL "disposable" was already generic, left as-is.
+- Routes moved out of the script entirely into a required
+  K6_ROUTES_JSON env var (an array of {path, name} objects) -- no
+  default, matching this pipeline's existing "never guess the target"
+  philosophy (K6_BASE_URL already worked this way).
+- k6-db-read.js's four hardcoded reference-table queries moved the
+  same way into K6_DB_PROBES_JSON.
+- User-Agent header now derives from K6_APP_NAME (defaults to the
+  generic "v2p-app" if unset, rather than hardcoding "Wilmet").
+
+Wilmet's own actual values (the real routes, the real reference-table
+queries, K6_APP_NAME=wilmet) moved to where instance-specific config
+belongs per this project's own architecture -- the calling workflow,
+.github/workflows/k6-disposable-load-test.yml -- not the reusable
+pipeline/ script. This is the same relationship pipeline/security/
+rls-probe.mjs already has with its own PROBE_TABLES env var; the k6
+scripts now follow the identical pattern instead of being a one-off
+exception.
+
+Verified: `grep -rli wilmet pipeline/` now returns zero matches (was 2
+files, 12 total matches, before this change). Confirmed the actual
+Wilmet-instance workflow still supplies the exact same routes/queries
+it always tested -- this is a refactor of WHERE the config lives, not
+a change to WHAT gets tested. Not yet re-run against the disposable
+project; the underlying test behavior is unchanged (same routes, same
+thresholds, same load shape), so no new risk expected, but this
+should still be confirmed with one more real trigger before Phase 5's
+own evidence chain is considered to still hold under the new script
+version.

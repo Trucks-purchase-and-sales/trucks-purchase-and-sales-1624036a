@@ -1,25 +1,49 @@
-// Phase 5 ramp test: baseline -> peak -> 3x peak -> ramp down, per
+// V2P Phase 5 ramp test: baseline -> peak -> 3x peak -> ramp down, per
 // EXECUTION-PLAN.md section 12. Same routes and safety guards as
 // k6-baseline.js -- see that file for why real app routes are used
 // instead of a raw Supabase REST passthrough.
 //
-// NOT wired into any CI workflow yet, and not run against anything --
-// written ahead of Phase 5 actually starting so it's ready once a
-// working, database-backed target exists to point it at.
+// App-agnostic and config-driven: which routes to hit come from
+// K6_ROUTES_JSON, not a hardcoded list, so this file works unmodified
+// for any Lovable app. See pipeline/README.md for how to fill it in.
 import http from "k6/http";
 import { check, sleep } from "k6";
 
 const baseUrl = __ENV.K6_BASE_URL;
 const targetLabel = __ENV.K6_TARGET_LABEL;
+const appName = __ENV.K6_APP_NAME || "v2p-app";
+const routesJson = __ENV.K6_ROUTES_JSON;
 
 if (!baseUrl) {
-  throw new Error("K6_BASE_URL is required; never guess the Wilmet load-test target.");
+  throw new Error("K6_BASE_URL is required; never guess the load-test target.");
 }
 
-if (targetLabel !== "wilmet-staging" && targetLabel !== "local") {
+if (targetLabel !== "staging" && targetLabel !== "local") {
   throw new Error(
-    "K6_TARGET_LABEL must be 'wilmet-staging' or 'local'. Production targets are intentionally unsupported.",
+    "K6_TARGET_LABEL must be 'staging' or 'local'. Production targets are intentionally unsupported.",
   );
+}
+
+if (!routesJson) {
+  throw new Error(
+    'K6_ROUTES_JSON is required -- a JSON array of {"path":"/","name":"label"} objects. ' +
+      "Never guess which routes matter for a given app.",
+  );
+}
+
+let routes;
+try {
+  routes = JSON.parse(routesJson);
+} catch {
+  throw new Error("K6_ROUTES_JSON must be valid JSON.");
+}
+if (!Array.isArray(routes) || routes.length === 0) {
+  throw new Error("K6_ROUTES_JSON must be a non-empty array.");
+}
+for (const r of routes) {
+  if (typeof r?.path !== "string" || typeof r?.name !== "string") {
+    throw new Error('Each K6_ROUTES_JSON entry needs a string "path" and "name".');
+  }
 }
 
 const root = baseUrl.trim().replace(/\/+$/, "");
@@ -32,9 +56,9 @@ if (targetLabel === "local" && !localOrigin.test(root)) {
   );
 }
 
-if (targetLabel === "wilmet-staging" && !stagingOrigin.test(root)) {
+if (targetLabel === "staging" && !stagingOrigin.test(root)) {
   throw new Error(
-    "Wilmet staging performance tests require an HTTPS origin with no path, query, fragment, or credentials.",
+    "The 'staging' k6 target must be a bare HTTPS origin with no path, query, fragment, or credentials.",
   );
 }
 
@@ -55,7 +79,7 @@ export const options = {
 function getPublicPath(path, name) {
   const response = http.get(`${root}${path}`, {
     headers: {
-      "User-Agent": "Wilmet-k6-load/1.0",
+      "User-Agent": `${appName}-k6-load/1.0`,
     },
     tags: { endpoint: name },
   });
@@ -66,7 +90,8 @@ function getPublicPath(path, name) {
 }
 
 export default function () {
-  getPublicPath("/", "public-shell");
-  getPublicPath("/chercher-un-vehicule/", "buyer-request-entry");
+  for (const r of routes) {
+    getPublicPath(r.path, r.name);
+  }
   sleep(1);
 }

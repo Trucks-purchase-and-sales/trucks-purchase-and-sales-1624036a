@@ -1,31 +1,50 @@
-// Phase 5 baseline: low, steady load to record normal p95 latency and
-// error rate before the ramp test (k6-load.js) pushes toward 3x peak.
+// V2P Phase 5 baseline: low, steady load to record normal p95 latency
+// and error rate before the ramp test (k6-load.js) pushes toward 3x
+// peak. Hits real app routes (not a raw Supabase REST passthrough) so
+// SSR/database-backed rendering cost is included, matching what a real
+// visitor actually experiences.
 //
-// NOT wired into any CI workflow yet, and not run against anything --
-// this only touches real request traffic once actually executed, which
-// requires a working, database-backed target. Written ahead of that so
-// it's ready the moment Phase 5 is unblocked.
-//
-// Hits real app routes (SSR, which queries the database server-side)
-// rather than Supabase's REST API directly, following the precedent
-// already set by performance/public-read-smoke.js -- this exercises the
-// full stack a real visitor hits, not just a raw table passthrough, which
-// matters for Phase 5's actual goal (finding missing indexes/pagination/
-// caching gaps, not just measuring Postgres's own response time).
+// App-agnostic and config-driven: which routes to hit come from
+// K6_ROUTES_JSON, not a hardcoded list, so this file works unmodified
+// for any Lovable app. See pipeline/README.md for how to fill it in.
 import http from "k6/http";
 import { check, sleep } from "k6";
 
 const baseUrl = __ENV.K6_BASE_URL;
 const targetLabel = __ENV.K6_TARGET_LABEL;
+const appName = __ENV.K6_APP_NAME || "v2p-app";
+const routesJson = __ENV.K6_ROUTES_JSON;
 
 if (!baseUrl) {
-  throw new Error("K6_BASE_URL is required; never guess the Wilmet load-test target.");
+  throw new Error("K6_BASE_URL is required; never guess the load-test target.");
 }
 
-if (targetLabel !== "wilmet-staging" && targetLabel !== "local") {
+if (targetLabel !== "staging" && targetLabel !== "local") {
   throw new Error(
-    "K6_TARGET_LABEL must be 'wilmet-staging' or 'local'. Production targets are intentionally unsupported.",
+    "K6_TARGET_LABEL must be 'staging' or 'local'. Production targets are intentionally unsupported.",
   );
+}
+
+if (!routesJson) {
+  throw new Error(
+    'K6_ROUTES_JSON is required -- a JSON array of {"path":"/","name":"label"} objects. ' +
+      "Never guess which routes matter for a given app.",
+  );
+}
+
+let routes;
+try {
+  routes = JSON.parse(routesJson);
+} catch {
+  throw new Error("K6_ROUTES_JSON must be valid JSON.");
+}
+if (!Array.isArray(routes) || routes.length === 0) {
+  throw new Error("K6_ROUTES_JSON must be a non-empty array.");
+}
+for (const r of routes) {
+  if (typeof r?.path !== "string" || typeof r?.name !== "string") {
+    throw new Error('Each K6_ROUTES_JSON entry needs a string "path" and "name".');
+  }
 }
 
 const root = baseUrl.trim().replace(/\/+$/, "");
@@ -38,9 +57,9 @@ if (targetLabel === "local" && !localOrigin.test(root)) {
   );
 }
 
-if (targetLabel === "wilmet-staging" && !stagingOrigin.test(root)) {
+if (targetLabel === "staging" && !stagingOrigin.test(root)) {
   throw new Error(
-    "Wilmet staging performance tests require an HTTPS origin with no path, query, fragment, or credentials.",
+    "The 'staging' k6 target must be a bare HTTPS origin with no path, query, fragment, or credentials.",
   );
 }
 
@@ -57,7 +76,7 @@ export const options = {
 function getPublicPath(path, name) {
   const response = http.get(`${root}${path}`, {
     headers: {
-      "User-Agent": "Wilmet-k6-baseline/1.0",
+      "User-Agent": `${appName}-k6-baseline/1.0`,
     },
     tags: { endpoint: name },
   });
@@ -68,10 +87,8 @@ function getPublicPath(path, name) {
 }
 
 export default function () {
-  getPublicPath("/", "public-shell");
-  // Database-backed: fetches ref_vehicle_categories/ref_vehicle_types
-  // server-side on render -- exactly the kind of query Phase 5 is meant
-  // to catch missing indexes or pagination on.
-  getPublicPath("/chercher-un-vehicule/", "buyer-request-entry");
+  for (const r of routes) {
+    getPublicPath(r.path, r.name);
+  }
   sleep(1);
 }
