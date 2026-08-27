@@ -1,5 +1,14 @@
 import { test, expect } from "@playwright/test";
-// V2P journey template — copy into tests/e2e/<feature>.spec.ts and fill in.
+// V2P journey template — copy into your own e2e specs directory and fill
+// in. Named .pw.ts here (not .spec.ts) so a root-level `bun test` doesn't
+// try to auto-discover and execute this file itself: Bun's default test
+// globbing matches *.spec.ts/*.test.ts regardless of what's actually
+// imported, so a Playwright-only file with that suffix fails immediately
+// with "Cannot find module '@playwright/test'" the moment `@playwright/
+// test` isn't a root dependency (real failure hit wiring this file into
+// Wilmet's own CI). If your app's unit-test runner doesn't do whole-repo
+// discovery (or isn't Bun), *.spec.ts is fine — just watch for this if it
+// does.
 test.describe("<FEATURE> journey", () => {
   test("user can <do the thing>", async ({ page }) => {
     await page.goto("/login");
