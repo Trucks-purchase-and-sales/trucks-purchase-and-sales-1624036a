@@ -516,6 +516,18 @@ afterAll(async () => {
     }
 
     if (createdOpportunityIds.length > 0) {
+      // opportunity_status_history has no ON DELETE CASCADE to
+      // vehicle_opportunities; this test transitions status multiple
+      // times, so history rows exist and must be cleared first.
+      const removedHistory = await service
+        .from("opportunity_status_history")
+        .delete()
+        .in("vehicle_opportunity_id", createdOpportunityIds);
+      if (removedHistory.error) {
+        cleanupFailed = true;
+        console.error(`E2E cleanup status history: ${removedHistory.error.message}`);
+      }
+
       const removedRows = await service
         .from("vehicle_opportunities")
         .delete()
