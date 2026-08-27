@@ -7,7 +7,18 @@ OUT="${1:-secret-scan-report.txt}"
 
 echo "== Building app ==" | tee -a "$OUT"
 npm run build 2>&1 | tail -n 5 | tee -a "$OUT"
-DIST="dist"; [ -d "$DIST" ] || DIST="build"
+# Nitro (TanStack Start's build-time SSR bundler) writes the actual deployable
+# artifact to .output/ on most presets -- checked first since it's a superset
+# of what ships (server + public/) and the canonical target for most presets.
+# dist/ and build/ are plain-Vite (or older/partial-build) fallbacks: a stale
+# dist/ from an earlier build can otherwise sit there and get scanned instead
+# of the real current output (hit this for real diffing two TanStack Start
+# apps against each other -- one had a days-old dist/ next to a fresh
+# .output/, and the old detection order would have silently scanned the
+# stale one).
+DIST="dist"
+[ -d ".output" ] && DIST=".output"
+[ -d "$DIST" ] || DIST="build"
 
 echo "== Scanning $DIST for high-risk secrets ==" | tee -a "$OUT"
 # Supabase service_role (a JWT containing "service_role"), and the env var name.
