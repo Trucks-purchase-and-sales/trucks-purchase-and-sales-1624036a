@@ -1,0 +1,32 @@
+{
+  "app_name": "wilmet",
+  "environments": {
+    "staging": {
+      "supabase_url": "https://<staging-ref>.supabase.co",
+      "base_url": "https://<staging-app-url>"
+    },
+    "production": {
+      "base_url": "https://<prod-app-url>",
+      "note": "READ-ONLY. Never a test target."
+    }
+  },
+  "roles": ["anon", "authenticated", "admin"],
+  "probe_tables": ["<table1>", "<table2>"],
+  "load_targets": {
+    "p95_ms": 500,
+    "error_rate": 0.01,
+    "peak_vus": 50,
+    "stress_multiplier": 3
+  },
+  "load_routes": [
+    { "path": "/", "name": "public-shell" },
+    { "path": "/<example-page>/", "name": "<example-page>" }
+  ],
+  "db_read_probes": [
+    {
+      "name": "<example-table>",
+      "path": "/rest/v1/<example_table>?select=id&limit=20"
+    }
+  ],
+  "secrets_are_in": ".env.local and GitHub Actions secrets — NEVER this file"
+}
