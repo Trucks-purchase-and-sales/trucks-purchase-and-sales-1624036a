@@ -1,0 +1,2 @@
+id,phase,category,title,severity,asset,evidence_before,fix,retest_evidence,status,owner,date
+F-001,Phase2,RLS,"<table> readable by anon key",Critical,<table>,evidence/phase2-rls-probe-anon.txt,"Enable RLS + auth.uid() policy (migration)",evidence/phase2-rls-probe-anon-retest.txt,open,Salma,<date>
