@@ -4,13 +4,18 @@ name: k6 Disposable Load Test
 # no-traffic `k6 inspect` step already in pr-build.yml.
 #
 # Deliberately does NOT target the "wilmet-staging" label the other manual
-# k6/Playwright workflows use: that label means a hosted staging URL, and
-# Wilmet has none -- the only hosted deployment is Lovable's, which is
-# production-backed. Targets "local" instead: a dev server started inside
-# this job, bound to Salma's disposable Supabase project via the same
-# secrets pr-build.yml already uses for Playwright. That satisfies Phase
-# 5's "database-backed target" requirement without ever touching the real
-# app or its data, and without depending on Lovable being healthy.
+# k6/Playwright workflows use (those hit a hosted staging URL; Wilmet has
+# none -- the only hosted deployment is Lovable's, which is production-
+# backed). Targets "local" instead: a dev server started inside this job,
+# bound to Salma's disposable Supabase project via the same secrets
+# pr-build.yml already uses for Playwright. That satisfies Phase 5's
+# "database-backed target" requirement without ever touching the real app
+# or its data, and without depending on Lovable being healthy. Note the
+# reusable pipeline/load/k6-*.js scripts themselves only know "local" or
+# "staging" (generic, per pipeline/README.md) -- "wilmet-staging" is this
+# repo's own instance-specific label used by a different, non-pipeline
+# script family (performance/public-read-smoke.js and friends), unrelated
+# to the scripts this workflow calls.
 on:
   workflow_dispatch:
     inputs:
@@ -87,6 +92,8 @@ jobs:
         env:
           K6_BASE_URL: http://127.0.0.1:4173
           K6_TARGET_LABEL: local
+          K6_APP_NAME: wilmet
+          K6_ROUTES_JSON: '[{"path":"/","name":"public-shell"},{"path":"/chercher-un-vehicule/","name":"buyer-request-entry"}]'
         run: |
           set +e
           k6 run \
@@ -101,6 +108,8 @@ jobs:
         env:
           K6_BASE_URL: http://127.0.0.1:4173
           K6_TARGET_LABEL: local
+          K6_APP_NAME: wilmet
+          K6_ROUTES_JSON: '[{"path":"/","name":"public-shell"},{"path":"/chercher-un-vehicule/","name":"buyer-request-entry"}]'
         run: |
           set +e
           k6 run \
@@ -126,6 +135,7 @@ jobs:
           K6_SUPABASE_URL: ${{ secrets.E2E_DISPOSABLE_SUPABASE_URL }}
           K6_SUPABASE_ANON_KEY: ${{ secrets.E2E_DISPOSABLE_SUPABASE_ANON_KEY }}
           K6_DB_TARGET_LABEL: disposable
+          K6_DB_PROBES_JSON: '[{"name":"ref-vehicle-categories","path":"/rest/v1/ref_vehicle_categories?select=slug,label_fr,label_en,sort_order&is_active=eq.true&order=sort_order"},{"name":"ref-vehicle-types","path":"/rest/v1/ref_vehicle_types?select=slug,label_fr,label_en,sort_order&is_active=eq.true&order=sort_order"},{"name":"ref-vehicle-brands","path":"/rest/v1/ref_vehicle_brands?select=slug,label,sort_order&is_active=eq.true&order=sort_order"},{"name":"ref-vehicle-models","path":"/rest/v1/ref_vehicle_models?select=id,brand_slug,label&is_active=eq.true&order=label"}]'
         run: |
           set +e
           k6 run \
