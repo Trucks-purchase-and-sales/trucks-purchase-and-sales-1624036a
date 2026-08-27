@@ -9,7 +9,9 @@ import { defineConfig, devices } from "@playwright/test";
 // 5173 default would have silently pointed Playwright at nothing.
 const baseURL = process.env.BASE_URL;
 if (!baseURL) {
-  throw new Error("BASE_URL is required; never guess the test target (see e2e/playwright.config.ts's own rule).");
+  throw new Error(
+    "BASE_URL is required; never guess the test target (see e2e/playwright.config.ts's own rule).",
+  );
 }
 
 export default defineConfig({
