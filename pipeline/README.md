@@ -54,9 +54,17 @@ Copy three directories from this repo into the new one, unchanged:
 
 ```
 pipeline/
-.github/workflows/     (the ones that call pipeline/ scripts, not Wilmet's own e2e/-specific ones)
-docs/v2p/               (EXECUTION-PLAN.md and the ADR template — the ADRs themselves are Wilmet's history, not required)
+.github/workflows/k6-disposable-load-test.yml   (the only workflow that calls a pipeline/ script directly — see below)
+docs/v2p/EXECUTION-PLAN.md
+docs/v2p/decisions/ADR-000-template.md
 ```
+
+In practice, only `k6-disposable-load-test.yml` calls into `pipeline/` directly.
+The rest of Wilmet's own CI (`pr-build.yml`, `staging-security-e2e.yml`, etc.)
+is app-specific glue around the same underlying checks, not a generic template
+— use it as a **worked example** of how to wire the six commands below into
+your own CI, the same way `apps/wilmet/inventory.md` is the worked example for
+Step 3's templates, rather than copying those workflow files verbatim.
 
 ## Step 2 — fill in config and secrets
 
@@ -107,10 +115,14 @@ per critical journey (signup, login, create/edit/delete each core
 entity, an authz-denial case) — named `.pw.ts`, not `.spec.ts`, on
 purpose; see that file's own header comment if your setup doesn't have
 the same constraint and you'd rather use `.spec.ts`.
-`pipeline/testing/playwright.config.ts` points at `BASE_URL` (default
-`http://localhost:5173`) — in CI, start a real dev server bound to the
-disposable project first (see "A real constraint, not a Wilmet quirk"
-below for why this matters more than it sounds like it should).
+`pipeline/testing/playwright.config.ts` requires `BASE_URL` explicitly —
+no default, deliberately: don't assume Vite's usual 5173, since Lovable's
+shared dev-server config defaults to port 8080 instead (confirmed running
+this template against a second Lovable app; check your own terminal output
+for the actual port, it can still shift further if 8080 is already taken).
+In CI, start a real dev server bound to the disposable project first (see
+"A real constraint, not a Wilmet quirk" below for why this matters more
+than it sounds like it should).
 
 ## Step 6 — load testing and production ops
 
@@ -183,6 +195,8 @@ being surprised by them partway through Phase 2 or Phase 5.
 
 ## Dry-run record
 
-Portability hasn't been exercised against a second target yet. Once it
-has, the record will live at `apps/wilmet/evidence/phase7-dry-run.txt`
-and be linked from here.
+Exercised for real against a second, unrelated Lovable app (karama-market)
+on 2026-08-27: every script ran against its real schema/routes, two real
+portability bugs were found and fixed here (see below), and the pipeline
+transplanted with configuration changes only, as intended. Full write-up:
+`apps/wilmet/evidence/phase7-dry-run.txt`.

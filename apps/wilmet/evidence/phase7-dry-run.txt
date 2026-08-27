@@ -1,0 +1,128 @@
+V2P Phase 7 -- pipeline/ portability dry-run against a second app
+Written by: Claude, 2026-08-27.
+
+Target: karama-market (github.com/Trucks-purchase-and-sales/karama-market),
+a real, separate Lovable-exported project Salma made specifically for this
+dry-run -- a different marketplace domain, a different (24-table) schema,
+different routes, no shared code with Wilmet beyond both using the same
+@lovable.dev/vite-tanstack-config scaffold (TanStack Start + Supabase). Its
+Supabase backend (project mqnydqekviqkerspacpp) is itself throwaway -- no
+real users or data -- so it was used directly as the disposable target, no
+separate staging project needed (unlike Wilmet's own ADR-005 situation).
+
+Method: cloned the app locally, copied pipeline/, docs/v2p/EXECUTION-PLAN.md
+and the ADR template into it exactly per pipeline/README.md's Step 1, then
+worked through Steps 2-6 for real -- filling in real config, running every
+script against the real app, and fixing anything that didn't actually work.
+
+=== Results per step ===
+
+Step 1 (copy) -- found two doc-accuracy gaps while just doing the copy:
+  - docs/v2p/decisions/ADR-000-template.md, referenced by the README and by
+    EXECUTION-PLAN.md's own Appendix P, did not exist anywhere on disk.
+    Created it (verbatim from Appendix P).
+  - README said to copy "the workflows that call pipeline/ scripts" as if
+    there were several; in reality only k6-disposable-load-test.yml does.
+    Reworded Step 1 to say so plainly and point at Wilmet's real workflows
+    (pr-build.yml, staging-security-e2e.yml, etc.) as the worked example for
+    wiring the six commands into CI, rather than implying generic ci.yml/
+    smoke.yml templates exist to copy verbatim (they don't; Wilmet's own
+    workflows organically superseded those early plan sketches).
+
+Step 2 (config) -- pipeline.config.json filled in with karama-market's real
+  values: its Supabase URL, six real RLS-sensitive probe tables picked from
+  its actual migrations (risk_flags, audit_logs, profile_private, orders,
+  order_messages, verification_documents -- all admin-or-participant-only by
+  policy), three real public routes, two real db-read probe endpoints. No
+  pipeline code needed touching for this step by design.
+
+Step 3 (intake) -- not exercised for this dry-run (would mean writing a full
+  inventory.md/threat-model.md for karama-market, which is hardening a
+  second app, not testing portability). Templates already confirmed to exist
+  and be generic from earlier phases.
+
+Step 4 (security verification) -- ran all four scripts for real:
+  - rls-probe.mjs: zero code changes. Ran clean against karama-market's real
+    anon key and the six probe tables above -- 0 rows leaked, all anon
+    writes rejected. PASS (no leaks).
+  - secret-scan.sh: found a real bug. It only ever checked for a `dist` or
+    `build` output directory, but TanStack Start's Nitro build actually
+    writes to `.output/` -- on karama-market this meant it silently found
+    neither, scanned nothing, and reported a false "0 hits" clean pass.
+    Worse. checking Wilmet's own repo turned up a genuinely stale `dist/`
+    (~30 hours older than the real `.output/` build sitting next to it) that
+    the old detection order would have picked over the current build.
+    Fixed: check `.output` first, falling back to `dist`/`build`. Re-ran
+    against Wilmet's own current `.output/` build afterward -- reproduces
+    the exact same server-only SUPABASE_SERVICE_ROLE_KEY reference F-002
+    already investigated and closed as a false positive (env var NAME, not
+    a value, in code that never ships to the browser). F-002 updated with
+    this reverification (findings-register.csv, evidence file added). Then
+    ran the fixed script against karama-market: also found the same class of
+    benign server-only reference -- correct behavior this time, not a false
+    "clean" result.
+  - headers-check.mjs: zero code changes. Ran against karama-market's real
+    published URL (https://karama-dignity-market.lovable.app). Found a real,
+    live finding on karama-market: HSTS, X-Content-Type-Options, and
+    Referrer-Policy are all present and correct; CSP and X-Frame-Options are
+    both missing. This is a genuine result on a second app, not a Wilmet
+    artifact -- left for Salma to decide whether/when to act on for that
+    project, since fixing karama-market itself is outside this dry-run's
+    purpose (validating the pipeline, not hardening a second app).
+  - wiring-scan.mjs: zero code changes. Clean run against karama-market's
+    real src/ tree and generated Supabase types -- 115 files scanned, all
+    .from() table references resolved, all local imports resolved, no dead
+    links or empty handlers found.
+
+Step 5 (regression/E2E) -- found a real bug. playwright.config.ts defaulted
+  BASE_URL to "http://localhost:5173" if unset. Starting karama-market's own
+  dev server showed its real default port is 8080 (from the shared
+  @lovable.dev/vite-tanstack-config package's sandbox-detection logic, not
+  anything app-specific) -- meaning the guessed default was actively wrong
+  for this whole class of app, and inconsistent with this pipeline's own
+  "never guess the target" rule already enforced everywhere else (the k6
+  scripts, and Wilmet's own real e2e/playwright.config.ts, which throws if
+  BASE_URL is unset). Fixed to require BASE_URL explicitly, matching that
+  existing rule. Instantiated a real journey spec
+  (tests/e2e/marketplace-journey.pw.ts) against karama-market's real routes;
+  first run had one failing assertion -- not a pipeline or app bug, but the
+  same class of mistake as the earlier photo-handoff.staging.ts lesson this
+  project already learned: I'd checked the URL changed on an authz denial
+  instead of checking for the actual denial text the app renders in place.
+  Fixed the test to match the journey template's own recommended pattern;
+  3/3 passing after.
+
+Step 6 (load testing + ops) -- adapted k6-disposable-load-test.yml for
+  karama-market: real routes/table names, K6_APP_NAME=karama-market, npm
+  instead of bun (karama-market's own package.json scripts are npm-based;
+  the reusable k6-*.js scripts themselves needed no changes either way).
+  Pushed to a branch, Salma added the two needed repo secrets and merged it
+  herself, then ran it for real via workflow_dispatch (baseline-then-ramp).
+  Result: baseline PASS, direct-DB-read PASS, ramp test correctly ran a real
+  3x-peak stress load (150 VUs) and correctly failed its own p95 latency
+  threshold (1.25s vs 500ms target) -- with 0% of 24,930 requests actually
+  failing (http_req_failed stayed at 0.00%, well under the 1% threshold).
+  This is the expected signature of testing an `npm run dev` server (not a
+  production build) on a shared GitHub Actions runner under an intentionally
+  aggressive synthetic stress multiplier, not a real defect in the app; it
+  is also exactly the outcome the ramp script exists to produce and report.
+  No changes needed to k6-baseline.js, k6-load.js, or k6-db-read.js
+  themselves -- Phase 7's earlier config-driven refactor held up completely.
+
+=== Overall conclusion ===
+
+The pipeline transplants with configuration changes only, as intended.
+Every script that ran against karama-market needed zero code changes to
+produce a correct result; the two real bugs found (secret-scan.sh's build-
+dir detection, playwright.config.ts's guessed port) were pipeline-level
+portability defects that would have caused a silent false-clean pass or a
+silently-broken E2E run on ANY TanStack-Start-via-Lovable app, including,
+in the first case, on Wilmet's own past runs -- not something specific to
+karama-market. Both are fixed in pipeline/ now, and Wilmet's own affected
+finding (F-002) was reverified against the corrected script rather than
+left resting on the old, weaker evidence.
+
+karama-market itself came out of this with two genuine, minor findings of
+its own (missing CSP/X-Frame-Options headers; expected dev-server latency
+under synthetic 3x load) -- left as-is, since hardening a second app was
+never this dry-run's goal, only proving the pipeline works on one.
