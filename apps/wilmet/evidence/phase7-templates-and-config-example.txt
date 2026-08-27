@@ -1,0 +1,34 @@
+V2P Phase 7 -- filled in the missing pipeline/templates/ files and
+pipeline.config.example.json
+Written by: Claude, 2026-08-27.
+
+EXECUTION-PLAN.md's own repository layout (section 6) and appendices
+(I, J, K, L, M, N, O) specify 8 template files under pipeline/templates/
+plus pipeline.config.example.json. Only 2 of the 8 templates existed
+(interaction-map.template.md, functional-defects.template.csv) --
+the other 6 were named in the plan but never actually created, and
+neither was the config example. Added all 7 missing files, each
+copied verbatim from its own appendix (I: threat-model,
+J: inventory, K: findings-register, L: pre-publish-checklist,
+M: incident-plan, N: backup-restore-runbook, O: pipeline.config).
+
+One addition beyond the literal appendix text, in
+backup-restore-runbook.template.md: a short section on what to do when
+a real restore test genuinely isn't possible with the access a given
+Lovable app grants -- Wilmet's own ADR-007 is exactly this situation
+(Lovable exposes no Supabase account access at all; the only mechanism
+is a destructive in-place PITR panel). Worth carrying forward into the
+reusable template since it's a real, likely-recurring situation for
+other Lovable-managed apps, not a Wilmet-specific one-off.
+
+Note on pipeline.config.example.json specifically: it intentionally
+still contains "wilmet" as the filled-in example value, matching the
+plan's own Appendix O template verbatim (which itself uses
+"app_name": "wilmet" as the illustrative worked example). This is a
+deliberate exception to the "grep pipeline/ for wilmet" requirement --
+that requirement targets the reusable SCRIPTS (already made
+grep-clean in the previous PR), not an example config file whose
+entire purpose is showing what a real, filled-in instance looks like.
+
+Not yet exercised as a genuine dry-run against a second/scratch app --
+that's a separate, later Phase 7 step (section 14, item 3).
