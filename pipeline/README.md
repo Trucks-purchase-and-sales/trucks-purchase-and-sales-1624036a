@@ -102,13 +102,15 @@ before moving on — a finding is never closed without retest evidence.
 
 ## Step 5 — regression/E2E
 
-Instantiate `pipeline/testing/journey.template.spec.ts` into a real
-spec per critical journey (signup, login, create/edit/delete each core
-entity, an authz-denial case). `pipeline/testing/playwright.config.ts`
-points at `BASE_URL` (default `http://localhost:5173`) — in CI, start
-a real dev server bound to the disposable project first (see "A real
-constraint, not a Wilmet quirk" below for why this matters more than
-it sounds like it should).
+Instantiate `pipeline/testing/journey.template.pw.ts` into a real spec
+per critical journey (signup, login, create/edit/delete each core
+entity, an authz-denial case) — named `.pw.ts`, not `.spec.ts`, on
+purpose; see that file's own header comment if your setup doesn't have
+the same constraint and you'd rather use `.spec.ts`.
+`pipeline/testing/playwright.config.ts` points at `BASE_URL` (default
+`http://localhost:5173`) — in CI, start a real dev server bound to the
+disposable project first (see "A real constraint, not a Wilmet quirk"
+below for why this matters more than it sounds like it should).
 
 ## Step 6 — load testing and production ops
 
