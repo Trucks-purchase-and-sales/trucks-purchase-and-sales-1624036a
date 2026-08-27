@@ -1,0 +1,51 @@
+V2P -- orphaned staging suites, final green run
+Written by: Claude, 2026-08-27. Run by Salma via
+disposable-staging-security-e2e.yml against the 🟦 disposable project.
+
+All four suites pass in one workflow run:
+  security.staging.ts               -- pass
+  workflow-children.staging.ts      -- pass (5 tests)
+  photo-handoff.staging.ts          -- pass (5 tests)
+  workflow-transactions.staging.ts  -- pass
+
+Took 3 real rounds to get here, each a genuine bug rather than a
+retry-until-it-passes exercise -- summarized for the record since the
+findings-register entries below cite this file as their retest
+evidence:
+
+  Round 1 (phase6-orphaned-staging-suites-wired.txt): wired 3 fully-
+  written, never-run suites into CI; found and fixed a missing schema
+  gap (5 workflow-transaction RPCs never added to staging-schema.sql)
+  before anything ran at all.
+
+  Round 2 (phase6-staging-suite-first-run-fixes.txt): first real
+  trigger. bun's test-file discovery silently no-op'd every suite
+  (needed "./" prefix, fixed separately). Once that was fixed:
+  security.staging.ts passed for the first time ever; workflow-
+  children.staging.ts failed on two real bugs -- a genuinely missing
+  status-history logging trigger (one of ADR-005's own named
+  exclusions, reconstructed and clearly labeled as such in
+  staging-schema.sql section 13) and a test-cleanup ordering bug
+  (deleting vehicle_opportunities before its children, present in all
+  four suites, fixed proactively in all four before they could fail
+  one at a time).
+
+  Round 3 (this file's immediate predecessor,
+  phase6-photo-handoff-assertion-fix.txt): with the schema fix applied
+  live (Salma re-ran the full staging-schema.sql), workflow-children.staging.ts
+  went green. photo-handoff.staging.ts then failed once more, on a
+  flawed test assertion (expected a Postgres-RLS-filtered Storage
+  bulk-delete to surface a client-visible error; it doesn't -- verified
+  the actual storage.objects policies live on the project first, via a
+  direct read-only query, before concluding the policy itself was
+  already correct).
+
+No round found a real, unfixed security defect in this app's current
+code -- every failure was in the test infrastructure or the disposable
+project's own hand-reconstructed schema, not in Wilmet's actual
+authorization logic. That's a meaningful result in itself, not a
+non-finding: it means B0-001's `vehicle_opportunities` slice, the
+TM-011 child-scope fixes (opportunity_activities, vehicle_photos), and
+the workflow-transaction atomicity RPCs all hold up under real,
+adversarial-role-spoofed re-verification, not just the original
+rollback-transaction pass from the earlier ChatGPT-assisted work.
