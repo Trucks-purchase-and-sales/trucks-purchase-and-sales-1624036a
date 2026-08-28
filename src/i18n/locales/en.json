@@ -621,7 +621,8 @@
         "historyHeading": "Status history",
         "noHistory": "No changes recorded.",
         "infoDialog": { "title": "Request information", "description": "The client will receive your message and can complete their request.", "placeholder": "Missing details…", "sentToast": "Request sent" },
-        "rejectDialog": { "title": "Reject the request", "description": "Choose a reason; the request will leave the to-process list.", "successToast": "Request rejected — removed from the to-process list" }
+        "rejectDialog": { "title": "Reject the request", "description": "Choose a reason; the request will leave the to-process list.", "successToast": "Request rejected — removed from the to-process list" },
+        "rejectReasonHeading": "Rejection reason"
       }
     },
     "demandOpportunities": {

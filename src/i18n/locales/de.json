@@ -621,7 +621,8 @@
         "historyHeading": "Statusverlauf",
         "noHistory": "Keine Änderungen erfasst.",
         "infoDialog": { "title": "Informationen anfordern", "description": "Der Kunde erhält Ihre Nachricht und kann seine Anfrage vervollständigen.", "placeholder": "Fehlende Angaben…", "sentToast": "Anfrage gesendet" },
-        "rejectDialog": { "title": "Anfrage ablehnen", "description": "Wählen Sie den Grund; die Anfrage verlässt die Bearbeitungsliste.", "successToast": "Anfrage abgelehnt — aus der Bearbeitungsliste entfernt" }
+        "rejectDialog": { "title": "Anfrage ablehnen", "description": "Wählen Sie den Grund; die Anfrage verlässt die Bearbeitungsliste.", "successToast": "Anfrage abgelehnt — aus der Bearbeitungsliste entfernt" },
+        "rejectReasonHeading": "Ablehnungsgrund"
       }
     },
     "demandOpportunities": {

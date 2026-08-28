@@ -621,7 +621,8 @@
         "historyHeading": "Historique de statut",
         "noHistory": "Aucun changement enregistré.",
         "infoDialog": { "title": "Demander des informations", "description": "Le client recevra votre message et pourra compléter sa demande.", "placeholder": "Détails manquants…", "sentToast": "Demande envoyée" },
-        "rejectDialog": { "title": "Rejeter la demande", "description": "Choisissez le motif ; la demande sortira de la liste à traiter.", "successToast": "Demande rejetée — retirée de la liste à traiter" }
+        "rejectDialog": { "title": "Rejeter la demande", "description": "Choisissez le motif ; la demande sortira de la liste à traiter.", "successToast": "Demande rejetée — retirée de la liste à traiter" },
+        "rejectReasonHeading": "Motif de rejet"
       }
     },
     "demandOpportunities": {
