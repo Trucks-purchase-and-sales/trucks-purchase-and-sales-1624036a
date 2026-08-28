@@ -112,23 +112,36 @@ jobs:
           const combos = page.getByRole("combobox");
           const comboCount = await combos.count();
           console.log("combobox_count", comboCount);
-          if (comboCount === 0) throw new Error("No reference comboboxes found on live form");
+          if (comboCount < 6) throw new Error(`Expected at least 6 comboboxes, found ${comboCount}`);
 
-          let labels = [];
-          for (let i = 0; i < comboCount && labels.length === 0; i++) {
-            try {
-              await combos.nth(i).click({ timeout: 3_000 });
-              await page.waitForTimeout(500);
-              const options = page.getByRole("option");
-              const count = await options.count();
-              if (count > 0) {
-                labels = (await options.allInnerTexts()).slice(0, 6);
-              }
-              await page.keyboard.press("Escape");
-            } catch {}
+          async function optionLabels(index, label) {
+            await combos.nth(index).click({ timeout: 5_000 });
+            await page.waitForTimeout(500);
+            const options = page.getByRole("option");
+            const labels = (await options.allInnerTexts()).filter(Boolean);
+            console.log(`${label}_options`, JSON.stringify(labels.slice(0, 10)));
+            await page.keyboard.press("Escape");
+            return labels;
           }
-          console.log("reference_option_labels", JSON.stringify(labels));
-          if (labels.length === 0) throw new Error("Live reference dropdowns contain no options");
+
+          // Index 0 is the language switcher. On step 1 the form then renders:
+          // 1 category, 2 vehicle type, 3 body type, 4 brand, 5 usage country.
+          const categoryLabels = await optionLabels(1, "vehicle_category");
+          if (categoryLabels.length < 3) throw new Error("Vehicle category dropdown is not populated");
+          if (!categoryLabels.some((v) => /utilitaire|camion|tracteur/i.test(v))) {
+            throw new Error(`Vehicle category options do not look like reference data: ${categoryLabels.join(", ")}`);
+          }
+
+          // Select a category so the category-filtered brand dropdown becomes enabled.
+          await combos.nth(1).click();
+          await page.getByRole("option").first().click();
+          await page.waitForTimeout(500);
+
+          const typeLabels = await optionLabels(2, "vehicle_type");
+          if (typeLabels.length === 0) throw new Error("Vehicle type dropdown is not populated");
+
+          const brandLabels = await optionLabels(4, "preferred_brand");
+          if (brandLabels.length === 0) throw new Error("Preferred brand dropdown is not populated after selecting a category");
 
           await browser.close();
           EOF
