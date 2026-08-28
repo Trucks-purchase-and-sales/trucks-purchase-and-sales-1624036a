@@ -261,6 +261,7 @@
     "title": "Trouvez le véhicule professionnel qu'il vous faut",
     "subtitle": "Décrivez votre besoin. Wilmet vérifie ses opportunités disponibles et son réseau pour vous proposer les véhicules les plus pertinents.",
     "step": "Étape {{current}} sur {{total}}",
+    "interestedPrefill": "Intéressé par : {{vehicleRef}}",
     "steps": {
       "vehicle": "Véhicule recherché",
       "technical": "Critères techniques",
@@ -1321,7 +1322,12 @@
     "emptyText": "Décrivez le véhicule que vous recherchez, notre équipe vous rappelle rapidement.",
     "createRequest": "Créer une demande",
     "vehicleSearch": "Recherche véhicule",
-    "createdOn": "Créé le {{date}}"
+    "createdOn": "Créé le {{date}}",
+    "detail": {
+      "back": "Retour à mes demandes",
+      "notFound": "Demande introuvable",
+      "notFoundText": "Cette demande n'existe pas ou ne vous appartient pas."
+    }
   },
   "mesDemandesClients": {
     "status": { "nouvelle": "Nouvelle", "qualifiee": "Qualifiée", "enRecherche": "En recherche", "propositionEnvoyee": "Proposition envoyée", "negociation": "Négociation", "gagnee": "Gagnée", "perdue": "Non aboutie", "archivee": "Archivée" },

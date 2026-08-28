@@ -163,25 +163,27 @@ function MyRequests() {
         <div className="grid gap-3 sm:grid-cols-2">
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {rows.map((r: any) => (
-            <Card key={r.id} className="border-border/70">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="truncate text-base font-semibold">
-                      {r.preferred_brand ?? t("mesDemandes.vehicleSearch")}{" "}
-                      {r.preferred_model ?? ""}
+            <Link key={r.id} to="/mes-demandes/$id" params={{ id: r.id }}>
+              <Card className="border-border/70 hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-base font-semibold">
+                        {r.preferred_brand ?? t("mesDemandes.vehicleSearch")}{" "}
+                        {r.preferred_model ?? ""}
+                      </div>
+                      <div className="mt-0.5 text-xs text-muted-foreground">
+                        {r.reference_number ? `${r.reference_number} · ` : ""}
+                        {t("mesDemandes.createdOn", {
+                          date: new Date(r.created_at).toLocaleDateString("fr-FR"),
+                        })}
+                      </div>
                     </div>
-                    <div className="mt-0.5 text-xs text-muted-foreground">
-                      {r.reference_number ? `${r.reference_number} · ` : ""}
-                      {t("mesDemandes.createdOn", {
-                        date: new Date(r.created_at).toLocaleDateString("fr-FR"),
-                      })}
-                    </div>
+                    <Badge variant="secondary">{STATUS_LABEL[r.status] ?? r.status}</Badge>
                   </div>
-                  <Badge variant="secondary">{STATUS_LABEL[r.status] ?? r.status}</Badge>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

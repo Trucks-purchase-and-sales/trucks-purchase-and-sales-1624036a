@@ -38,7 +38,12 @@ import { buyerLeadSchema, BUYER_FIELD_LABELS, type BuyerLeadInput } from "@/lib/
 import { EU27_CODES } from "@/lib/wilmet-constants";
 import { AssistantWidget } from "@/components/public/AssistantWidget";
 
+type Search = { vehicleRef?: string };
+
 export const Route = createFileRoute("/chercher-un-vehicule/")({
+  validateSearch: (s: Record<string, unknown>): Search => ({
+    vehicleRef: typeof s.vehicleRef === "string" ? s.vehicleRef : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Chercher un véhicule — Wilmet Trucks" },
@@ -64,6 +69,7 @@ function BuyerLeadPage() {
   useI18nInit();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { vehicleRef } = Route.useSearch();
   const fn = useServerFn(getReferenceData);
   const {
     data: ref,
@@ -86,6 +92,7 @@ function BuyerLeadPage() {
       required_equipment: [],
       wanted_equipment: [],
       locale: i18n.language || "fr",
+      message: vehicleRef ? t("buyer.interestedPrefill", { vehicleRef }) : "",
     },
   });
 

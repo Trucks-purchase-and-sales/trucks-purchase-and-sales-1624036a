@@ -243,10 +243,10 @@ The cleanest lifecycle in the whole audit: full, correctly-wired create/read/upd
 
 | Element | Decision (wire later / hide / remove) | Approved by | Date |
 |---|---|---|---|
-| `/vehicules/$id` "catalog.interested" CTA doesn't carry vehicle context into the wizard | _pending_ | | |
-| `/mes-demandes` and `/espace-acheteur` have no per-request detail view for buyers — intentional? | _pending_ | | |
-| `SaleListingPanel` manual "Transformer en offre de vente" create dialog — likely dead code, remove or keep as fallback? | _pending_ | | |
-| No hard-delete anywhere for buyer_leads / demand_opportunities / vehicle_opportunities / sale_listings / match_candidates — intentional audit-trail design? | _pending_ | | |
+| `/vehicules/$id` "catalog.interested" CTA doesn't carry vehicle context into the wizard | wire: pre-fill the vehicle into the wizard | Salma | 2026-08-28 |
+| `/mes-demandes` and `/espace-acheteur` have no per-request detail view for buyers — intentional? | wire: add a buyer request detail view | Salma | 2026-08-28 |
+| `SaleListingPanel` manual "Transformer en offre de vente" create dialog — likely dead code, remove or keep as fallback? | keep as fallback | Salma | 2026-08-28 |
+| No hard-delete anywhere for buyer_leads / demand_opportunities / vehicle_opportunities / sale_listings / match_candidates — intentional audit-trail design? | keep soft-close only, confirmed intentional | Salma | 2026-08-28 |
 
 ## 🛑 Needs live/staging verification before Phase 0.5 can close
 

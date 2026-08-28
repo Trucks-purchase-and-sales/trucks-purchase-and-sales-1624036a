@@ -261,6 +261,7 @@
     "title": "Finden Sie das passende Nutzfahrzeug",
     "subtitle": "Beschreiben Sie Ihren Bedarf. Wilmet prüft seine verfügbaren Angebote und sein Netzwerk, um Ihnen die passendsten Fahrzeuge vorzuschlagen.",
     "step": "Schritt {{current}} von {{total}}",
+    "interestedPrefill": "Interessiert an: {{vehicleRef}}",
     "steps": {
       "vehicle": "Gesuchtes Fahrzeug",
       "technical": "Technische Kriterien",
@@ -1321,7 +1322,12 @@
     "emptyText": "Beschreiben Sie das gesuchte Fahrzeug, unser Team ruft Sie schnell zurück.",
     "createRequest": "Anfrage erstellen",
     "vehicleSearch": "Fahrzeugsuche",
-    "createdOn": "Erstellt am {{date}}"
+    "createdOn": "Erstellt am {{date}}",
+    "detail": {
+      "back": "Zurück zu meinen Anfragen",
+      "notFound": "Anfrage nicht gefunden",
+      "notFoundText": "Diese Anfrage existiert nicht oder gehört Ihnen nicht."
+    }
   },
   "mesDemandesClients": {
     "status": { "nouvelle": "Neu", "qualifiee": "Qualifiziert", "enRecherche": "In Suche", "propositionEnvoyee": "Angebot gesendet", "negociation": "Verhandlung", "gagnee": "Gewonnen", "perdue": "Nicht erfolgreich", "archivee": "Archiviert" },

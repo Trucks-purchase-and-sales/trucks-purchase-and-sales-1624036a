@@ -17,9 +17,17 @@ export const Route = createFileRoute("/vehicules/$id")({
   head: () => ({
     meta: [
       { title: "Fiche véhicule — Wilmet Trucks" },
-      { name: "description", content: "Détail technique, photos et disponibilité d'un véhicule industriel d'occasion proposé par Wilmet Trucks." },
+      {
+        name: "description",
+        content:
+          "Détail technique, photos et disponibilité d'un véhicule industriel d'occasion proposé par Wilmet Trucks.",
+      },
       { property: "og:title", content: "Fiche véhicule — Wilmet Trucks" },
-      { property: "og:description", content: "Détail technique, photos et disponibilité d'un véhicule industriel d'occasion proposé par Wilmet Trucks." },
+      {
+        property: "og:description",
+        content:
+          "Détail technique, photos et disponibilité d'un véhicule industriel d'occasion proposé par Wilmet Trucks.",
+      },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -68,7 +76,10 @@ function VehicleDetail() {
   return (
     <PublicShell>
       <div className="container-page py-8">
-        <Link to="/vehicules" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <Link
+          to="/vehicules"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
           <ArrowLeft className="h-4 w-4" /> {t("catalog.back")}
         </Link>
 
@@ -83,12 +94,14 @@ function VehicleDetail() {
           <div className="mt-10 rounded-2xl border border-border bg-card p-10 text-center">
             <Truck className="mx-auto h-8 w-8 text-muted-foreground" />
             <h1 className="mt-4 text-lg font-semibold">{t("catalog.notFound.title")}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {t("catalog.notFound.text")}
-            </p>
+            <p className="mt-2 text-sm text-muted-foreground">{t("catalog.notFound.text")}</p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Button asChild><Link to="/vehicules">{t("catalog.notFound.browse")}</Link></Button>
-              <Button asChild variant="outline"><Link to="/chercher-un-vehicule">{t("catalog.empty.cta")}</Link></Button>
+              <Button asChild>
+                <Link to="/vehicules">{t("catalog.notFound.browse")}</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/chercher-un-vehicule">{t("catalog.empty.cta")}</Link>
+              </Button>
             </div>
           </div>
         )}
@@ -98,7 +111,11 @@ function VehicleDetail() {
             <div>
               <div className="overflow-hidden rounded-2xl border border-border bg-secondary">
                 {v.images.length > 0 ? (
-                  <img src={v.images[active]} alt={v.title} className="aspect-[4/3] w-full object-cover" />
+                  <img
+                    src={v.images[active]}
+                    alt={v.title}
+                    className="aspect-[4/3] w-full object-cover"
+                  />
                 ) : (
                   <div className="grid aspect-[4/3] w-full place-items-center text-muted-foreground">
                     <Truck className="h-12 w-12" />
@@ -115,7 +132,12 @@ function VehicleDetail() {
                       aria-label={t("catalog.photo", { index: i + 1 })}
                       className={`overflow-hidden rounded-lg border ${i === active ? "border-accent" : "border-border"}`}
                     >
-                      <img src={src} alt="" loading="lazy" className="aspect-square w-full object-cover" />
+                      <img
+                        src={src}
+                        alt=""
+                        loading="lazy"
+                        className="aspect-square w-full object-cover"
+                      />
                     </button>
                   ))}
                 </div>
@@ -124,7 +146,9 @@ function VehicleDetail() {
               {v.description && (
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold">{t("catalog.description")}</h2>
-                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{v.description}</p>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                    {v.description}
+                  </p>
                 </div>
               )}
 
@@ -136,7 +160,10 @@ function VehicleDetail() {
                     const value = pretty(key, (v.specs as Record<string, unknown>)[key]);
                     if (!value) return null;
                     return (
-                      <div key={key} className="flex justify-between gap-4 border-b border-border/50 py-1.5 text-sm">
+                      <div
+                        key={key}
+                        className="flex justify-between gap-4 border-b border-border/50 py-1.5 text-sm"
+                      >
                         <dt className="text-muted-foreground">{label}</dt>
                         <dd className="font-medium">{value}</dd>
                       </div>
@@ -148,7 +175,9 @@ function VehicleDetail() {
                     <h3 className="text-sm font-semibold">{t("catalog.equipment")}</h3>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {v.specs.equipment.map((e) => (
-                        <Badge key={e} variant="outline">{e.replace(/_/g, " ")}</Badge>
+                        <Badge key={e} variant="outline">
+                          {e.replace(/_/g, " ")}
+                        </Badge>
                       ))}
                     </div>
                   </div>
@@ -159,7 +188,9 @@ function VehicleDetail() {
             <aside className="lg:sticky lg:top-24 lg:self-start">
               <div className="rounded-2xl border border-border bg-card p-6">
                 {v.reference && (
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("catalog.ref")} {v.reference}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    {t("catalog.ref")} {v.reference}
+                  </div>
                 )}
                 <h1 className="mt-1 text-xl font-bold leading-snug">{v.title}</h1>
                 <div className="mt-4 text-2xl font-extrabold">
@@ -170,20 +201,41 @@ function VehicleDetail() {
                 </div>
 
                 <ul className="mt-4 space-y-1.5 text-sm text-muted-foreground">
-                  {(v.city || v.country) && <li>{t("catalog.location")} : {[v.city, v.country].filter(Boolean).join(", ")}</li>}
-                  {v.availability && <li>{t("catalog.availability")} : {v.availability.replace(/_/g, " ")}</li>}
+                  {(v.city || v.country) && (
+                    <li>
+                      {t("catalog.location")} : {[v.city, v.country].filter(Boolean).join(", ")}
+                    </li>
+                  )}
+                  {v.availability && (
+                    <li>
+                      {t("catalog.availability")} : {v.availability.replace(/_/g, " ")}
+                    </li>
+                  )}
                   <li>
                     {t("catalog.status")} :{" "}
                     {v.status === "reservee" ? (
-                      <Badge className="bg-status-pending text-status-pending-foreground">{t("catalog.reserved")}</Badge>
+                      <Badge className="bg-status-pending text-status-pending-foreground">
+                        {t("catalog.reserved")}
+                      </Badge>
                     ) : (
-                      <Badge className="bg-status-info text-status-info-foreground">{t("catalog.available")}</Badge>
+                      <Badge className="bg-status-info text-status-info-foreground">
+                        {t("catalog.available")}
+                      </Badge>
                     )}
                   </li>
                 </ul>
 
-                <Button asChild size="lg" className="mt-6 w-full bg-accent text-accent-foreground hover:bg-accent/90">
-                  <Link to="/chercher-un-vehicule">{t("catalog.interested")}</Link>
+                <Button
+                  asChild
+                  size="lg"
+                  className="mt-6 w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                >
+                  <Link
+                    to="/chercher-un-vehicule"
+                    search={{ vehicleRef: v.reference ? `${v.title} (${v.reference})` : v.title }}
+                  >
+                    {t("catalog.interested")}
+                  </Link>
                 </Button>
                 <p className="mt-2 text-center text-xs text-muted-foreground">
                   {t("catalog.replyNote")}
