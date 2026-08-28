@@ -30,11 +30,22 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 function createSupabaseClient() {
-  // Use import.meta.env for client-side (Vite build-time replacement)
-  // Fall back to process.env for SSR (server-side rendering)
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || process.env["SUPABASE_URL"];
+  // Use managed environment variables first. Lovable production builds currently fail to inject
+  // the public VITE_* values, so fall back to this project's verified public client config only
+  // in production builds. These values are browser-visible by design and are not privileged keys.
+  const productionSupabaseUrl = import.meta.env.PROD
+    ? "https://srjnljpjwzhtbdnhksux.supabase.co"
+    : undefined;
+  const productionSupabasePublishableKey = import.meta.env.PROD
+    ? "sb_publishable_KLgCSgqIFm1n_Nswc1d0nQ_7tmxnRQ8"
+    : undefined;
+
+  const SUPABASE_URL =
+    import.meta.env.VITE_SUPABASE_URL || process.env["SUPABASE_URL"] || productionSupabaseUrl;
   const SUPABASE_PUBLISHABLE_KEY =
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env["SUPABASE_PUBLISHABLE_KEY"];
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env["SUPABASE_PUBLISHABLE_KEY"] ||
+    productionSupabasePublishableKey;
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [
