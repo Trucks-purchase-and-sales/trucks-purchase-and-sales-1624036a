@@ -152,6 +152,21 @@ function Page() {
         )}
       </div>
 
+      {lead.status === "perdu" && (
+        <Card className="border-status-refused-foreground/40">
+          <CardContent className="p-5">
+            <div className="text-sm font-semibold text-status-refused-foreground">
+              {t("admin.buyerLeads.detail.rejectReasonHeading")}
+            </div>
+            <div className="mt-2 text-sm">
+              {CLOSED_LOST_REASONS.find((o) => o.value === lead.reject_reason)?.label ??
+                lead.reject_reason ??
+                "—"}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>

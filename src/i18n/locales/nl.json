@@ -621,7 +621,8 @@
         "historyHeading": "Statusgeschiedenis",
         "noHistory": "Geen wijzigingen geregistreerd.",
         "infoDialog": { "title": "Informatie aanvragen", "description": "De klant ontvangt uw bericht en kan zijn aanvraag aanvullen.", "placeholder": "Ontbrekende gegevens…", "sentToast": "Aanvraag verzonden" },
-        "rejectDialog": { "title": "Aanvraag afwijzen", "description": "Kies een reden; de aanvraag verlaat de te behandelen lijst.", "successToast": "Aanvraag afgewezen — verwijderd uit de te behandelen lijst" }
+        "rejectDialog": { "title": "Aanvraag afwijzen", "description": "Kies een reden; de aanvraag verlaat de te behandelen lijst.", "successToast": "Aanvraag afgewezen — verwijderd uit de te behandelen lijst" },
+        "rejectReasonHeading": "Reden van afwijzing"
       }
     },
     "demandOpportunities": {

@@ -1,7 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { requiredPhotoCategories, missingSubmissionFields, categoryProfile } from "@/lib/wilmet-constants";
+import {
+  requiredPhotoCategories,
+  missingSubmissionFields,
+  categoryProfile,
+} from "@/lib/wilmet-constants";
 import { parseOpportunityInput, normalise } from "@/lib/opportunity-input";
 
 export const saveOpportunity = createServerFn({ method: "POST" })
@@ -24,7 +28,10 @@ export const saveOpportunity = createServerFn({ method: "POST" })
         .eq("partenaire_id", userId)
         .select("id, reference_number, status")
         .single();
-      if (error) { console.error("[opportunities.functions]", error); throw new Error("Une erreur est survenue, veuillez réessayer."); }
+      if (error) {
+        console.error("[opportunities.functions]", error);
+        throw new Error("Une erreur est survenue, veuillez réessayer.");
+      }
       return row;
     } else {
       const { data: row, error } = await supabase
@@ -32,30 +39,45 @@ export const saveOpportunity = createServerFn({ method: "POST" })
         .insert({ ...(payload as object), status: "brouillon" } as never)
         .select("id, reference_number, status")
         .single();
-      if (error) { console.error("[opportunities.functions]", error); throw new Error("Une erreur est survenue, veuillez réessayer."); }
+      if (error) {
+        console.error("[opportunities.functions]", error);
+        throw new Error("Une erreur est survenue, veuillez réessayer.");
+      }
       return row;
     }
   });
 
 export const submitOpportunity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), message: z.string().optional() }).parse(d))
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid(), message: z.string().optional() }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
     const { data: current, error: readErr } = await supabase
       .from("vehicle_opportunities")
-      .select("vehicle_runs, not_running_reason, technical_inspection_status, inspection_valid_until, assigned_group, referred_by, referral_code, reference_number, brand, model, vehicle_category, body_type, body_type_other, first_registration_date, mileage, vin, city, country, visible_on_site, fuel_type, gearbox, gross_vehicle_weight, general_condition, has_accident, desired_price_excl_tax, price_negotiable, availability, free_of_pledge, onsite_contact_name, onsite_contact_phone, defects_and_comments, known_defects, expected_repairs")
+      .select(
+        "vehicle_runs, not_running_reason, technical_inspection_status, inspection_valid_until, assigned_group, referred_by, referral_code, reference_number, brand, model, vehicle_category, body_type, body_type_other, first_registration_date, mileage, vin, city, country, visible_on_site, fuel_type, gearbox, gross_vehicle_weight, general_condition, has_accident, desired_price_excl_tax, price_negotiable, availability, free_of_pledge, onsite_contact_name, onsite_contact_phone, defects_and_comments, known_defects, expected_repairs",
+      )
       .eq("id", data.id)
       .eq("partenaire_id", userId)
       .single();
-    if (readErr) { console.error("[opportunities.functions]", readErr); throw new Error("Une erreur est survenue, veuillez réessayer."); }
+    if (readErr) {
+      console.error("[opportunities.functions]", readErr);
+      throw new Error("Une erreur est survenue, veuillez réessayer.");
+    }
     const missingFields = missingSubmissionFields(current as unknown as Record<string, unknown>);
     if (missingFields.length > 0) {
-      throw new Error(`Informations obligatoires manquantes : ${missingFields.map((f) => f.label).join(", ")}.`);
+      throw new Error(
+        `Informations obligatoires manquantes : ${missingFields.map((f) => f.label).join(", ")}.`,
+      );
     }
-    if (categoryProfile(current.vehicle_category).powered
-      && current.vehicle_runs === "non" && !current.not_running_reason?.trim()) {
+    if (
+      categoryProfile(current.vehicle_category).powered &&
+      current.vehicle_runs === "non" &&
+      !current.not_running_reason?.trim()
+    ) {
       throw new Error("Précisez pourquoi le véhicule ne roule pas avant l'envoi.");
     }
     if (current.technical_inspection_status === "oui" && !current.inspection_valid_until) {
@@ -63,13 +85,21 @@ export const submitOpportunity = createServerFn({ method: "POST" })
     }
 
     const { data: pics, error: picErr } = await supabase
-      .from("vehicle_photos").select("category").eq("vehicle_opportunity_id", data.id);
-    if (picErr) { console.error("[opportunities.functions]", picErr); throw new Error("Une erreur est survenue, veuillez réessayer."); }
+      .from("vehicle_photos")
+      .select("category")
+      .eq("vehicle_opportunity_id", data.id);
+    if (picErr) {
+      console.error("[opportunities.functions]", picErr);
+      throw new Error("Une erreur est survenue, veuillez réessayer.");
+    }
     const covered = new Set((pics ?? []).map((p) => p.category));
-    const missing = requiredPhotoCategories(current as unknown as Record<string, unknown>)
-      .filter((c) => !covered.has(c.value as never));
+    const missing = requiredPhotoCategories(current as unknown as Record<string, unknown>).filter(
+      (c) => !covered.has(c.value as never),
+    );
     if (missing.length > 0) {
-      throw new Error(`Photos obligatoires manquantes : ${missing.map((m) => m.label).join(", ")}.`);
+      throw new Error(
+        `Photos obligatoires manquantes : ${missing.map((m) => m.label).join(", ")}.`,
+      );
     }
 
     // Affiliate fast-track: when the seller came in through a sales person's link
@@ -87,7 +117,11 @@ export const submitOpportunity = createServerFn({ method: "POST" })
     const { readLeadAssignmentSettingsServer } = await import("@/lib/app-settings.server");
     const routing = await readLeadAssignmentSettingsServer();
     let assignedGroup: "purchase" | null = null;
-    if (!fastTrackOwnerId && routing.enabled && !(current as { assigned_group?: string | null }).assigned_group) {
+    if (
+      !fastTrackOwnerId &&
+      routing.enabled &&
+      !(current as { assigned_group?: string | null }).assigned_group
+    ) {
       assignedGroup = "purchase";
     }
 
@@ -103,7 +137,10 @@ export const submitOpportunity = createServerFn({ method: "POST" })
       .eq("partenaire_id", userId)
       .select("id, reference_number, status")
       .single();
-    if (error) { console.error("[opportunities.functions]", error); throw new Error("Une erreur est survenue, veuillez réessayer."); }
+    if (error) {
+      console.error("[opportunities.functions]", error);
+      throw new Error("Une erreur est survenue, veuillez réessayer.");
+    }
 
     if (fastTrackOwnerId) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -129,7 +166,6 @@ export const submitOpportunity = createServerFn({ method: "POST" })
       }
     }
     return row;
-
   });
 
 export const withdrawOpportunity = createServerFn({ method: "POST" })
@@ -138,11 +174,25 @@ export const withdrawOpportunity = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const nowIso = new Date().toISOString();
-    const { error } = await supabase.from("vehicle_opportunities")
+    const { data: updated, error } = await supabase
+      .from("vehicle_opportunities")
       .update({ status: "archivee", withdrawn_at: nowIso } as never)
       .eq("id", data.id)
-      .eq("partenaire_id", userId);
-    if (error) { console.error("[opportunities.functions] withdraw", error); throw new Error("Retrait impossible."); }
+      .eq("partenaire_id", userId)
+      .select("id");
+    if (error) {
+      console.error("[opportunities.functions] withdraw", error);
+      throw new Error("Retrait impossible.");
+    }
+    // RLS (opp_partner_update) only allows this update when status=brouillon or
+    // owner_side=partenaire. A zero-row result means the policy silently blocked
+    // it (e.g. Wilmet already owns this opportunity) -- that must surface as a
+    // real failure, not a false success (FD-008).
+    if (!updated || updated.length === 0) {
+      throw new Error(
+        "Retrait impossible : cette opportunité ne peut plus être retirée à ce stade.",
+      );
+    }
     return { ok: true };
   });
 
@@ -161,9 +211,14 @@ export const listMyInfoRequests = createServerFn({ method: "GET" })
       .select("*")
       .in("vehicle_opportunity_id", oppIds)
       .order("created_at", { ascending: false });
-    const oppMap: Record<string, { reference_number: string | null; brand: string | null; model: string | null }> = {};
+    const oppMap: Record<
+      string,
+      { reference_number: string | null; brand: string | null; model: string | null }
+    > = {};
     for (const o of opps ?? []) oppMap[o.id] = o as never;
-    return { rows: (reqs ?? []).map((r) => ({ ...r, opportunity: oppMap[r.vehicle_opportunity_id] })) };
+    return {
+      rows: (reqs ?? []).map((r) => ({ ...r, opportunity: oppMap[r.vehicle_opportunity_id] })),
+    };
   });
 
 export const listMyOpportunities = createServerFn({ method: "GET" })
@@ -172,13 +227,18 @@ export const listMyOpportunities = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("vehicle_opportunities")
-      .select("id, reference_number, status, vehicle_type, brand, model, year, mileage, city, desired_price_excl_tax, submitted_at, created_at, updated_at, owner_side, handover_message")
+      .select(
+        "id, reference_number, status, vehicle_type, brand, model, year, mileage, city, desired_price_excl_tax, submitted_at, created_at, updated_at, owner_side, handover_message",
+      )
       .eq("partenaire_id", userId)
       .order("updated_at", { ascending: false });
-    if (error) { console.error("[opportunities.functions]", error); throw new Error("Une erreur est survenue, veuillez réessayer."); }
+    if (error) {
+      console.error("[opportunities.functions]", error);
+      throw new Error("Une erreur est survenue, veuillez réessayer.");
+    }
 
     const ids = (data ?? []).map((r) => r.id);
-    let mainByOpp: Record<string, string> = {};
+    const mainByOpp: Record<string, string> = {};
     if (ids.length) {
       const { data: photos } = await supabase
         .from("vehicle_photos")
@@ -187,7 +247,8 @@ export const listMyOpportunities = createServerFn({ method: "GET" })
         .order("is_main_photo", { ascending: false })
         .order("sort_order", { ascending: true });
       for (const p of photos ?? []) {
-        if (!mainByOpp[p.vehicle_opportunity_id]) mainByOpp[p.vehicle_opportunity_id] = p.storage_path;
+        if (!mainByOpp[p.vehicle_opportunity_id])
+          mainByOpp[p.vehicle_opportunity_id] = p.storage_path;
       }
     }
     return { rows: data ?? [], mainByOpp };
@@ -203,13 +264,29 @@ export const getOpportunity = createServerFn({ method: "GET" })
       .select("*")
       .eq("id", data.id)
       .maybeSingle();
-    if (error) { console.error("[opportunities.functions]", error); throw new Error("Une erreur est survenue, veuillez réessayer."); }
+    if (error) {
+      console.error("[opportunities.functions]", error);
+      throw new Error("Une erreur est survenue, veuillez réessayer.");
+    }
     if (!opp) throw new Error("Opportunité introuvable");
 
     const [{ data: photos }, { data: history }, { data: infoReqs }] = await Promise.all([
-      supabase.from("vehicle_photos").select("*").eq("vehicle_opportunity_id", data.id).order("is_main_photo", { ascending: false }).order("sort_order"),
-      supabase.from("opportunity_status_history").select("*").eq("vehicle_opportunity_id", data.id).order("created_at"),
-      supabase.from("information_requests").select("*").eq("vehicle_opportunity_id", data.id).order("created_at"),
+      supabase
+        .from("vehicle_photos")
+        .select("*")
+        .eq("vehicle_opportunity_id", data.id)
+        .order("is_main_photo", { ascending: false })
+        .order("sort_order"),
+      supabase
+        .from("opportunity_status_history")
+        .select("*")
+        .eq("vehicle_opportunity_id", data.id)
+        .order("created_at"),
+      supabase
+        .from("information_requests")
+        .select("*")
+        .eq("vehicle_opportunity_id", data.id)
+        .order("created_at"),
     ]);
     return { opp, photos: photos ?? [], history: history ?? [], infoRequests: infoReqs ?? [] };
   });
@@ -222,7 +299,10 @@ export const signPhotoUrls = createServerFn({ method: "POST" })
     const { data: signed, error } = await context.supabase.storage
       .from("vehicle-photos")
       .createSignedUrls(data.paths, 60 * 60);
-    if (error) { console.error("[opportunities.functions]", error); throw new Error("Une erreur est survenue, veuillez réessayer."); }
+    if (error) {
+      console.error("[opportunities.functions]", error);
+      throw new Error("Une erreur est survenue, veuillez réessayer.");
+    }
     const urls: Record<string, string> = {};
     for (const s of signed ?? []) if (s.path && s.signedUrl) urls[s.path] = s.signedUrl;
     return { urls };
@@ -231,10 +311,12 @@ export const signPhotoUrls = createServerFn({ method: "POST" })
 export const createPhotoUploadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      opportunityId: z.string().uuid(),
-      fileName: z.string().min(1).max(180),
-    }).parse(d)
+    z
+      .object({
+        opportunityId: z.string().uuid(),
+        fileName: z.string().min(1).max(180),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { data: opp, error: oppError } = await context.supabase
@@ -262,13 +344,15 @@ export const createPhotoUploadUrl = createServerFn({ method: "POST" })
 export const addPhotoRecord = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      vehicle_opportunity_id: z.string().uuid(),
-      storage_path: z.string(),
-      category: z.string().nullable().optional(),
-      is_main_photo: z.boolean().optional(),
-      sort_order: z.number().int().optional(),
-    }).parse(d)
+    z
+      .object({
+        vehicle_opportunity_id: z.string().uuid(),
+        storage_path: z.string(),
+        category: z.string().nullable().optional(),
+        is_main_photo: z.boolean().optional(),
+        sort_order: z.number().int().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
@@ -282,14 +366,20 @@ export const addPhotoRecord = createServerFn({ method: "POST" })
       })
       .select("*")
       .single();
-    if (error) { console.error("[opportunities.functions]", error); throw new Error("Une erreur est survenue, veuillez réessayer."); }
+    if (error) {
+      console.error("[opportunities.functions]", error);
+      throw new Error("Une erreur est survenue, veuillez réessayer.");
+    }
     return row;
   });
 
 export const setMainPhoto = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ opportunityId: z.string().uuid(), photoId: z.string().uuid() }).parse(d))
+  .inputValidator((d: unknown) =>
+    z.object({ opportunityId: z.string().uuid(), photoId: z.string().uuid() }).parse(d),
+  )
   .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing, unrelated to this change
     const sb = context.supabase as any;
     const { error } = await sb.rpc("set_main_vehicle_photo", {
       p_opportunity_id: data.opportunityId,
@@ -337,13 +427,22 @@ export const deletePhoto = createServerFn({ method: "POST" })
 
 export const reorderPhotos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({
-    orders: z.array(z.object({
-      id: z.string().uuid(),
-      sort_order: z.number().int().nonnegative(),
-    })).max(50),
-  }).parse(d))
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        orders: z
+          .array(
+            z.object({
+              id: z.string().uuid(),
+              sort_order: z.number().int().nonnegative(),
+            }),
+          )
+          .max(50),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing, unrelated to this change
     const sb = context.supabase as any;
     const { error } = await sb.rpc("reorder_vehicle_photos", { p_orders: data.orders });
     if (error) {
@@ -355,8 +454,11 @@ export const reorderPhotos = createServerFn({ method: "POST" })
 
 export const answerInfoRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), comment: z.string().max(5000).optional() }).parse(d))
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid(), comment: z.string().max(5000).optional() }).parse(d),
+  )
   .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pre-existing, unrelated to this change
     const sb = context.supabase as any;
     const { error } = await sb.rpc("answer_information_request", {
       p_request_id: data.id,

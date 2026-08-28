@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- pre-existing throughout this file (raw
+   Supabase client passed around untyped), unrelated to the FD-014 fix touching adminRejectBuyerLead
+   below. Retyping it properly cascades into the return types of listDemandOpportunities and
+   getDemandOpportunity, which several other route files destructure loosely -- out of scope here. */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -38,7 +42,11 @@ async function myGroupIds(sb: any, userId: string): Promise<string[]> {
   return (data ?? []).map((m: any) => m.group_id as string);
 }
 
-async function myGroups(sb: any, userId: string, seesAll: boolean): Promise<("purchase" | "sales")[]> {
+async function myGroups(
+  sb: any,
+  userId: string,
+  seesAll: boolean,
+): Promise<("purchase" | "sales")[]> {
   if (seesAll) return ["purchase", "sales"];
   const { data } = await sb.from("profiles").select("staff_scope").eq("id", userId).maybeSingle();
   const scope = (data?.staff_scope ?? "both") as "purchase" | "sales" | "both";
@@ -53,14 +61,23 @@ export const adminGetBuyerLead = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const sb = context.supabase as any;
     await assertInternal(sb, context.userId);
-    const { data: lead, error } = await sb.from("buyer_leads").select("*").eq("id", data.id).maybeSingle();
+    const { data: lead, error } = await sb
+      .from("buyer_leads")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (error) fail("getBuyerLead", error);
     if (!lead) throw new Error("Demande introuvable");
-    const { data: history } = await sb.from("buyer_lead_status_history")
-      .select("*").eq("buyer_lead_id", data.id).order("created_at", { ascending: false });
-    const { data: demand } = await sb.from("demand_opportunities")
+    const { data: history } = await sb
+      .from("buyer_lead_status_history")
+      .select("*")
+      .eq("buyer_lead_id", data.id)
+      .order("created_at", { ascending: false });
+    const { data: demand } = await sb
+      .from("demand_opportunities")
       .select("id, reference_number, status, stage, assigned_sales_agent_id, created_at")
-      .eq("buyer_lead_id", data.id).maybeSingle();
+      .eq("buyer_lead_id", data.id)
+      .maybeSingle();
     return { lead, history: history ?? [], demand };
   });
 
@@ -80,11 +97,19 @@ export const adminConvertBuyerLead = createServerFn({ method: "POST" })
     await assertStaff(sb, context.userId);
     const agentId = data.agentId ?? null;
 
-    const { data: lead, error: leadErr } = await sb.from("buyer_leads").select("*").eq("id", data.id).maybeSingle();
+    const { data: lead, error: leadErr } = await sb
+      .from("buyer_leads")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (leadErr) fail("convert.getLead", leadErr);
     if (!lead) throw new Error("Demande introuvable");
 
-    const { data: existing } = await sb.from("demand_opportunities").select("id").eq("buyer_lead_id", data.id).maybeSingle();
+    const { data: existing } = await sb
+      .from("demand_opportunities")
+      .select("id")
+      .eq("buyer_lead_id", data.id)
+      .maybeSingle();
     if (existing?.id) {
       return { id: existing.id, alreadyExisted: true };
     }
@@ -112,10 +137,15 @@ export const adminConvertBuyerLead = createServerFn({ method: "POST" })
       notes: lead.message,
     };
 
-    const { data: created, error: insErr } = await sb.from("demand_opportunities").insert(insert).select("id").single();
+    const { data: created, error: insErr } = await sb
+      .from("demand_opportunities")
+      .insert(insert)
+      .select("id")
+      .single();
     if (insErr) fail("convert.insert", insErr);
 
-    const { error: updErr } = await sb.from("buyer_leads")
+    const { error: updErr } = await sb
+      .from("buyer_leads")
       .update({ status: "converted", assigned_sales_agent_id: agentId, assigned_group: "sales" })
       .eq("id", lead.id);
     if (updErr) fail("convert.updateLead", updErr);
@@ -136,14 +166,19 @@ export const adminConvertBuyerLead = createServerFn({ method: "POST" })
 
 export const assignDemandOpportunity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({
-    id: z.string().uuid(),
-    agentId: z.string().uuid().nullable(),
-  }).parse(d))
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        agentId: z.string().uuid().nullable(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     const sb = context.supabase as any;
     await assertStaff(sb, context.userId);
-    const { error } = await sb.from("demand_opportunities")
+    const { error } = await sb
+      .from("demand_opportunities")
       .update({ assigned_sales_agent_id: data.agentId, assigned_group: "sales" })
       .eq("id", data.id);
     if (error) fail("assignDemand", error);
@@ -161,11 +196,17 @@ export const assignDemandOpportunity = createServerFn({ method: "POST" })
 
 export const adminBuyerLeadRequestInfo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), message: z.string().min(2).max(2000) }).parse(d))
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid(), message: z.string().min(2).max(2000) }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     const sb = context.supabase as any;
     await assertInternal(sb, context.userId);
-    const { data: lead } = await sb.from("buyer_leads").select("user_id, reference_number").eq("id", data.id).maybeSingle();
+    const { data: lead } = await sb
+      .from("buyer_leads")
+      .select("user_id, reference_number")
+      .eq("id", data.id)
+      .maybeSingle();
     if (lead?.user_id) {
       await sb.from("notifications").insert({
         user_id: lead.user_id,
@@ -174,18 +215,26 @@ export const adminBuyerLeadRequestInfo = createServerFn({ method: "POST" })
         body: data.message,
       });
     }
-    const { error } = await sb.from("buyer_leads").update({ status: "a_qualifier" }).eq("id", data.id);
+    const { error } = await sb
+      .from("buyer_leads")
+      .update({ status: "a_qualifier" })
+      .eq("id", data.id);
     if (error) fail("requestInfo", error);
     return { ok: true };
   });
 
 export const adminRejectBuyerLead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), reason: z.string().max(200).optional() }).parse(d))
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid(), reason: z.string().max(200).optional() }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     const sb = context.supabase as any;
     await assertInternal(sb, context.userId);
-    const { error } = await sb.from("buyer_leads").update({ status: "perdu" }).eq("id", data.id);
+    const { error } = await sb
+      .from("buyer_leads")
+      .update({ status: "perdu", reject_reason: data.reason ?? null })
+      .eq("id", data.id);
     if (error) fail("reject", error);
     return { ok: true };
   });
@@ -194,15 +243,20 @@ export const adminRejectBuyerLead = createServerFn({ method: "POST" })
 
 export const listDemandOpportunities = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ scope: z.enum(["mine", "all"]).default("all") }).parse(d ?? { scope: "all" }))
+  .inputValidator((d: unknown) =>
+    z.object({ scope: z.enum(["mine", "all"]).default("all") }).parse(d ?? { scope: "all" }),
+  )
   .handler(async ({ data, context }) => {
     const sb = context.supabase as any;
     const roles = await assertInternal(sb, context.userId);
     const isStaff = roles.some((r) => (INTERNAL_STAFF as readonly string[]).includes(r));
     const isExternal = roles.includes("external_agent");
 
-    let q = sb.from("demand_opportunities")
-      .select("id, reference_number, status, stage, assigned_sales_agent_id, assigned_group, assigned_group_id, brand, model, max_budget_ht, city, country, buyer_lead_id, created_at")
+    let q = sb
+      .from("demand_opportunities")
+      .select(
+        "id, reference_number, status, stage, assigned_sales_agent_id, assigned_group, assigned_group_id, brand, model, max_budget_ht, city, country, buyer_lead_id, created_at",
+      )
       .order("created_at", { ascending: false })
       .limit(200);
 
@@ -224,20 +278,27 @@ export const listDemandOpportunities = createServerFn({ method: "GET" })
     const { data: rows, error } = await q;
     if (error) fail("list", error);
 
-    const buyerIds = Array.from(new Set((rows ?? []).map((r: any) => r.buyer_lead_id).filter(Boolean)));
-    let buyerMap: Record<string, any> = {};
+    const buyerIds = Array.from(
+      new Set((rows ?? []).map((r: any) => r.buyer_lead_id).filter(Boolean)),
+    );
+    const buyerMap: Record<string, any> = {};
     if (buyerIds.length) {
-      const { data: buyers } = await sb.from("buyer_leads")
+      const { data: buyers } = await sb
+        .from("buyer_leads")
         .select("id, first_name, last_name, email, company_name, reference_number")
         .in("id", buyerIds);
       for (const b of buyers ?? []) buyerMap[b.id] = b;
     }
 
-    const agentIds = Array.from(new Set((rows ?? []).map((r: any) => r.assigned_sales_agent_id).filter(Boolean)));
-    let agentMap: Record<string, any> = {};
+    const agentIds = Array.from(
+      new Set((rows ?? []).map((r: any) => r.assigned_sales_agent_id).filter(Boolean)),
+    );
+    const agentMap: Record<string, any> = {};
     if (agentIds.length) {
-      const { data: agents } = await sb.from("profiles")
-        .select("id, first_name, last_name, email").in("id", agentIds);
+      const { data: agents } = await sb
+        .from("profiles")
+        .select("id, first_name, last_name, email")
+        .in("id", agentIds);
       for (const a of agents ?? []) agentMap[a.id] = a;
     }
 
@@ -249,19 +310,37 @@ export const getDemandOpportunity = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const sb = context.supabase as any;
-    const { data: opp, error } = await sb.from("demand_opportunities").select("*").eq("id", data.id).maybeSingle();
+    const { data: opp, error } = await sb
+      .from("demand_opportunities")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (error) fail("get", error);
     if (!opp) throw new Error("Opportunité introuvable");
 
-    const { data: lead } = await sb.from("buyer_leads").select("*").eq("id", opp.buyer_lead_id).maybeSingle();
-    const { data: history } = await sb.from("demand_opportunity_status_history")
-      .select("*").eq("demand_opportunity_id", opp.id).order("created_at", { ascending: false });
+    const { data: lead } = await sb
+      .from("buyer_leads")
+      .select("*")
+      .eq("id", opp.buyer_lead_id)
+      .maybeSingle();
+    const { data: history } = await sb
+      .from("demand_opportunity_status_history")
+      .select("*")
+      .eq("demand_opportunity_id", opp.id)
+      .order("created_at", { ascending: false });
     const { data: agent } = opp.assigned_sales_agent_id
-      ? await sb.from("profiles").select("id, first_name, last_name, email").eq("id", opp.assigned_sales_agent_id).maybeSingle()
+      ? await sb
+          .from("profiles")
+          .select("id, first_name, last_name, email")
+          .eq("id", opp.assigned_sales_agent_id)
+          .maybeSingle()
       : { data: null };
     const { data: match } = opp.matched_vehicle_opportunity_id
-      ? await sb.from("vehicle_opportunities").select("id, reference_number, brand, model, year, desired_price_excl_tax, status")
-          .eq("id", opp.matched_vehicle_opportunity_id).maybeSingle()
+      ? await sb
+          .from("vehicle_opportunities")
+          .select("id, reference_number, brand, model, year, desired_price_excl_tax, status")
+          .eq("id", opp.matched_vehicle_opportunity_id)
+          .maybeSingle()
       : { data: null };
 
     return { opp, lead, history: history ?? [], agent, matchedVehicle: match };
@@ -272,7 +351,18 @@ export const getDemandOpportunity = createServerFn({ method: "GET" })
 const StageInput = z.object({
   id: z.string().uuid(),
   stage: z.enum(["qualification", "sourcing", "proposition", "negociation", "cloture"]).optional(),
-  status: z.enum(["nouvelle", "qualifiee", "en_recherche", "proposition_envoyee", "negociation", "gagnee", "perdue", "archivee"]).optional(),
+  status: z
+    .enum([
+      "nouvelle",
+      "qualifiee",
+      "en_recherche",
+      "proposition_envoyee",
+      "negociation",
+      "gagnee",
+      "perdue",
+      "archivee",
+    ])
+    .optional(),
   lost_reason: z.string().max(200).optional(),
 });
 
@@ -285,7 +375,8 @@ export const updateDemandStage = createServerFn({ method: "POST" })
     if (data.stage) patch.stage = data.stage;
     if (data.status) patch.status = data.status;
     if (data.lost_reason) patch.lost_reason = data.lost_reason;
-    if (data.status && ["gagnee", "perdue", "archivee"].includes(data.status)) patch.closed_at = new Date().toISOString();
+    if (data.status && ["gagnee", "perdue", "archivee"].includes(data.status))
+      patch.closed_at = new Date().toISOString();
     const { error } = await sb.from("demand_opportunities").update(patch).eq("id", data.id);
     if (error) fail("updateStage", error);
     return { ok: true };
@@ -295,13 +386,19 @@ export const updateDemandStage = createServerFn({ method: "POST" })
 
 export const linkVehicleMatch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({
-    demandId: z.string().uuid(),
-    vehicleOpportunityId: z.string().uuid().nullable(),
-  }).parse(d))
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        demandId: z.string().uuid(),
+        vehicleOpportunityId: z.string().uuid().nullable(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     const sb = context.supabase as any;
-    const patch: Record<string, unknown> = { matched_vehicle_opportunity_id: data.vehicleOpportunityId };
+    const patch: Record<string, unknown> = {
+      matched_vehicle_opportunity_id: data.vehicleOpportunityId,
+    };
     if (data.vehicleOpportunityId) {
       patch.stage = "proposition";
       patch.status = "proposition_envoyee";
@@ -318,12 +415,19 @@ export const suggestVehiclesForDemand = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const sb = context.supabase as any;
-    const { data: d0, error: e0 } = await sb.from("demand_opportunities").select("*").eq("id", data.id).maybeSingle();
+    const { data: d0, error: e0 } = await sb
+      .from("demand_opportunities")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
     if (e0) fail("suggest.get", e0);
     if (!d0) throw new Error("Introuvable");
 
-    let q = sb.from("vehicle_opportunities")
-      .select("id, reference_number, brand, model, year, mileage, desired_price_excl_tax, city, country, status")
+    let q = sb
+      .from("vehicle_opportunities")
+      .select(
+        "id, reference_number, brand, model, year, mileage, desired_price_excl_tax, city, country, status",
+      )
       .in("status", ["en_cours_analyse", "offre_envoyee", "en_negociation", "achetee"])
       .order("created_at", { ascending: false })
       .limit(30);
