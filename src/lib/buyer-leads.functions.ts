@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { parseBuyerLead } from "./buyer-leads.schema";
 import { buildBuyerLeadRow } from "./buyer-leads.shared";
@@ -47,7 +48,13 @@ export const submitBuyerLeadAuthenticated = createServerFn({ method: "POST" })
     const assignedGroup: "sales" | null = routing.enabled && !ref?.canOwnLeads ? "sales" : null;
 
     const id = crypto.randomUUID();
-    const row = buildBuyerLeadRow({ id, data: d, ownerUserId: userId, referrer: ref, assignedGroup });
+    const row = buildBuyerLeadRow({
+      id,
+      data: d,
+      ownerUserId: userId,
+      referrer: ref,
+      assignedGroup,
+    });
 
     const { error } = await supabase.from("buyer_leads").insert(row as never);
     if (error) {
@@ -62,4 +69,25 @@ export const submitBuyerLeadAuthenticated = createServerFn({ method: "POST" })
       .maybeSingle();
 
     return { id, reference: created?.reference_number ?? null, tracked: true };
+  });
+
+/** Buyer "Mes demandes" detail view -- a single lead, scoped to its owner. */
+export const getMyBuyerLead = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: row, error } = await supabase
+      .from("buyer_leads")
+      .select(
+        "id, reference_number, status, preferred_brand, preferred_model, vehicle_category, vehicle_type, min_year, max_mileage, max_budget_ht, currency, message, phone, email, first_name, last_name, intended_use, buy_timeline, financing_needed, payment_method, usage_country, required_equipment, wanted_equipment, created_at, updated_at",
+      )
+      .eq("id", data.id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error) {
+      console.error("[getMyBuyerLead] read failed", error);
+      throw new Error("Une erreur est survenue, veuillez réessayer.");
+    }
+    return { row: row ?? null };
   });

@@ -108,6 +108,7 @@
     "title": "Vind het bedrijfsvoertuig dat u nodig heeft",
     "subtitle": "Beschrijf uw behoefte. Wilmet controleert de beschikbare opportuniteiten en zijn netwerk om u de meest relevante voertuigen voor te stellen.",
     "step": "Stap {{current}} van {{total}}",
+    "interestedPrefill": "Geïnteresseerd in: {{vehicleRef}}",
     "steps": {
       "vehicle": "Gezocht voertuig",
       "technical": "Technische criteria",
@@ -1321,7 +1322,12 @@
     "emptyText": "Beschrijf het voertuig dat u zoekt, ons team belt u snel terug.",
     "createRequest": "Een aanvraag aanmaken",
     "vehicleSearch": "Voertuigzoekopdracht",
-    "createdOn": "Aangemaakt op {{date}}"
+    "createdOn": "Aangemaakt op {{date}}",
+    "detail": {
+      "back": "Terug naar mijn aanvragen",
+      "notFound": "Aanvraag niet gevonden",
+      "notFoundText": "Deze aanvraag bestaat niet of behoort u niet toe."
+    }
   },
   "mesDemandesClients": {
     "status": { "nouvelle": "Nieuw", "qualifiee": "Gekwalificeerd", "enRecherche": "In opzoeking", "propositionEnvoyee": "Voorstel verzonden", "negociation": "Onderhandeling", "gagnee": "Gewonnen", "perdue": "Niet geslaagd", "archivee": "Gearchiveerd" },
