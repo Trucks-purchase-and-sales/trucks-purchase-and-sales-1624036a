@@ -1,0 +1,125 @@
+FD-019 investigation -- does anything create opportunity_commissions rows?
+Run by: Salma, via Supabase SQL editor, against PRODUCTION (read-only
+catalog introspection and aggregate counts only -- no data mutated).
+Date: 2026-08-28
+
+=====================================================================
+Query 2 -- every trigger on vehicle_opportunities
+=====================================================================
+function_name;trigger_name
+tg_compute_commission;trg_compute_commission
+tg_default_assigned_group;trg_default_group
+tg_log_owner_side_change;trg_log_owner_side_change
+tg_opp_inherit_referral;trg_opp_inherit_referral
+tg_opp_partner_column_guard;trg_opp_partner_column_guard
+tg_compute_quality_score;trg_opp_quality
+tg_assign_reference_number;vehicle_opp_assign_ref
+tg_notify_on_status;vehicle_opp_notify
+tg_log_status_change;vehicle_opp_status_log
+tg_set_updated_at;vehicle_opp_updated_at
+
+trg_compute_commission stood out by name. Queries 3/4 (aggregate counts on
+opportunity_commissions and on vehicle_opportunities filtered to
+achetee/livree) both returned zero rows -- production currently has no
+opportunities in a post-purchase status at all, so an empty commissions
+table on its own proves nothing either way.
+
+=====================================================================
+Query A -- trigger definition
+=====================================================================
+CREATE TRIGGER trg_compute_commission AFTER UPDATE ON public.vehicle_opportunities
+FOR EACH ROW EXECUTE FUNCTION tg_compute_commission()
+
+=====================================================================
+Query B -- function body (verbatim, reformatted for readability below;
+see git history of this file for the single-line original)
+=====================================================================
+CREATE OR REPLACE FUNCTION public.tg_compute_commission()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+DECLARE
+  r public.commission_rules;
+  basis_amount numeric(12,2);
+  computed numeric(12,2);
+BEGIN
+  IF TG_OP <> 'UPDATE' THEN RETURN NEW; END IF;
+  IF NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;
+  IF NEW.status NOT IN ('achetee', 'livree', 'closed_won') THEN RETURN NEW; END IF;
+  IF EXISTS (
+    SELECT 1 FROM public.opportunity_commissions
+    WHERE vehicle_opportunity_id = NEW.id AND status <> 'cancelled'
+  ) THEN RETURN NEW; END IF;
+
+  SELECT * INTO r FROM private.resolve_commission_rule(NEW.id);
+  IF r IS NULL THEN RETURN NEW; END IF;
+
+  IF r.basis = 'purchase' THEN
+    basis_amount := COALESCE(NEW.purchase_price_excl_tax, NEW.desired_price_excl_tax, 0);
+  ELSE
+    basis_amount := GREATEST(COALESCE(NEW.final_sale_price_eur,0) - COALESCE(NEW.purchase_price_excl_tax,0), 0);
+  END IF;
+
+  computed := CASE r.rule_kind
+    WHEN 'flat' THEN r.rule_value
+    ELSE ROUND(basis_amount * (r.rule_value / 100.0), 2)
+  END;
+
+  INSERT INTO public.opportunity_commissions (
+    vehicle_opportunity_id, partenaire_id, rule_id, basis, basis_amount_eur,
+    rule_kind, rule_value, computed_amount_eur, status
+  ) VALUES (
+    NEW.id, NEW.partenaire_id, r.id, r.basis, basis_amount,
+    r.rule_kind, r.rule_value, computed, 'draft'
+  ) ON CONFLICT (vehicle_opportunity_id) DO NOTHING;
+
+  IF NEW.partenaire_id IS NOT NULL THEN
+    INSERT INTO public.notifications(user_id, type, title, body, vehicle_opportunity_id)
+    VALUES (NEW.partenaire_id, 'commission_created', 'Commission calculée',
+            'Une commission de ' || computed || ' € a été calculée pour ' || COALESCE(NEW.reference_number,''),
+            NEW.id);
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+=====================================================================
+Query C -- active commission_rules
+=====================================================================
+select id, name, applies_to, basis, rule_kind, rule_value, priority, active
+from commission_rules where active;
+
+Result: no rows.
+
+=====================================================================
+Analysis
+=====================================================================
+1. The trigger is real, correctly wired (fires on the right status
+   transitions), idempotent (guards against duplicate rows via both an
+   existence check and vehicle_opportunity_id's own conflict target), and
+   computes an amount from whatever rule it finds via
+   private.resolve_commission_rule(NEW.id).
+2. It found zero rules to apply, every time, because commission_rules has
+   zero active rows. That is the entire reason opportunity_commissions is
+   empty -- not a bug in the trigger, a missing prerequisite it depends on.
+3. A full CRUD server-function API for commission_rules already exists
+   (listCommissionRules / upsertCommissionRule / deleteCommissionRule in
+   src/lib/commissions.functions.ts), properly gated to admins. Searched
+   every route file in src/routes/ for any call to these three functions:
+   zero matches. No page in the app can create, edit, or delete a
+   commission rule -- the only way to do it right now is a direct SQL
+   insert against commission_rules.
+4. Secondary, currently-latent risk found while reading the trigger: a
+   rule with basis='sale' (margin-based) would be computed from
+   final_sale_price_eur, which is not yet set at the 'achetee' transition
+   (it's only written later, at delivery/sale). Combined with the
+   trigger's own guard against recomputing once a non-cancelled row
+   exists, a margin-based rule would compute and permanently lock in a
+   commission of 0. Not observable today (zero rules of any kind exist),
+   but worth knowing before anyone configures a basis='sale' rule.
+
+Conclusion: FD-019 as originally stated ("no code creates a commission
+row") is not accurate -- the create step exists and is correctly written.
+The real, complete finding is narrower and more specific: the commission
+system has never produced a payout because its one configurable
+prerequisite (a commission_rules row) has never been created, and there
+is no UI anywhere to create one.
