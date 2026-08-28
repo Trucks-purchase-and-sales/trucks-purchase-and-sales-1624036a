@@ -3,3 +3,6 @@
 # Keep these exceptions fingerprint-specific so any different finding still fails CI.
 eb1f64887596c8a84ee39de8d2e5e76bdbf77563:.env:generic-api-key:2
 eb1f64887596c8a84ee39de8d2e5e76bdbf77563:.env:generic-api-key:5
+
+# Production-only restoration of the same public Supabase publishable/client key.
+eea9a93136328bbe2413b7030460747ac3ab2e2d:.env.production:generic-api-key:2
