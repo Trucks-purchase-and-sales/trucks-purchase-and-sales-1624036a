@@ -1,0 +1,134 @@
+name: Temporary Production Recovery Verification
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-production:
+    name: Verify published Supabase recovery read-only
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install browser tooling
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Verify live production in Chromium
+        working-directory: e2e
+        env:
+          PRODUCTION_URL: https://wilmet-proposeur-connect.lovable.app
+        run: |
+          node --input-type=module <<'EOF'
+          import { chromium } from "@playwright/test";
+          import { createHash } from "node:crypto";
+
+          const base = process.env.PRODUCTION_URL;
+          const expectedProject = "srjnljpjwzhtbdnhksux.supabase.co";
+
+          const htmlResponse = await fetch(`${base}/`, {
+            headers: { "cache-control": "no-cache", pragma: "no-cache" },
+          });
+          const html = await htmlResponse.text();
+          console.log("homepage_status", htmlResponse.status);
+          console.log("x_deployment_id", htmlResponse.headers.get("x-deployment-id"));
+
+          const asset = html.match(/\/assets\/client-[A-Za-z0-9._-]+\.js/)?.[0];
+          if (!asset) throw new Error("Could not locate production client bundle");
+          const assetResponse = await fetch(`${base}${asset}`, {
+            headers: { "cache-control": "no-cache", pragma: "no-cache" },
+          });
+          const bundle = Buffer.from(await assetResponse.arrayBuffer());
+          console.log("client_asset", asset);
+          console.log("client_sha256", createHash("sha256").update(bundle).digest("hex"));
+          console.log("bundle_contains_project_url", bundle.includes(Buffer.from(expectedProject)));
+          if (!bundle.includes(Buffer.from(expectedProject))) {
+            throw new Error("Published client bundle does not contain the verified Supabase project URL");
+          }
+
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext({ locale: "fr-FR" });
+          const page = await context.newPage();
+          const consoleErrors = [];
+          const pageErrors = [];
+          const interestingResponses = [];
+
+          page.on("console", (msg) => {
+            if (msg.type() === "error") consoleErrors.push(msg.text());
+          });
+          page.on("pageerror", (error) => pageErrors.push(String(error)));
+          page.on("response", (response) => {
+            const url = response.url();
+            if (url.includes("supabase.co") || url.includes("_server") || url.includes("serverFn")) {
+              interestingResponses.push(`${response.status()} ${url}`);
+            }
+          });
+
+          for (const path of ["/", "/chercher-un-vehicule", "/vehicules"]) {
+            const response = await page.goto(`${base}${path}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+            console.log("page", path, "status", response?.status(), "final_url", page.url());
+            await page.waitForTimeout(7_000);
+          }
+
+          console.log("console_errors", JSON.stringify(consoleErrors));
+          console.log("page_errors", JSON.stringify(pageErrors));
+          console.log("interesting_responses", JSON.stringify(interestingResponses));
+
+          const allErrors = [...consoleErrors, ...pageErrors].join("\n");
+          if (allErrors.includes("Missing Supabase environment variable")) {
+            throw new Error("Live browser still reports missing Supabase environment variables");
+          }
+
+          await page.goto(`${base}/chercher-un-vehicule`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+          await page.waitForTimeout(8_000);
+          const body = await page.locator("body").innerText();
+          console.log("known_crash_visible", body.includes("Un problème est survenu"));
+          console.log("reference_unavailable_visible", /référentiel.*indisponible|reference lists.*unavailable/i.test(body));
+          if (body.includes("Un problème est survenu")) {
+            throw new Error("Known production crash fallback is still visible");
+          }
+          if (/référentiel.*indisponible|reference lists.*unavailable/i.test(body)) {
+            throw new Error("Reference data is still unavailable in the live form");
+          }
+
+          const combos = page.getByRole("combobox");
+          const comboCount = await combos.count();
+          console.log("combobox_count", comboCount);
+          if (comboCount === 0) throw new Error("No reference comboboxes found on live form");
+
+          let labels = [];
+          for (let i = 0; i < comboCount && labels.length === 0; i++) {
+            try {
+              await combos.nth(i).click({ timeout: 3_000 });
+              await page.waitForTimeout(500);
+              const options = page.getByRole("option");
+              const count = await options.count();
+              if (count > 0) {
+                labels = (await options.allInnerTexts()).slice(0, 6);
+              }
+              await page.keyboard.press("Escape");
+            } catch {}
+          }
+          console.log("reference_option_labels", JSON.stringify(labels));
+          if (labels.length === 0) throw new Error("Live reference dropdowns contain no options");
+
+          await browser.close();
+          EOF
